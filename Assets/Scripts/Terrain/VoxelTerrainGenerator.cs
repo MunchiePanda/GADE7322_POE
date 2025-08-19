@@ -18,8 +18,20 @@ public class VoxelTerrainGenerator : MonoBehaviour
     public int width = 15;
     [Tooltip("Depth (Z) of the voxel grid.")]
     public int depth = 15;
-    [Tooltip("Height (Y) of the voxel grid.")]
-    public int height = 3;
+    [Tooltip("Maximum column height (Y) for the voxel grid.")]
+    public int height = 6;
+
+    [Header("Noise Settings (Uneven Terrain)")]
+    [Tooltip("Enable Perlin-noise-based uneven terrain.")]
+    public bool useNoise = true;
+    [Tooltip("Minimum column height.")]
+    public int minColumnHeight = 2;
+    [Tooltip("Maximum additional height above minColumnHeight.")]
+    public int noiseAmplitude = 4;
+    [Tooltip("Perlin noise scale for x/z.")]
+    public float noiseScale = 0.12f;
+    [Tooltip("Random noise offset.")]
+    public Vector2 noiseOffset = new Vector2(137.13f, 59.87f);
 
     [Header("Voxel Prefab")]
     [Tooltip("Prefab for a single voxel cube.")]
@@ -29,12 +41,24 @@ public class VoxelTerrainGenerator : MonoBehaviour
     [Tooltip("Number of unique enemy paths to carve.")]
     public int numPaths = 3;
 
+    [Header("Placement Rules")]
+    [Tooltip("Allow defenders to be placed on carved paths.")]
+    public bool allowPlacementOnPaths = true;
+
+    [Header("Mesh Combination & Layering")]
+    [Tooltip("Combine individual voxel meshes into a single mesh after generation.")]
+    public bool combineMeshes = true;
+    [Tooltip("Layer index to assign to the combined terrain for camera culling.")]
+    public int terrainLayer = 8; // Ensure this exists in Project Settings > Tags and Layers
+
     // -----------------------------
     // INTERNAL DATA STRUCTURES
     // -----------------------------
 
     // 3D array to store voxel references
     private GameObject[,,] voxels;
+    // Column heights per x,z (for surface queries)
+    private int[,] columnHeights;
     // List of path positions (for each path)
     private List<List<Vector3Int>> paths = new List<List<Vector3Int>>();
     // Center position (tower point)
@@ -43,13 +67,30 @@ public class VoxelTerrainGenerator : MonoBehaviour
     private int highlightedPathIndex = -1;
     // Original materials of path voxels for highlighting
     private Dictionary<Vector3Int, Material> originalMaterials = new Dictionary<Vector3Int, Material>();
+    // Whether meshes were combined (disables per-voxel highlighting)
+    private bool meshesCombined = false;
+    // Generation state
+    private bool isGenerated = false;
+    public bool IsReady { get { return isGenerated; } }
 
     // -----------------------------
     // UNITY LIFECYCLE
     // -----------------------------
 
+    void Awake()
+    {
+        GenerateAllIfNeeded();
+    }
+
     void Start()
     {
+        // Safeguard in case script execution order causes Start() to precede Awake()
+        GenerateAllIfNeeded();
+    }
+
+    void GenerateAllIfNeeded()
+    {
+        if (isGenerated) return;
         // Calculate the center of the grid (where the tower will be placed)
         center = new Vector3Int(width / 2, 0, depth / 2);
 
@@ -58,27 +99,60 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
         // Step 2: Carve unique paths from edges to the center
         CarvePaths();
+
+        // Step 3: Optionally combine voxel meshes into a single mesh with collider
+        if (combineMeshes)
+        {
+            CombineVoxelMeshes();
+        }
+        isGenerated = true;
     }
 
     // -----------------------------
     // VOXEL GRID GENERATION
     // -----------------------------
 
-    // Instantiates a 3D grid of voxel cubes
+    // Instantiates a 3D grid of voxel cubes with optional noise-based column heights
     void GenerateVoxelGrid()
     {
         voxels = new GameObject[width, height, depth];
+        columnHeights = new int[width, depth];
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
                 for (int z = 0; z < depth; z++)
                 {
-                    Vector3 pos = new Vector3(x, y, z);
-                    voxels[x, y, z] = Instantiate(voxelPrefab, pos, Quaternion.identity, this.transform);
+                    // Determine column height using noise only once per column
+                    if (y == 0)
+                    {
+                        int colHeight = ComputeColumnHeight(x, z);
+                        columnHeights[x, z] = Mathf.Clamp(colHeight, 1, height);
+                    }
+                    if (y < columnHeights[x, z])
+                    {
+                        GameObject voxel = Instantiate(voxelPrefab, this.transform);
+                        voxel.transform.localPosition = new Vector3(x, y, z);
+                        voxel.transform.localRotation = Quaternion.identity;
+                        voxel.transform.localScale = Vector3.one;
+                        voxels[x, y, z] = voxel;
+                    }
                 }
             }
         }
+    }
+
+    int ComputeColumnHeight(int x, int z)
+    {
+        if (!useNoise)
+        {
+            return Mathf.Clamp(minColumnHeight + noiseAmplitude, 1, height);
+        }
+        float nx = (x + noiseOffset.x) * noiseScale;
+        float nz = (z + noiseOffset.y) * noiseScale;
+        float n = Mathf.PerlinNoise(nx, nz); // 0..1
+        int h = minColumnHeight + Mathf.RoundToInt(n * noiseAmplitude);
+        return Mathf.Clamp(h, 1, height);
     }
 
     // -----------------------------
@@ -107,10 +181,11 @@ public class VoxelTerrainGenerator : MonoBehaviour
             if (path.Count > 0)
             {
                 paths.Add(path);
-                // Remove voxels along the path (carve)
+                // Remove voxels along the path (carve a walkable path)
                 foreach (var pos in path)
                 {
-                    for (int y = 0; y < height; y++)
+                    int colHeight = columnHeights != null ? columnHeights[pos.x, pos.z] : height;
+                    for (int y = 0; y < colHeight; y++)
                     {
                         if (voxels[pos.x, y, pos.z] != null)
                         {
@@ -183,17 +258,26 @@ public class VoxelTerrainGenerator : MonoBehaviour
     // DEFENDER PLACEMENT ZONES
     // -----------------------------
 
-    // Returns true if a voxel is a valid defender placement (not on a path)
+    // Returns true if a voxel is a valid defender placement
     public bool IsValidDefenderPlacement(Vector3Int pos)
     {
-        // Check if this position is part of any path
+        bool isPath = IsPathTile(pos);
+        if (allowPlacementOnPaths)
+        {
+            return true;
+        }
+        // If placement on paths is disabled, only allow non-path tiles
+        return !isPath;
+    }
+
+    public bool IsPathTile(Vector3Int pos)
+    {
         foreach (var path in paths)
         {
             if (path.Contains(new Vector3Int(pos.x, 0, pos.z)))
-                return false;
+                return true;
         }
-        // Not a path, so valid
-        return true;
+        return false;
     }
 
     // -----------------------------
@@ -206,9 +290,16 @@ public class VoxelTerrainGenerator : MonoBehaviour
         return paths;
     }
 
-    // Highlights a specific path by changing its color
+    public Vector3Int GetCenterGrid()
+    {
+        GenerateAllIfNeeded();
+        return center;
+    }
+
+    // Highlights a specific path by changing its color (only works if meshes are not combined)
     public void HighlightPath(int pathIndex)
     {
+        if (meshesCombined) return;
         // Reset previous highlighting
         if (highlightedPathIndex >= 0 && highlightedPathIndex < paths.Count)
         {
@@ -230,6 +321,7 @@ public class VoxelTerrainGenerator : MonoBehaviour
     // Applies highlighting to a specific path
     private void ApplyPathHighlighting(int pathIndex)
     {
+        if (meshesCombined) return;
         var path = paths[pathIndex];
         foreach (var pos in path)
         {
@@ -260,6 +352,7 @@ public class VoxelTerrainGenerator : MonoBehaviour
     // Resets highlighting for a specific path
     private void ResetPathHighlighting(int pathIndex)
     {
+        if (meshesCombined) return;
         var path = paths[pathIndex];
         foreach (var pos in path)
         {
@@ -295,11 +388,107 @@ public class VoxelTerrainGenerator : MonoBehaviour
         {
             foreach (var pos in path)
             {
-                Gizmos.DrawCube(new Vector3(pos.x, 0.5f, pos.z), Vector3.one * 0.5f);
+                float sy = GetSurfaceYSafe(pos.x, pos.z) + 0.5f;
+                Gizmos.DrawCube(new Vector3(pos.x, sy, pos.z), Vector3.one * 0.5f);
             }
         }
         // Draw center (tower point)
         Gizmos.color = Color.yellow;
-        Gizmos.DrawCube(new Vector3(center.x, 0.5f, center.z), Vector3.one * 0.7f);
+        float cy = GetSurfaceYSafe(center.x, center.z) + 0.5f;
+        Gizmos.DrawCube(new Vector3(center.x, cy, center.z), Vector3.one * 0.7f);
+    }
+
+    // -----------------------------
+    // SURFACE & COMBINE HELPERS
+    // -----------------------------
+
+    public int GetSurfaceY(int x, int z)
+    {
+        if (columnHeights == null) return height;
+        if (x < 0 || x >= width || z < 0 || z >= depth)
+        {
+            return height;
+        }
+        return Mathf.Clamp(columnHeights[x, z], 1, height);
+    }
+
+    public Vector3 GetSurfaceWorldPosition(Vector3Int grid)
+    {
+        int y = GetSurfaceY(grid.x, grid.z);
+        Vector3 local = new Vector3(grid.x, y, grid.z);
+        return transform.TransformPoint(local);
+    }
+
+    public Vector3 GridToWorld(int x, int z)
+    {
+        int y = GetSurfaceY(x, z);
+        return transform.TransformPoint(new Vector3(x, y, z));
+    }
+
+    private float GetSurfaceYSafe(int x, int z)
+    {
+        if (columnHeights == null) return 0.0f;
+        return Mathf.Clamp(columnHeights[x, z], 1, height) - 0.5f;
+    }
+
+    void CombineVoxelMeshes()
+    {
+        List<MeshFilter> meshFilters = new List<MeshFilter>(GetComponentsInChildren<MeshFilter>());
+        // Exclude the parent if it already has a MeshFilter
+        meshFilters.RemoveAll(mf => mf.gameObject == this.gameObject);
+        if (meshFilters.Count == 0) return;
+
+        List<CombineInstance> combine = new List<CombineInstance>(meshFilters.Count);
+        foreach (var mf in meshFilters)
+        {
+            if (mf.sharedMesh == null) continue;
+            CombineInstance ci = new CombineInstance();
+            ci.mesh = mf.sharedMesh;
+            ci.transform = mf.transform.localToWorldMatrix;
+            combine.Add(ci);
+        }
+
+        Mesh combinedMesh = new Mesh();
+        combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; // allow large meshes
+        combinedMesh.CombineMeshes(combine.ToArray());
+
+        // Assign to parent
+        MeshFilter parentMF = GetComponent<MeshFilter>();
+        if (parentMF == null) parentMF = gameObject.AddComponent<MeshFilter>();
+        parentMF.sharedMesh = combinedMesh;
+
+        MeshRenderer parentMR = GetComponent<MeshRenderer>();
+        if (parentMR == null) parentMR = gameObject.AddComponent<MeshRenderer>();
+        // Use voxel prefab's material if available
+        var voxelRenderer = voxelPrefab != null ? voxelPrefab.GetComponent<MeshRenderer>() : null;
+        if (voxelRenderer != null)
+        {
+            parentMR.sharedMaterial = voxelRenderer.sharedMaterial;
+        }
+
+        MeshCollider mc = GetComponent<MeshCollider>();
+        if (mc == null) mc = gameObject.AddComponent<MeshCollider>();
+        mc.sharedMesh = combinedMesh;
+
+        // Assign layer for camera culling
+        gameObject.layer = terrainLayer;
+
+        // Clean up child voxels
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int z = 0; z < depth; z++)
+                {
+                    if (voxels != null && voxels[x, y, z] != null)
+                    {
+                        Destroy(voxels[x, y, z]);
+                        voxels[x, y, z] = null;
+                    }
+                }
+            }
+        }
+
+        meshesCombined = true;
     }
 } 

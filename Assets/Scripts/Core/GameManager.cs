@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 // GameManager
 // -----------
@@ -24,6 +25,14 @@ public class GameManager : MonoBehaviour
     public float enemySpawnInterval = 2f;
     [Tooltip("Number of enemies in the first wave.")]
     public int initialWaveEnemyCount = 5;
+
+    [Header("Defenders & Resources")]
+    [Tooltip("Defender prefab to place on valid terrain.")]
+    public GameObject defenderPrefab;
+    [Tooltip("Resource cost to place a defender.")]
+    public int defenderCost = 25;
+    [Tooltip("Resources the player starts with.")]
+    public int startingResources = 100;
 
     // UI References
     public HealthBarUI towerHealthBar;
@@ -61,7 +70,21 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // Step 2: Spawn the tower at the center of the terrain
+        // Initialize resources and UI
+        resources = Mathf.Max(0, startingResources);
+        if (resourceCounterUI != null)
+            resourceCounterUI.SetResource(resources);
+        if (defenderCostUI != null)
+            defenderCostUI.SetCost(defenderCost);
+
+        // Step 2: Spawn the tower at the center of the terrain (ensure terrain is ready)
+        if (!terrainGenerator.IsReady)
+        {
+            // Force generation if needed
+            // This call is no-op if already generated (handled internally)
+            // Access a method that triggers generation by querying center
+            terrainGenerator.GetCenterGrid();
+        }
         SpawnTower();
 
         // Step 3: Start the first enemy wave
@@ -83,8 +106,8 @@ public class GameManager : MonoBehaviour
 
     void SpawnTower()
     {
-        Vector3Int center = new Vector3Int(terrainGenerator.width / 2, 0, terrainGenerator.depth / 2);
-        Vector3 towerPos = new Vector3(center.x, terrainGenerator.height, center.z); // Place on top of terrain
+        Vector3Int center = terrainGenerator.GetCenterGrid();
+        Vector3 towerPos = terrainGenerator.GetSurfaceWorldPosition(center);
         towerInstance = Instantiate(towerPrefab, towerPos, Quaternion.identity);
     }
 
@@ -108,14 +131,20 @@ public class GameManager : MonoBehaviour
         // Pick a random path entrance from the terrain generator
         if (terrainGenerator == null || terrainGenerator.numPaths == 0)
             return;
-        int pathIndex = Random.Range(0, terrainGenerator.numPaths);
-        var paths = terrainGenerator.GetType().GetField("paths", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(terrainGenerator) as System.Collections.IList;
+        System.Collections.Generic.List<System.Collections.Generic.List<UnityEngine.Vector3Int>> paths = terrainGenerator.GetPaths();
         if (paths == null || paths.Count == 0) return;
-        var path = paths[pathIndex] as System.Collections.IList;
+        int pathIndex = Random.Range(0, paths.Count);
+        System.Collections.Generic.List<UnityEngine.Vector3Int> path = paths[pathIndex];
         if (path == null || path.Count == 0) return;
-        Vector3Int entrance = (Vector3Int)path[0];
-        Vector3 spawnPos = new Vector3(entrance.x, terrainGenerator.height, entrance.z);
-        Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        UnityEngine.Vector3Int entrance = path[0];
+        Vector3 spawnPos = terrainGenerator.GetSurfaceWorldPosition(entrance);
+        GameObject enemyObj = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        Enemy enemy = enemyObj.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            Tower towerComponent = towerInstance != null ? towerInstance.GetComponent<Tower>() : null;
+            enemy.Initialize(path, 0, towerComponent, this, terrainGenerator);
+        }
     }
 
     // -----------------------------
@@ -214,4 +243,26 @@ public class GameManager : MonoBehaviour
 
     // Call this when the defender cost changes:
     // if (defenderCostUI != null) defenderCostUI.SetCost(defenderCost);
+
+    // -----------------------------
+    // DEFENDER PLACEMENT API
+    // -----------------------------
+
+    public bool TryPlaceDefender(Vector3Int gridPosition)
+    {
+        if (isGameOver || isPaused) return false;
+        if (defenderPrefab == null || terrainGenerator == null) return false;
+
+        // Only allow placement on valid non-path tiles
+        if (!terrainGenerator.IsValidDefenderPlacement(gridPosition)) return false;
+
+        if (!SpendResources(defenderCost)) return false;
+
+        // Clamp to terrain bounds to avoid OOB
+        int gx = Mathf.Clamp(gridPosition.x, 0, terrainGenerator.width - 1);
+        int gz = Mathf.Clamp(gridPosition.z, 0, terrainGenerator.depth - 1);
+        Vector3 worldPos = terrainGenerator.GridToWorld(gx, gz);
+        Instantiate(defenderPrefab, worldPos, Quaternion.identity);
+        return true;
+    }
 } 

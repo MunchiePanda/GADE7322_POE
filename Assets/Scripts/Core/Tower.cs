@@ -5,6 +5,12 @@ public class Tower : MonoBehaviour
     [Header("Tower Stats")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float currentHealth;
+    [Header("Combat")]
+    [SerializeField] private float attackRange = 8f;
+    [SerializeField] private float attackDamage = 8f;
+    [SerializeField] private float attackIntervalSeconds = 0.7f;
+    [SerializeField] private LayerMask enemyMask = ~0;
+    private float lastAttackTime = -999f;
     
     [Header("References")]
     [SerializeField] private GameManager gameManager;
@@ -65,6 +71,38 @@ public class Tower : MonoBehaviour
         if (gameManager != null)
         {
             gameManager.GameOver();
+        }
+    }
+    
+    void Update()
+    {
+        AutoAttackNearestEnemy();
+    }
+    
+    void AutoAttackNearestEnemy()
+    {
+        float time = Time.time;
+        if (time - lastAttackTime < attackIntervalSeconds) return;
+        Enemy nearest = null;
+        float nearestDist = float.MaxValue;
+        Collider[] hits = Physics.OverlapSphere(transform.position, attackRange, enemyMask);
+        foreach (var hit in hits)
+        {
+            Enemy e = hit.GetComponentInParent<Enemy>();
+            if (e != null)
+            {
+                float d = Vector3.Distance(transform.position, e.transform.position);
+                if (d < nearestDist)
+                {
+                    nearestDist = d;
+                    nearest = e;
+                }
+            }
+        }
+        if (nearest != null)
+        {
+            lastAttackTime = time;
+            nearest.TakeDamage(attackDamage);
         }
     }
     
