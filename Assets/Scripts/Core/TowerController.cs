@@ -22,7 +22,7 @@ public class TowerController : MonoBehaviour
         // Get terrain generator reference if not assigned
         if (terrainGenerator == null)
         {
-            terrainGenerator = FindObjectOfType<VoxelTerrainGenerator>();
+            terrainGenerator = FindFirstObjectByType<VoxelTerrainGenerator>();
         }
     }
     

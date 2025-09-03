@@ -1,107 +1,284 @@
-# GADE7322 – Tower Defence (Part 1) Implementation Explanation
+# GADE7322 – Tower Defence Implementation Explanation
 
-This document explains how the current project implements the Part 1 requirements: procedural terrain and base mechanics, with defenders, enemies, a basic game loop, and UI.
+This document explains how the project implements the requirements for **Parts 1, 2, and 3**, including procedural terrain, base mechanics, enemy waves, upgrades, shaders, and a custom procedural feature.
 
-## High-level Architecture
+---
+
+## Table of Contents
+1. [Part 1: Procedural Terrain & Base Mechanics](#part-1-procedural-terrain--base-mechanics)
+2. [Part 2: Procedural Enemy Waves](#part-2-procedural-enemy-waves)
+3. [Part 3: Upgrades, Shaders, Custom Procedural Feature](#part-3-upgrades-shaders-custom-procedural-feature)
+4. [Scene Navigation](#scene-navigation)
+5. [General Setup Instructions](#general-setup-instructions)
+
+---
+
+## Part 1: Procedural Terrain & Base Mechanics
+### High-level Architecture
 - **Terrain generation**: `Assets/Scripts/Terrain/VoxelTerrainGenerator.cs`
 - **Game loop & spawning**: `Assets/Scripts/Core/GameManager.cs`
 - **Player base (tower)**: `Assets/Scripts/Core/Tower.cs`
 - **Enemies**: `Assets/Scripts/Systems/Enemy.cs`
 - **Defenders**: `Assets/Scripts/Systems/Defender.cs`
 - **Defender placement**: `Assets/Scripts/Systems/DefenderPlacement.cs`
-- **UI**: `Assets/Scripts/UI/HealthBarUI.cs`, `ResourceCounterUI.cs`, `DefenderCostUI.cs`, `PauseMenuUI.cs`, `GameOverUI.cs`, and setup guide `Assets/Scripts/UI/UI_Setup_Readme.md`
+- **UI**: `Assets/Scripts/UI/` (Health bars, resource counters, pause menu, game over screen)
 
-## How requirements are met
-- **Procedural Terrain & ≥3 Paths**: `VoxelTerrainGenerator` builds a 3D voxel grid and carves multiple unique paths from random edges to the center point. The number of paths is configurable (default 3). Paths differ every run due to randomness.
-- **Central Tower with Health & Auto-Attack**: `Tower` tracks health, updates the UI, and when destroyed triggers game over. It auto-attacks the nearest enemy within range at an interval.
-- **Defenders**: `Defender` can be placed on valid tiles (not on paths), auto-targets/attacks enemies within range, has health, and can be destroyed.
-- **Enemies**: `Enemy` follows a generated path to the tower, attacks defenders that come within detection range, and damages the tower on arrival. On death, it rewards resources.
-- **Game Loop & Resources**: `GameManager` initializes terrain/tower, spawns an initial wave on play, tracks resources, and provides a placement cost. UI elements display resources and costs.
-- **UI/UX**: Health bar for the tower, resource/cost counters, pause/resume/restart, and game over panel are supported through the UI scripts.
+### How Requirements Are Met
+- **Procedural Terrain & ≥3 Paths**: `VoxelTerrainGenerator` builds a 3D voxel grid and carves multiple unique paths from random edges to the center.
+- **Central Tower**: Tracks health, auto-attacks enemies, and triggers game over when destroyed.
+- **Defenders**: Can be placed on valid tiles, auto-target enemies, and have health.
+- **Enemies**: Follow generated paths, attack defenders/tower, and reward resources on death.
+- **Game Loop**: Manages resources, spawning, and UI.
+- **UI/UX**: Health bars, resource counters, pause/restart, and game over screens.
 
-## Detailed Components
-
-### VoxelTerrainGenerator.cs
-- Public inspector fields: `width`, `depth`, `height`, `voxelPrefab`, `numPaths`.
-- Generates a voxel grid and carves paths using a biased random-walk from random edges to the center.
+### Detailed Components
+#### VoxelTerrainGenerator.cs
+- Generates a voxel grid and carves paths using biased random walks.
 - Exposes:
-  - `List<List<Vector3Int>> GetPaths()` – public access for consumers.
-  - `bool IsValidDefenderPlacement(Vector3Int)` – prevents placement on carved path tiles.
-  - `void HighlightPath(int)` – optional visual path highlight for selection/feedback.
-- Debug: draws path cells (red) and the center (yellow) using gizmos.
+  - `List<List<Vector3Int>> GetPaths()`: Public access to paths.
+  - `bool IsValidDefenderPlacement(Vector3Int)`: Prevents placement on paths.
+  - `void HighlightPath(int)`: Visual feedback for path selection.
 
-### GameManager.cs
-- References: `terrainGenerator`, `towerPrefab`, `enemyPrefab`.
-- Timing: `enemySpawnInterval`, `initialWaveEnemyCount`.
-- Defenders/Resources: `defenderPrefab`, `defenderCost`, `startingResources`.
-- UI references: `towerHealthBar`, `resourceCounterUI`, `defenderCostUI`, `gameOverUI`, `pauseMenuUI`.
-- Startup flow: hides panels → validates terrain → initializes resources and UI → spawns tower → starts first enemy wave.
-- Enemy spawn: now uses `terrainGenerator.GetPaths()` to pick a random path entrance and instantiates an `Enemy`, initializing it with the path, terrain height, and the tower.
-- Resource API: `AddResources(int)`, `SpendResources(int)`, `GetResources()`; updates UI accordingly.
-- Pause/game over: ESC toggles pause; `GameOver()` shows UI; `RestartGame()` reloads the scene.
-- Defender placement API:
-  - `bool TryPlaceDefender(Vector3Int gridPosition)` – validates path exclusion via `IsValidDefenderPlacement`, checks resources, instantiates defender at the top of the terrain (y = `height`).
+#### GameManager.cs
+- Initializes terrain, tower, and enemies.
+- Manages resources, spawning, and game state (pause/restart).
+- Exposes APIs for resource management and defender placement.
 
-### Tower.cs
-- Health: `maxHealth`, `currentHealth`, updates `HealthBarUI` through `GameManager.towerHealthBar`.
-- Auto-attack: scans for nearest `Enemy` within `attackRange` using `Physics.OverlapSphere` and applies damage at `attackIntervalSeconds`.
-- On death: calls `GameManager.GameOver()`.
+#### Tower.cs
+- Tracks health, auto-attacks enemies, and triggers game over on destruction.
 
-### Enemy.cs
-- Initialization: `Initialize(List<Vector3Int> path, int terrainTopY, Tower tower, GameManager gm)` called by `GameManager` on spawn.
-- Movement: follows `path` by moving toward the next waypoint at `moveSpeed` on the top surface (y = `terrainTopY`).
-- Targeting: if an in-range `Defender` is found (via `OverlapSphere`), the enemy attacks it at `attackIntervalSeconds`; otherwise continues along its path.
-- Tower damage: when reaching the final waypoint, attacks the `Tower` at the same interval.
-- Death: awards `resourceRewardOnDeath` to the player (`GameManager.AddResources`) and destroys itself.
+#### Enemy.cs
+- Follows paths, attacks defenders/tower, and rewards resources on death.
 
-### Defender.cs
-- Health and simple death.
-- Targeting: acquires nearest `Enemy` in `attackRange` via `OverlapSphere`.
-- Attack: damages target at `attackIntervalSeconds`.
+#### Defender.cs
+- Auto-targets enemies, deals damage, and can be destroyed.
 
-### DefenderPlacement.cs
-- Input: uses the new Input System (`UnityEngine.InputSystem`). On left-mouse click, it raycasts from the camera and snaps to integer grid coordinates.
-- Layer mask: `placementPlaneMask` should include the layer(s) used by your voxel cubes so the ray hits the terrain surface.
-- Calls `GameManager.TryPlaceDefender(gridPosition)`; placement succeeds only if not on a path tile and enough resources are available.
-
-## Scene & Inspector Setup (Checklist)
-1. Create an empty `GameManager` object and add `GameManager` component.
-   - Assign `terrainGenerator` (your `VoxelTerrainGenerator` in the scene).
-   - Assign `towerPrefab`, `enemyPrefab`, `defenderPrefab`.
-   - Set `enemySpawnInterval`, `initialWaveEnemyCount`, `startingResources`, and `defenderCost`.
-   - Link UI references (see UI section).
-2. Add `VoxelTerrainGenerator` on an empty object.
-   - Assign `voxelPrefab` (the cube prefab). Ensure it has a collider and is on a `Terrain` (or similar) layer.
-3. Add `DefenderPlacement` to an object (e.g., `GameManager`).
-   - Assign `mainCamera` and `gameManager`. Set `placementPlaneMask` to include the `Terrain` layer.
-4. Prefabs:
-   - `Tower.prefab`: must include `Tower` component.
-   - `Enemy.prefab`: include `Enemy` component and a collider (Capsule/Sphere). Rigidbody is optional (set kinematic if used).
-   - `Defender.prefab`: include `Defender` component and a collider.
-5. Input System: Project Settings → Player → Active Input Handling = “Both” or “Input System Package”.
-6. UI: Follow `Assets/Scripts/UI/UI_Setup_Readme.md` and then assign the created UI objects to `GameManager`.
-
-## UI Wiring
-- `HealthBarUI` → controlled by `Tower` through `GameManager.towerHealthBar`.
-- `ResourceCounterUI` → updated by `GameManager.AddResources/SpendResources`.
-- `DefenderCostUI` → set on start with `defenderCost`.
-- `PauseMenuUI` → ESC toggles; Resume/Restart buttons invoke `GameManager` methods.
-- `GameOverUI` → shown from `GameManager.GameOver()`.
-
-## Notes, Limitations, and Next Steps
-- Placement grid snap is integer rounding; adjust if your terrain origin/scale changes.
-- OverlapSphere target acquisition requires colliders on `Enemy` and `Defender` objects.
-- Simple instant-damage attacks are used (no projectiles/VFX) to keep mechanics clear. These can be replaced with projectile systems later.
-- Waves currently spawn a fixed count; extend `GameManager` to scale `enemyCount`, `enemy stats`, and timing per wave for Part 2.
-- Consider disabling further spawns after `GameOver()` and clearing remaining enemies.
-
-## Test Plan
-- Press Play: terrain generates and tower spawns at center.
-- Enemies spawn at random path entrances and move toward the tower.
-- Tower auto-attacks enemies in range; enemy deaths increase resources.
-- Left-click on non-path tiles places defenders (cost deducted; fails on path tiles or insufficient resources).
-- ESC pauses; Resume/Restart work; tower destruction triggers Game Over panel.
+#### DefenderPlacement.cs
+- Handles input for defender placement using the Input System.
 
 ---
 
-For UI specifics and a field mapping table, see `Assets/Scripts/UI/UI_Setup_Readme.md`.
+## Part 2: Procedural Enemy Waves
+### New Enemy Types
+1. **FastEnemy.cs**
+   - High speed, low health.
+   - Inherits from `Enemy.cs` and overrides `moveSpeed` and `maxHealth`.
+
+2. **TankEnemy.cs**
+   - Low speed, high health.
+   - Inherits from `Enemy.cs` and overrides `moveSpeed` and `maxHealth`.
+
+### New Defender Types
+1. **SniperDefender.cs**
+   - Long range, high damage, low attack speed.
+   - Inherits from `Defender.cs` and overrides `attackRange` and `attackDamage`.
+
+2. **AoEDefender.cs**
+   - Short range, area damage.
+   - Uses `Physics.OverlapSphere` to damage multiple enemies.
+
+### Procedural Wave System
+#### EnemySpawner.cs (Updated)
+- Spawns random enemy types (`FastEnemy`, `TankEnemy`, or default `Enemy`).
+- Scales enemy stats (health, speed) based on the current wave.
+
+#### GameManager.cs (Updated)
+- Tracks `currentWave` and increases difficulty:
+  - Enemy count scales exponentially.
+  - Enemy health/speed increases per wave.
+- Adaptive difficulty: Reduces spawn intervals if the player has many resources.
+
+### Implementation Steps
+1. **Create New Enemy/Defender Scripts**:
+   - Add `FastEnemy.cs`, `TankEnemy.cs`, `SniperDefender.cs`, and `AoEDefender.cs` to `Assets/Scripts/Systems/`.
+   - Inherit from `Enemy.cs`/`Defender.cs` and override stats.
+
+2. **Update EnemySpawner.cs**:
+   - Add logic to randomly instantiate enemy types.
+   - Scale enemy stats based on `GameManager.currentWave`.
+
+3. **Update GameManager.cs**:
+   - Add wave tracking and difficulty scaling.
+   - Call `StartNextWave()` when all enemies in the current wave are defeated.
+
+4. **Update DefenderPlacement.cs**:
+   - Support multiple defender types (e.g., via a UI dropdown).
+
+5. **Update UI**:
+   - Add wave counter (`WaveCounterUI.cs`).
+   - Add defender type selection buttons.
+
+---
+
+## Part 3: Upgrades, Shaders, Custom Procedural Feature
+### Upgrades
+#### Tower.cs (Updated)
+- Add `UpgradeHealth()` and `UpgradeDamage()` methods.
+- Visual feedback: Scale the tower or change its material.
+
+#### Defender.cs (Updated)
+- Add upgrade methods and visual feedback.
+
+#### UI
+- Add upgrade buttons to `TowerUI.cs` and `DefenderUI.cs`.
+- Connect buttons to upgrade methods.
+
+### Shaders
+1. **Vertex Displacement Shader**
+   - Apply to terrain for dynamic effects (e.g., waving grass).
+   - Save as `Assets/Shaders/VertexDisplacement.shader`.
+
+2. **Base Color Modification Shader**
+   - Apply to defenders/enemies for dynamic color changes (e.g., damage feedback).
+   - Save as `Assets/Shaders/ColorModification.shader`.
+
+### Visual Effects
+1. **Particle System**
+   - Add explosion effects on enemy/death (`Assets/Prefabs/Explosion.prefab`).
+
+2. **Post-Processing**
+   - Add bloom/vignette via Unity’s Post-Processing Stack.
+
+### Custom Procedural Feature: Dynamic Weather
+#### WeatherManager.cs (New)
+- Randomly triggers weather events (rain, snow).
+- Affects gameplay (e.g., rain slows enemies).
+
+#### Implementation Steps
+1. Create `WeatherManager.cs` in `Assets/Scripts/Systems/`.
+2. Add particle systems for rain/snow (`Assets/Prefabs/Rain.prefab`, `Snow.prefab`).
+3. Connect weather events to gameplay (e.g., modify enemy speed).
+
+---
+
+## Scene Navigation
+### SceneNavigationUI.cs (New)
+- Handles navigation between `MainMenu`, `Game`, and `EndMenu` scenes.
+- Attach to a UI canvas in each scene.
+
+#### Features
+- **Main Menu**: Buttons for `Start Game` and `Quit`.
+- **Game Scene**: Button for `Back to Menu`.
+- **End Menu**: Buttons for `Restart` and `Back to Menu`.
+
+#### Setup Instructions
+1. Create a new UI canvas in each scene.
+2. Add buttons and attach `SceneNavigationUI.cs`.
+3. Configure button `onClick` events to call `LoadScene(string sceneName)`.
+
+---
+
+## General Setup Instructions
+### 1. Scene Setup
+- **MainMenu.unity**: Add `Start Game` and `Quit` buttons.
+- **SampleScene.unity**: Add `Back to Menu` button.
+- **EndMenu.unity**: Add `Restart` and `Back to Menu` buttons.
+
+### 2. Script Setup
+- Attach `SceneNavigationUI.cs` to UI canvases.
+- Configure public fields in the Inspector (e.g., assign button references).
+
+### 3. Build Settings
+- Add all scenes to **File > Build Settings**:
+  - `Assets/Scenes/MainMenu.unity`
+  - `Assets/Scenes/SampleScene.unity`
+  - `Assets/Scenes/EndMenu.unity`
+
+### 4. Input System
+- Ensure **Project Settings > Player > Active Input Handling** is set to "Both" or "Input System Package".
+
+### 5. Testing
+- Test scene transitions:
+  - Main Menu → Game → End Menu → Main Menu.
+  - Verify pause/restart functionality in the game scene.
+
+---
+
+## Example Code Snippets
+### 1. FastEnemy.cs
+```csharp
+using UnityEngine;
+
+public class FastEnemy : Enemy
+{
+    protected override void Start()
+    {
+        base.Start();
+        moveSpeed *= 2f; // Double speed
+        maxHealth = 5;  // Lower health
+    }
+}
+```
+
+### 2. Wave Scaling in GameManager.cs
+```csharp
+public class GameManager : MonoBehaviour
+{
+    public int currentWave = 1;
+    public float waveScalingFactor = 1.5f;
+
+    void StartNextWave()
+    {
+        currentWave++;
+        int enemyCount = Mathf.RoundToInt(initialWaveEnemyCount * Mathf.Pow(waveScalingFactor, currentWave));
+        StartCoroutine(SpawnWave(enemyCount));
+    }
+}
+```
+
+### 3. Upgrade Method in Defender.cs
+```csharp
+public void UpgradeDamage()
+{
+    if (GameManager.Instance.SpendResources(upgradeCost))
+    {
+        attackDamage *= 1.5f;
+        transform.localScale *= 1.2f; // Visual feedback
+    }
+}
+```
+
+### 4. SceneNavigationUI.cs
+```csharp
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+public class SceneNavigationUI : MonoBehaviour
+{
+    public Button mainMenuButton;
+    public Button startGameButton;
+    public Button restartButton;
+    public Button quitButton;
+
+    void Start()
+    {
+        if (mainMenuButton != null) mainMenuButton.onClick.AddListener(() => LoadScene("MainMenu"));
+        if (startGameButton != null) startGameButton.onClick.AddListener(() => LoadScene("SampleScene"));
+        if (restartButton != null) restartButton.onClick.AddListener(() => LoadScene(SceneManager.GetActiveScene().name));
+        if (quitButton != null) quitButton.onClick.AddListener(QuitGame);
+    }
+
+    public void LoadScene(string sceneName)
+    {
+        SceneManager.LoadScene(sceneName);
+    }
+
+    public void QuitGame()
+    {
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
+    }
+}
+```
+
+---
+
+## Final Notes
+- **Balance**: Test upgrades, enemy waves, and resources for fair difficulty.
+- **Polish**: Add sound effects, particle effects, and UI animations.
+- **Documentation**: Update this file as you implement new features.
+- **GitHub**: Commit changes frequently and include this file in your repo.

@@ -299,7 +299,12 @@ public class VoxelTerrainGenerator : MonoBehaviour
     // Highlights a specific path by changing its color (only works if meshes are not combined)
     public void HighlightPath(int pathIndex)
     {
-        if (meshesCombined) return;
+        if (meshesCombined)
+        {
+            Debug.LogWarning("Cannot highlight paths when meshes are combined.");
+            return;
+        }
+
         // Reset previous highlighting
         if (highlightedPathIndex >= 0 && highlightedPathIndex < paths.Count)
         {
@@ -323,25 +328,20 @@ public class VoxelTerrainGenerator : MonoBehaviour
     {
         if (meshesCombined) return;
         var path = paths[pathIndex];
+        Material highlightMaterial = new Material(Shader.Find("Standard"));
+        highlightMaterial.color = Color.cyan; // You can change this color
+
         foreach (var pos in path)
         {
-            // Create a highlight material (bright color)
-            Material highlightMaterial = new Material(Shader.Find("Standard"));
-            highlightMaterial.color = Color.cyan; // You can change this color
-
-            // Store original material and apply highlight
             for (int y = 0; y < height; y++)
             {
                 Vector3Int voxelPos = new Vector3Int(pos.x, y, pos.z);
-                if (voxels[pos.x, y, pos.z] != null)
+                if (voxels[pos.x, y, pos.z] != null && !originalMaterials.ContainsKey(voxelPos))
                 {
                     Renderer renderer = voxels[pos.x, y, pos.z].GetComponent<Renderer>();
                     if (renderer != null)
                     {
-                        if (!originalMaterials.ContainsKey(voxelPos))
-                        {
-                            originalMaterials[voxelPos] = renderer.material;
-                        }
+                        originalMaterials[voxelPos] = renderer.material;
                         renderer.material = highlightMaterial;
                     }
                 }
@@ -431,6 +431,8 @@ public class VoxelTerrainGenerator : MonoBehaviour
         return Mathf.Clamp(columnHeights[x, z], 1, height) - 0.5f;
     }
 
+
+
     void CombineVoxelMeshes()
     {
         List<MeshFilter> meshFilters = new List<MeshFilter>(GetComponentsInChildren<MeshFilter>());
@@ -491,4 +493,4 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
         meshesCombined = true;
     }
-} 
+}

@@ -7,6 +7,9 @@ public class DefenderPlacement : MonoBehaviour
     [SerializeField] private LayerMask placementPlaneMask;
     [SerializeField] private VoxelTerrainGenerator terrainGenerator;
 
+    // Public property for defender prefab (can be set by DefenderSelectionUI)
+    public GameObject defenderPrefab;
+
     void Start()
     {
         if (mainCamera == null)
@@ -15,11 +18,17 @@ public class DefenderPlacement : MonoBehaviour
         }
         if (gameManager == null)
         {
-            gameManager = FindObjectOfType<GameManager>();
+            gameManager = FindFirstObjectByType<GameManager>();
         }
         if (terrainGenerator == null)
         {
-            terrainGenerator = FindObjectOfType<VoxelTerrainGenerator>();
+            terrainGenerator = FindFirstObjectByType<VoxelTerrainGenerator>();
+        }
+
+        // Default to the GameManager's defender prefab
+        if (defenderPrefab == null && gameManager != null)
+        {
+            defenderPrefab = gameManager.defenderPrefab;
         }
     }
 
@@ -36,7 +45,7 @@ public class DefenderPlacement : MonoBehaviour
 
     void TryPlaceAtMouse()
     {
-        if (mainCamera == null) return;
+        if (mainCamera == null || defenderPrefab == null) return;
         Ray ray = mainCamera.ScreenPointToRay(UnityEngine.InputSystem.Mouse.current.position.ReadValue());
         RaycastHit hit;
         bool didHit = Physics.Raycast(ray, out hit, 1000f, placementPlaneMask);
@@ -59,8 +68,28 @@ public class DefenderPlacement : MonoBehaviour
             if (gx < 0 || gz < 0 || gx >= gameManager.terrainGenerator.width || gz >= gameManager.terrainGenerator.depth)
                 return;
             Vector3Int grid = new Vector3Int(gx, 0, gz);
-            gameManager.TryPlaceDefender(grid);
+            TryPlaceDefender(grid);
         }
+    }
+
+    /// <summary>
+    /// Attempts to place a defender at the specified grid position.
+    /// </summary>
+    public bool TryPlaceDefender(Vector3Int gridPosition)
+    {
+        if (gameManager == null || defenderPrefab == null || terrainGenerator == null) return false;
+
+        // Only allow placement on valid non-path tiles
+        if (!terrainGenerator.IsValidDefenderPlacement(gridPosition)) return false;
+
+        if (!gameManager.SpendResources(gameManager.defenderCost)) return false;
+
+        // Clamp to terrain bounds to avoid OOB
+        int gx = Mathf.Clamp(gridPosition.x, 0, terrainGenerator.width - 1);
+        int gz = Mathf.Clamp(gridPosition.z, 0, terrainGenerator.depth - 1);
+        Vector3 worldPos = terrainGenerator.GridToWorld(gx, gz);
+        Instantiate(defenderPrefab, worldPos, Quaternion.identity);
+        return true;
     }
 }
 

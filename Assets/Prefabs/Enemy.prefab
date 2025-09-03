@@ -117,6 +117,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 820385077123436877}
+  - component: {fileID: 2471127363600878552}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -140,3 +141,22 @@ Transform:
   - {fileID: 4089293825564301949}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2471127363600878552
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7520726967525940784}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9fa36ce71b569549a486ca5e298fb99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 50
+  currentHealth: 0
+  moveSpeed: 2.5
+  attackDamage: 5
+  attackIntervalSeconds: 1
+  detectionRange: 2
+  resourceRewardOnDeath: 10

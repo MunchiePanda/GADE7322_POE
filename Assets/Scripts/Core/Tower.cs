@@ -11,51 +11,57 @@ public class Tower : MonoBehaviour
     [SerializeField] private float attackIntervalSeconds = 0.7f;
     [SerializeField] private LayerMask enemyMask = ~0;
     private float lastAttackTime = -999f;
-    
+
+    [Header("Upgrade Settings")]
+    [SerializeField] public int healthUpgradeCost = 50;
+    [SerializeField] public int damageUpgradeCost = 75;
+    [SerializeField] private float healthUpgradeAmount = 20f;
+    [SerializeField] private float damageUpgradeAmount = 3f;
+
     [Header("References")]
     [SerializeField] private GameManager gameManager;
-    
+
     void Start()
     {
         currentHealth = maxHealth;
-        
+
         // Get GameManager reference if not assigned
         if (gameManager == null)
         {
-            gameManager = FindObjectOfType<GameManager>();
+            gameManager = FindFirstObjectByType<GameManager>();
         }
-        
+
         // Update UI with initial health
         UpdateHealthUI();
     }
-    
+
     public void TakeDamage(float damage)
     {
         currentHealth -= damage;
         currentHealth = Mathf.Max(0, currentHealth); // Don't go below 0
-        
+
         UpdateHealthUI();
-        
+
         // Visual feedback (you can add particle effects, screen shake, etc.)
         Debug.Log($"Tower took {damage} damage! Health: {currentHealth}/{maxHealth}");
-        
+
         // Check if tower is destroyed
         if (currentHealth <= 0)
         {
             OnTowerDestroyed();
         }
     }
-    
+
     public void Heal(float healAmount)
     {
         currentHealth += healAmount;
         currentHealth = Mathf.Min(maxHealth, currentHealth); // Don't exceed max health
-        
+
         UpdateHealthUI();
-        
+
         Debug.Log($"Tower healed {healAmount}! Health: {currentHealth}/{maxHealth}");
     }
-    
+
     private void UpdateHealthUI()
     {
         if (gameManager != null && gameManager.towerHealthBar != null)
@@ -63,22 +69,22 @@ public class Tower : MonoBehaviour
             gameManager.towerHealthBar.SetHealth(currentHealth, maxHealth);
         }
     }
-    
+
     private void OnTowerDestroyed()
     {
         Debug.Log("Tower destroyed! Game Over!");
-        
+
         if (gameManager != null)
         {
             gameManager.GameOver();
         }
     }
-    
+
     void Update()
     {
         AutoAttackNearestEnemy();
     }
-    
+
     void AutoAttackNearestEnemy()
     {
         float time = Time.time;
@@ -105,12 +111,12 @@ public class Tower : MonoBehaviour
             nearest.TakeDamage(attackDamage);
         }
     }
-    
+
     // Public getters
     public float GetCurrentHealth() { return currentHealth; }
     public float GetMaxHealth() { return maxHealth; }
     public float GetHealthPercentage() { return currentHealth / maxHealth; }
-    
+
     // Public setters
     public void SetMaxHealth(float newMaxHealth)
     {
@@ -118,4 +124,35 @@ public class Tower : MonoBehaviour
         currentHealth = Mathf.Min(currentHealth, maxHealth);
         UpdateHealthUI();
     }
-} 
+
+    // Upgrade methods
+    public bool UpgradeHealth()
+    {
+        if (gameManager == null) return false;
+
+        if (gameManager.SpendResources(healthUpgradeCost))
+        {
+            maxHealth += healthUpgradeAmount;
+            currentHealth = maxHealth; // Fully heal on upgrade
+            UpdateHealthUI();
+            Debug.Log($"Tower health upgraded! New max health: {maxHealth}");
+            transform.localScale *= 1.1f; // Visual feedback
+            return true;
+        }
+        return false;
+    }
+
+    public bool UpgradeDamage()
+    {
+        if (gameManager == null) return false;
+
+        if (gameManager.SpendResources(damageUpgradeCost))
+        {
+            attackDamage += damageUpgradeAmount;
+            Debug.Log($"Tower damage upgraded! New damage: {attackDamage}");
+            // Visual feedback (e.g., change color or add particles)
+            return true;
+        }
+        return false;
+    }
+}

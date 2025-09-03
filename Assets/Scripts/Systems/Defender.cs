@@ -3,21 +3,29 @@ using UnityEngine;
 public class Defender : MonoBehaviour
 {
     [Header("Stats")]
-    [SerializeField] private float maxHealth = 60f;
-    [SerializeField] private float currentHealth = 0f;
+    [SerializeField] protected float maxHealth = 60f;
+    [SerializeField] protected float currentHealth = 0f;
 
     [Header("Combat")]
-    [SerializeField] private float attackDamage = 10f;
-    [SerializeField] private float attackIntervalSeconds = 0.8f;
-    [SerializeField] private float attackRange = 5f;
-    [SerializeField] private LayerMask enemyMask = ~0;
+    [SerializeField] protected float attackDamage = 10f;
+    [SerializeField] protected float attackIntervalSeconds = 0.8f;
+    [SerializeField] protected float attackRange = 5f;
+    [SerializeField] protected LayerMask enemyMask = ~0;
+
+    [Header("Upgrade Settings")]
+    [SerializeField] private int healthUpgradeCost = 30;
+    [SerializeField] private int damageUpgradeCost = 40;
+    [SerializeField] private float healthUpgradeAmount = 15f;
+    [SerializeField] private float damageUpgradeAmount = 2f;
 
     private float lastAttackTime = -999f;
-    private Enemy currentEnemyTarget;
+    protected Enemy currentEnemyTarget;
+    private GameManager gameManager;
 
-    void Start()
+    protected virtual void Start()
     {
         currentHealth = maxHealth;
+        gameManager = FindFirstObjectByType<GameManager>();
     }
 
     void Update()
@@ -72,6 +80,12 @@ public class Defender : MonoBehaviour
         if (currentHealth <= 0f)
         {
             currentHealth = 0f;
+            // Play explosion effect
+            ExplosionEffect explosionEffect = GetComponent<ExplosionEffect>();
+            if (explosionEffect != null)
+            {
+                explosionEffect.PlayExplosion();
+            }
             Destroy(gameObject);
         }
     }
@@ -79,6 +93,36 @@ public class Defender : MonoBehaviour
     public bool IsAlive()
     {
         return currentHealth > 0f;
+    }
+
+    // Upgrade methods
+    public bool UpgradeHealth()
+    {
+        if (gameManager == null) return false;
+
+        if (gameManager.SpendResources(healthUpgradeCost))
+        {
+            maxHealth += healthUpgradeAmount;
+            currentHealth = maxHealth; // Fully heal on upgrade
+            Debug.Log($"Defender health upgraded! New max health: {maxHealth}");
+            transform.localScale *= 1.1f; // Visual feedback
+            return true;
+        }
+        return false;
+    }
+
+    public bool UpgradeDamage()
+    {
+        if (gameManager == null) return false;
+
+        if (gameManager.SpendResources(damageUpgradeCost))
+        {
+            attackDamage += damageUpgradeAmount;
+            Debug.Log($"Defender damage upgraded! New damage: {attackDamage}");
+            // Visual feedback (e.g., change color or add particles)
+            return true;
+        }
+        return false;
     }
 }
 

@@ -257,6 +257,49 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6136757}
   m_CullTransparentMesh: 1
+--- !u!1 &22424943
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 22424945}
+  - component: {fileID: 22424944}
+  m_Layer: 0
+  m_Name: Occlusion Area
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!192 &22424944
+OcclusionArea:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 22424943}
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+  m_IsViewVolume: 1
+--- !u!4 &22424945
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 22424943}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &42162407
 GameObject:
   m_ObjectHideFlags: 0
@@ -1284,7 +1327,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 29
+  m_fontSize: 29.45
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1528,9 +1571,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   terrainGenerator: {fileID: 1975398409}
   towerPrefab: {fileID: 7800735999051106116, guid: 1f1383773c4b21742af8c2dc6104b0ec, type: 3}
-  enemyPrefab: {fileID: 7520726967525940784, guid: ff99a61e7a5dc2046b7339cce10468d1, type: 3}
+  defaultEnemyPrefab: {fileID: 7520726967525940784, guid: ff99a61e7a5dc2046b7339cce10468d1, type: 3}
+  fastEnemyPrefab: {fileID: 7520726967525940784, guid: ff99a61e7a5dc2046b7339cce10468d1, type: 3}
+  tankEnemyPrefab: {fileID: 7520726967525940784, guid: ff99a61e7a5dc2046b7339cce10468d1, type: 3}
   enemySpawnInterval: 2
   initialWaveEnemyCount: 5
+  waveScalingFactor: 1.5
+  healthScalingFactor: 1.2
+  speedScalingFactor: 1.1
   defenderPrefab: {fileID: 4414111203060204694, guid: c4b2c8828ec9be54b8b58fd73b10808a, type: 3}
   defenderCost: 25
   startingResources: 100
@@ -1539,6 +1587,7 @@ MonoBehaviour:
   defenderCostUI: {fileID: 745225628}
   gameOverUI: {fileID: 402756660}
   pauseMenuUI: {fileID: 1676361400}
+  currentWave: 1
 --- !u!4 &1117801837
 Transform:
   m_ObjectHideFlags: 0
@@ -1571,7 +1620,8 @@ MonoBehaviour:
   placementPlaneMask:
     serializedVersion: 2
     m_Bits: 64
-  terrainGenerator: {fileID: 0}
+  terrainGenerator: {fileID: 1975398409}
+  defenderPrefab: {fileID: 4414111203060204694, guid: c4b2c8828ec9be54b8b58fd73b10808a, type: 3}
 --- !u!1 &1492471692
 GameObject:
   m_ObjectHideFlags: 0
@@ -1731,8 +1781,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   panel: {fileID: 1676361398}
-  resumeButton: {fileID: 0}
-  restartButton: {fileID: 0}
+  resumeButton: {fileID: 247882962}
+  restartButton: {fileID: 312815633}
 --- !u!114 &1676361401
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2005,7 +2055,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 28.9
+  m_fontSize: 29.45
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2086,9 +2136,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a6b381b07cee0c48a024d71c2f85cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 100
-  depth: 100
-  height: 3
+  width: 150
+  depth: 150
+  height: 8
   useNoise: 1
   minColumnHeight: 18
   noiseAmplitude: 8
@@ -2236,3 +2286,4 @@ SceneRoots:
   - {fileID: 1117801837}
   - {fileID: 754197284}
   - {fileID: 790079341}
+  - {fileID: 22424945}

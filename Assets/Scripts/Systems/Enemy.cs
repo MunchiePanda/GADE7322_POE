@@ -4,37 +4,44 @@ using System.Collections.Generic;
 public class Enemy : MonoBehaviour
 {
     [Header("Stats")]
-    [SerializeField] private float maxHealth = 50f;
-    [SerializeField] private float currentHealth = 0f;
-    [SerializeField] private float moveSpeed = 2.5f;
-    [SerializeField] private float attackDamage = 5f;
-    [SerializeField] private float attackIntervalSeconds = 1.0f;
-    [SerializeField] private float detectionRange = 2.0f;
-    [SerializeField] private int resourceRewardOnDeath = 10;
+    [SerializeField] protected float maxHealth = 50f;
+    [SerializeField] protected float currentHealth = 0f;
+    [SerializeField] protected float moveSpeed = 2.5f;
+    [SerializeField] protected float attackDamage = 5f;
+    [SerializeField] protected float attackIntervalSeconds = 1.0f;
+    [SerializeField] protected float detectionRange = 2.0f;
+    [SerializeField] protected int resourceRewardOnDeath = 10;
 
-    private List<Vector3Int> path;
-    private int currentPathIndex = 0;
-    private int terrainHeight = 1; // legacy; not used for uneven per-tile heights
-    private int finalIndex = 0;
-    private VoxelTerrainGenerator terrainGenerator;
-    private Tower targetTower;
-    private GameManager gameManager;
+    protected List<Vector3Int> path;
+    protected int currentPathIndex = 0;
+    protected int terrainHeight = 1; // legacy; not used for uneven per-tile heights
+    protected int finalIndex = 0;
+    protected VoxelTerrainGenerator terrainGenerator;
+    protected Tower targetTower;
+    protected GameManager gameManager;
 
     // Combat state
-    private Defender currentDefenderTarget;
-    private float lastAttackTime = -999f;
+    protected Defender currentDefenderTarget;
+    protected float lastAttackTime = -999f;
 
-    public void Initialize(List<Vector3Int> pathToFollow, int terrainTopY, Tower tower, GameManager gm, VoxelTerrainGenerator generator)
+    public virtual void Initialize(List<Vector3Int> pathToFollow, int terrainTopY, Tower tower, GameManager gm)
     {
         path = pathToFollow;
         terrainHeight = terrainTopY;
         targetTower = tower;
         gameManager = gm;
-        terrainGenerator = generator;
+        terrainGenerator = gameManager.terrainGenerator;
         finalIndex = path != null && path.Count > 0 ? path.Count - 1 : 0;
     }
 
-    void Start()
+    // Public getters and setters for fields accessed by EnemySpawner and WeatherManager
+    public float GetMoveSpeed() { return moveSpeed; }
+    public float GetMaxHealth() { return maxHealth; }
+    public void SetMaxHealth(float value) { maxHealth = value; }
+    public void SetCurrentHealth(float value) { currentHealth = value; }
+    public void SetMoveSpeed(float value) { moveSpeed = value; }
+
+    protected virtual void Start()
     {
         currentHealth = maxHealth;
     }
@@ -143,7 +150,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    public void TakeDamage(float amount)
+    public virtual void TakeDamage(float amount)
     {
         currentHealth -= amount;
         if (currentHealth <= 0f)
@@ -154,9 +161,22 @@ public class Enemy : MonoBehaviour
 
     void Die()
     {
+        // Play explosion effect
+        ExplosionEffect explosionEffect = GetComponent<ExplosionEffect>();
+        if (explosionEffect != null)
+        {
+            explosionEffect.PlayExplosion();
+        }
+
         if (gameManager != null)
         {
             gameManager.AddResources(resourceRewardOnDeath);
+            // Notify EnemySpawner that this enemy died
+            EnemySpawner spawner = FindFirstObjectByType<EnemySpawner>();
+            if (spawner != null)
+            {
+                spawner.OnEnemyDeath(gameObject);
+            }
         }
         Destroy(gameObject);
     }

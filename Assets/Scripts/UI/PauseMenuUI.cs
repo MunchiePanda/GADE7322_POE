@@ -12,7 +12,7 @@ public class PauseMenuUI : MonoBehaviour
     void Start()
     {
         // Get GameManager reference
-        gameManager = FindObjectOfType<GameManager>();
+        gameManager = FindFirstObjectByType<GameManager>();
         
         // Set up button listeners
         if (resumeButton != null)

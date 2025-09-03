@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using GADE7322_POE.UI;
 
 // GameManager
 // -----------
@@ -19,12 +20,22 @@ public class GameManager : MonoBehaviour
     public VoxelTerrainGenerator terrainGenerator;
     [Tooltip("Tower prefab to instantiate at the center.")]
     public GameObject towerPrefab;
-    [Tooltip("Enemy prefab to spawn.")]
-    public GameObject enemyPrefab;
+    [Tooltip("Default enemy prefab to spawn.")]
+    public GameObject defaultEnemyPrefab;
+    [Tooltip("Fast enemy prefab to spawn.")]
+    public GameObject fastEnemyPrefab;
+    [Tooltip("Tank enemy prefab to spawn.")]
+    public GameObject tankEnemyPrefab;
     [Tooltip("Time (seconds) between enemy spawns in a wave.")]
     public float enemySpawnInterval = 2f;
     [Tooltip("Number of enemies in the first wave.")]
     public int initialWaveEnemyCount = 5;
+    [Tooltip("Factor by which enemy count increases per wave.")]
+    public float waveScalingFactor = 1.5f;
+    [Tooltip("Factor by which enemy health increases per wave.")]
+    public float healthScalingFactor = 1.2f;
+    [Tooltip("Factor by which enemy speed increases per wave.")]
+    public float speedScalingFactor = 1.1f;
 
     [Header("Defenders & Resources")]
     [Tooltip("Defender prefab to place on valid terrain.")]
@@ -46,10 +57,13 @@ public class GameManager : MonoBehaviour
     // -----------------------------
 
     private GameObject towerInstance;
-    private int currentWave = 1;
+    public GameObject TowerInstance { get { return towerInstance; } }
+    public int currentWave = 1;
     private int resources = 0;
     private bool isGameOver = false;
     private bool isPaused = false;
+    private EnemySpawner enemySpawner;
+    public Tower tower { get; private set; }
 
     // -----------------------------
     // UNITY LIFECYCLE
@@ -81,14 +95,25 @@ public class GameManager : MonoBehaviour
         if (!terrainGenerator.IsReady)
         {
             // Force generation if needed
-            // This call is no-op if already generated (handled internally)
-            // Access a method that triggers generation by querying center
             terrainGenerator.GetCenterGrid();
         }
         SpawnTower();
 
-        // Step 3: Start the first enemy wave
-        StartCoroutine(SpawnWave(initialWaveEnemyCount));
+    // Step 3: Initialize EnemySpawner
+        enemySpawner = GetComponent<EnemySpawner>();
+        if (enemySpawner == null)
+        {
+            enemySpawner = gameObject.AddComponent<EnemySpawner>();
+        }
+        enemySpawner.gameManager = this;
+        enemySpawner.defaultEnemyPrefab = defaultEnemyPrefab;
+        enemySpawner.fastEnemyPrefab = fastEnemyPrefab;
+        enemySpawner.tankEnemyPrefab = tankEnemyPrefab;
+        enemySpawner.spawnInterval = enemySpawnInterval;
+        enemySpawner.initialWaveEnemyCount = initialWaveEnemyCount;
+        enemySpawner.waveScalingFactor = waveScalingFactor;
+        enemySpawner.healthScalingFactor = healthScalingFactor;
+        enemySpawner.speedScalingFactor = speedScalingFactor;
     }
 
     void Update()
@@ -138,12 +163,12 @@ public class GameManager : MonoBehaviour
         if (path == null || path.Count == 0) return;
         UnityEngine.Vector3Int entrance = path[0];
         Vector3 spawnPos = terrainGenerator.GetSurfaceWorldPosition(entrance);
-        GameObject enemyObj = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        GameObject enemyObj = Instantiate(defaultEnemyPrefab, spawnPos, Quaternion.identity);
         Enemy enemy = enemyObj.GetComponent<Enemy>();
         if (enemy != null)
         {
             Tower towerComponent = towerInstance != null ? towerInstance.GetComponent<Tower>() : null;
-            enemy.Initialize(path, 0, towerComponent, this, terrainGenerator);
+            enemy.Initialize(path, terrainGenerator.height, towerComponent, this);
         }
     }
 
