@@ -1430,7 +1430,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
+  m_fontSize: 20.5
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2197,7 +2197,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 32.3
+  m_fontSize: 32.5
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2347,7 +2347,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 19.05
+  m_fontSize: 19.6
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2564,16 +2564,19 @@ MonoBehaviour:
   width: 150
   depth: 150
   height: 8
+  chunkSize: 18
   useNoise: 1
-  minColumnHeight: 18
+  minColumnHeight: 8
   noiseAmplitude: 8
   noiseScale: 0.86
   noiseOffset: {x: 137.13, y: 59.87}
+  useBiomes: 1
+  biomeScale: 0.05
+  biomeOffset: {x: 42, y: 73}
   voxelPrefab: {fileID: 385153727637207084, guid: c556f28b45f9ab94d8994358783bec3d, type: 3}
   numPaths: 5
-  allowPlacementOnPaths: 1
-  maxPathDistance: 3
-  combineMeshes: 1
+  pathHeight: 1
+  pathWidth: 2
   terrainLayer: 6
 --- !u!4 &1975398410
 Transform:
