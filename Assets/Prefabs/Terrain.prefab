@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7125168315503731830}
   - component: {fileID: 8072535043036867605}
   - component: {fileID: 1324729429141970955}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Terrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -42,7 +42,7 @@ Terrain:
   m_GameObject: {fileID: 1192680849476865353}
   m_Enabled: 1
   serializedVersion: 6
-  m_TerrainData: {fileID: 15600000, guid: 7f570b916f436aa4c9d4676e57349fd4, type: 2}
+  m_TerrainData: {fileID: 0}
   m_TreeDistance: 2000
   m_TreeBillboardDistance: 50
   m_TreeCrossFadeLength: 5

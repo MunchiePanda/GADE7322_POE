@@ -7,9 +7,12 @@ public class Tower : MonoBehaviour
     [SerializeField] private float currentHealth;
     [Header("Combat")]
     [SerializeField] private float attackRange = 8f;
-    [SerializeField] private float attackDamage = 8f;
+    public float attackDamage = 8f;
     [SerializeField] private float attackIntervalSeconds = 0.7f;
     [SerializeField] private LayerMask enemyMask = ~0;
+    public GameObject projectilePrefab;
+    public float projectileSpeed = 10f;
+    public Transform projectileSpawnPoint;
     private float lastAttackTime = -999f;
 
     [Header("Upgrade Settings")]
@@ -108,8 +111,28 @@ public class Tower : MonoBehaviour
         if (nearest != null)
         {
             lastAttackTime = time;
-            nearest.TakeDamage(attackDamage);
+            LobProjectileAtEnemy(nearest);
         }
+    }
+
+    public void LobProjectileAtEnemy(Enemy enemy)
+    {
+        if (projectilePrefab == null)
+        {
+            Debug.LogError("Projectile prefab is not assigned!");
+            return;
+        }
+
+        Vector3 spawnPosition = projectileSpawnPoint != null ? projectileSpawnPoint.position : transform.position;
+        GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
+        Projectile projectileComponent = projectile.GetComponent<Projectile>();
+        if (projectileComponent == null)
+        {
+            Debug.LogError("Projectile prefab does not have a Projectile component!");
+            return;
+        }
+
+        projectileComponent.Initialize(enemy.transform, attackDamage, projectileSpeed);
     }
 
     // Public getters

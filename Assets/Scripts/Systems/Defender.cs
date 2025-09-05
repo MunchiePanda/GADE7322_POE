@@ -3,14 +3,16 @@ using UnityEngine;
 public class Defender : MonoBehaviour
 {
     [Header("Stats")]
-    [SerializeField] protected float maxHealth = 60f;
-    [SerializeField] protected float currentHealth = 0f;
+    [SerializeField] protected int hitPoints = 5;
 
     [Header("Combat")]
     [SerializeField] protected float attackDamage = 10f;
     [SerializeField] protected float attackIntervalSeconds = 0.8f;
     [SerializeField] protected float attackRange = 5f;
     [SerializeField] protected LayerMask enemyMask = ~0;
+    [SerializeField] protected GameObject projectilePrefab;
+    [SerializeField] protected Transform projectileSpawnPoint;
+    [SerializeField] protected float projectileSpeed = 10f;
 
     [Header("Upgrade Settings")]
     [SerializeField] private int healthUpgradeCost = 30;
@@ -24,7 +26,6 @@ public class Defender : MonoBehaviour
 
     protected virtual void Start()
     {
-        currentHealth = maxHealth;
         gameManager = FindFirstObjectByType<GameManager>();
     }
 
@@ -69,18 +70,38 @@ public class Defender : MonoBehaviour
         if (time - lastAttackTime >= attackIntervalSeconds)
         {
             lastAttackTime = time;
-            currentEnemyTarget.TakeDamage(attackDamage);
+            LobProjectileAtEnemy(currentEnemyTarget);
         }
+    }
+
+    void LobProjectileAtEnemy(Enemy enemy)
+    {
+        if (projectilePrefab == null)
+        {
+            Debug.LogError($"{gameObject.name}: Projectile prefab is not assigned!");
+            return;
+        }
+
+        Vector3 spawnPosition = projectileSpawnPoint != null ? projectileSpawnPoint.position : transform.position;
+        GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
+        Projectile projectileComponent = projectile.GetComponent<Projectile>();
+        if (projectileComponent == null)
+        {
+            Debug.LogError($"{gameObject.name}: Projectile prefab does not have a Projectile component!");
+            Destroy(projectile);
+            return;
+        }
+
+        projectileComponent.Initialize(enemy.transform, attackDamage, projectileSpeed);
+        Debug.Log($"{gameObject.name} shot a projectile at {enemy.name}!");
     }
 
     public void TakeDamage(float amount)
     {
         if (!IsAlive()) return;
-        currentHealth -= amount;
-        if (currentHealth <= 0f)
+        hitPoints--;
+        if (hitPoints <= 0)
         {
-            currentHealth = 0f;
-            // Play explosion effect
             ExplosionEffect explosionEffect = GetComponent<ExplosionEffect>();
             if (explosionEffect != null)
             {
@@ -92,20 +113,18 @@ public class Defender : MonoBehaviour
 
     public bool IsAlive()
     {
-        return currentHealth > 0f;
+        return hitPoints > 0;
     }
 
-    // Upgrade methods
     public bool UpgradeHealth()
     {
         if (gameManager == null) return false;
 
         if (gameManager.SpendResources(healthUpgradeCost))
         {
-            maxHealth += healthUpgradeAmount;
-            currentHealth = maxHealth; // Fully heal on upgrade
-            Debug.Log($"Defender health upgraded! New max health: {maxHealth}");
-            transform.localScale *= 1.1f; // Visual feedback
+            hitPoints += Mathf.RoundToInt(healthUpgradeAmount);
+            Debug.Log($"Defender durability upgraded! New hit points: {hitPoints}");
+            transform.localScale *= 1.1f;
             return true;
         }
         return false;
@@ -119,11 +138,8 @@ public class Defender : MonoBehaviour
         {
             attackDamage += damageUpgradeAmount;
             Debug.Log($"Defender damage upgraded! New damage: {attackDamage}");
-            // Visual feedback (e.g., change color or add particles)
             return true;
         }
         return false;
     }
 }
-
-

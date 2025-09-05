@@ -1,6 +1,37 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+// Texture types for atlas mapping
+public enum TextureType
+{
+    Grass,
+    Dirt,
+    Stone,
+    Sand
+}
+
+// Helper class for texture atlas UV mapping
+public static class TextureAtlas
+{
+public static Vector2[] GetUVs(TextureType type)
+{
+    switch (type)
+    {
+        case TextureType.Grass:
+            // Ensure these UVs correspond to the correct region of the atlas where the grass texture is located.
+            return new Vector2[] { new Vector2(0, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 1), new Vector2(0, 1) };
+        case TextureType.Dirt:
+            return new Vector2[] { new Vector2(0.5f, 0.5f), new Vector2(1, 0.5f), new Vector2(1, 1), new Vector2(0.5f, 1) };
+        case TextureType.Stone:
+            return new Vector2[] { new Vector2(0, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0.5f), new Vector2(0, 0.5f) };
+        case TextureType.Sand:
+            return new Vector2[] { new Vector2(0.5f, 0), new Vector2(1, 0), new Vector2(1, 0.5f), new Vector2(0.5f, 0.5f) };
+        default:
+            return new Vector2[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
+    }
+}
+}
+
 // VoxelTerrainGenerator
 // ---------------------
 // This script generates a 3D grid of voxels (cubes) at runtime, carves at least 3 unique paths to a central tower point,
@@ -43,7 +74,9 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
     [Header("Placement Rules")]
     [Tooltip("Allow defenders to be placed on carved paths.")]
-    public bool allowPlacementOnPaths = true;
+    public bool allowPlacementOnPaths = false;
+    [Tooltip("Maximum distance (grid units) from a path for defender placement")]
+    public float maxPathDistance = 3f;
 
     [Header("Mesh Combination & Layering")]
     [Tooltip("Combine individual voxel meshes into a single mesh after generation.")]
@@ -57,6 +90,24 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
     // 3D array to store voxel references
     private GameObject[,,] voxels;
+
+    // Method to determine texture type based on position
+    private TextureType GetTextureType(int x, int y, int z)
+    {
+        // Example logic: Assign texture types based on height
+        if (y == columnHeights[x, z] - 1)
+        {
+            return TextureType.Grass; // Top layer
+        }
+        else if (y == 0)
+        {
+            return TextureType.Stone; // Bottom layer
+        }
+        else
+        {
+            return TextureType.Dirt; // Middle layers
+        }
+    }
     // Column heights per x,z (for surface queries)
     private int[,] columnHeights;
     // List of path positions (for each path)
@@ -135,6 +186,22 @@ public class VoxelTerrainGenerator : MonoBehaviour
                         voxel.transform.localPosition = new Vector3(x, y, z);
                         voxel.transform.localRotation = Quaternion.identity;
                         voxel.transform.localScale = Vector3.one;
+
+                        // Assign UVs based on texture type
+                        TextureType textureType = GetTextureType(x, y, z);
+                        MeshFilter meshFilter = voxel.GetComponent<MeshFilter>();
+                        if (meshFilter != null)
+                        {
+                            Mesh mesh = meshFilter.mesh;
+                            Vector2[] uvs = new Vector2[mesh.vertices.Length];
+                            Vector2[] atlasUVs = TextureAtlas.GetUVs(textureType);
+                            for (int i = 0; i < uvs.Length; i++)
+                            {
+                                uvs[i] = atlasUVs[i % 4];
+                            }
+                            mesh.uv = uvs;
+                        }
+
                         voxels[x, y, z] = voxel;
                     }
                 }
@@ -261,13 +328,56 @@ public class VoxelTerrainGenerator : MonoBehaviour
     // Returns true if a voxel is a valid defender placement
     public bool IsValidDefenderPlacement(Vector3Int pos)
     {
-        bool isPath = IsPathTile(pos);
-        if (allowPlacementOnPaths)
+        // Check bounds
+        if (pos.x < 0 || pos.x >= width || pos.z < 0 || pos.z >= depth)
+            return false;
+
+        // Must be on surface
+        int surfaceY = GetSurfaceY(pos.x, pos.z);
+        if (pos.y != surfaceY - 1)
+            return false;
+
+        // Cannot place on paths if not allowed
+        if (!allowPlacementOnPaths && IsPathTile(pos))
+            return false;
+
+        // Must be within maxPathDistance of a path
+        return IsNearPath(pos);
+    }
+
+    private bool IsNearPath(Vector3Int gridPosition)
+    {
+        foreach (var path in paths)
         {
-            return true;
+            foreach (var pathPos in path)
+            {
+                float distance = Vector3Int.Distance(gridPosition, pathPos);
+                if (distance <= maxPathDistance)
+                    return true;
+            }
         }
-        // If placement on paths is disabled, only allow non-path tiles
-        return !isPath;
+        return false;
+    }
+
+    private bool IsAdjacentToPath(Vector3Int pos)
+    {
+        // Check all 4 adjacent tiles (up, down, left, right)
+        Vector3Int[] adjacentPositions = new Vector3Int[]
+        {
+            new Vector3Int(pos.x + 1, 0, pos.z),
+            new Vector3Int(pos.x - 1, 0, pos.z),
+            new Vector3Int(pos.x, 0, pos.z + 1),
+            new Vector3Int(pos.x, 0, pos.z - 1)
+        };
+
+        foreach (var adjacentPos in adjacentPositions)
+        {
+            if (IsPathTile(adjacentPos))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public bool IsPathTile(Vector3Int pos)
@@ -433,64 +543,77 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
 
 
-    void CombineVoxelMeshes()
+void CombineVoxelMeshes()
+{
+    if (voxelPrefab == null)
     {
-        List<MeshFilter> meshFilters = new List<MeshFilter>(GetComponentsInChildren<MeshFilter>());
-        // Exclude the parent if it already has a MeshFilter
-        meshFilters.RemoveAll(mf => mf.gameObject == this.gameObject);
-        if (meshFilters.Count == 0) return;
+        Debug.LogError("Voxel prefab is not assigned!");
+        return;
+    }
 
-        List<CombineInstance> combine = new List<CombineInstance>(meshFilters.Count);
-        foreach (var mf in meshFilters)
+    List<MeshFilter> meshFilters = new List<MeshFilter>(GetComponentsInChildren<MeshFilter>());
+    // Exclude the parent if it already has a MeshFilter
+    meshFilters.RemoveAll(mf => mf.gameObject == this.gameObject);
+    if (meshFilters.Count == 0) return;
+
+    List<CombineInstance> combine = new List<CombineInstance>(meshFilters.Count);
+    foreach (var mf in meshFilters)
+    {
+        if (mf.sharedMesh == null) continue;
+        CombineInstance ci = new CombineInstance();
+        ci.mesh = mf.sharedMesh;
+        ci.transform = mf.transform.localToWorldMatrix;
+        combine.Add(ci);
+    }
+
+    Mesh combinedMesh = new Mesh();
+    combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; // allow large meshes
+    combinedMesh.CombineMeshes(combine.ToArray());
+
+    // Assign to parent
+    MeshFilter parentMF = GetComponent<MeshFilter>();
+    if (parentMF == null) parentMF = gameObject.AddComponent<MeshFilter>();
+    parentMF.sharedMesh = combinedMesh;
+
+    MeshRenderer parentMR = GetComponent<MeshRenderer>();
+    if (parentMR == null) parentMR = gameObject.AddComponent<MeshRenderer>();
+    // Use voxel prefab's material if available
+    var voxelRenderer = voxelPrefab.GetComponent<MeshRenderer>();
+    if (voxelRenderer != null)
+    {
+        parentMR.sharedMaterial = voxelRenderer.sharedMaterial;
+    }
+    else
+    {
+        Debug.LogError("Voxel prefab has no MeshRenderer!");
+    }
+
+    MeshCollider mc = GetComponent<MeshCollider>();
+    if (mc == null) mc = gameObject.AddComponent<MeshCollider>();
+    mc.sharedMesh = combinedMesh;
+    mc.convex = false; // Ensure convex is false for complex meshes
+    mc.isTrigger = false; // Ensure it's not a trigger
+    mc.cookingOptions = MeshColliderCookingOptions.None; // Disable Fast Midphase
+
+    // Assign layer for camera culling
+    gameObject.layer = terrainLayer;
+
+    // Clean up child voxels
+    for (int x = 0; x < width; x++)
+    {
+        for (int y = 0; y < height; y++)
         {
-            if (mf.sharedMesh == null) continue;
-            CombineInstance ci = new CombineInstance();
-            ci.mesh = mf.sharedMesh;
-            ci.transform = mf.transform.localToWorldMatrix;
-            combine.Add(ci);
-        }
-
-        Mesh combinedMesh = new Mesh();
-        combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; // allow large meshes
-        combinedMesh.CombineMeshes(combine.ToArray());
-
-        // Assign to parent
-        MeshFilter parentMF = GetComponent<MeshFilter>();
-        if (parentMF == null) parentMF = gameObject.AddComponent<MeshFilter>();
-        parentMF.sharedMesh = combinedMesh;
-
-        MeshRenderer parentMR = GetComponent<MeshRenderer>();
-        if (parentMR == null) parentMR = gameObject.AddComponent<MeshRenderer>();
-        // Use voxel prefab's material if available
-        var voxelRenderer = voxelPrefab != null ? voxelPrefab.GetComponent<MeshRenderer>() : null;
-        if (voxelRenderer != null)
-        {
-            parentMR.sharedMaterial = voxelRenderer.sharedMaterial;
-        }
-
-        MeshCollider mc = GetComponent<MeshCollider>();
-        if (mc == null) mc = gameObject.AddComponent<MeshCollider>();
-        mc.sharedMesh = combinedMesh;
-
-        // Assign layer for camera culling
-        gameObject.layer = terrainLayer;
-
-        // Clean up child voxels
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
+            for (int z = 0; z < depth; z++)
             {
-                for (int z = 0; z < depth; z++)
+                if (voxels != null && voxels[x, y, z] != null)
                 {
-                    if (voxels != null && voxels[x, y, z] != null)
-                    {
-                        Destroy(voxels[x, y, z]);
-                        voxels[x, y, z] = null;
-                    }
+                    Destroy(voxels[x, y, z]);
+                    voxels[x, y, z] = null;
                 }
             }
         }
-
-        meshesCombined = true;
     }
+
+    meshesCombined = true;
+}
 }

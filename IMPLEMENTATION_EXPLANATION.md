@@ -10,6 +10,8 @@ This document explains how the project implements the requirements for **Parts 1
 3. [Part 3: Upgrades, Shaders, Custom Procedural Feature](#part-3-upgrades-shaders-custom-procedural-feature)
 4. [Scene Navigation](#scene-navigation)
 5. [General Setup Instructions](#general-setup-instructions)
+6. [New Features: Defenders and Tower Mechanics](#new-features-defenders-and-tower-mechanics)
+7. [Unity Editor Setup Instructions](#unity-editor-setup-instructions)
 
 ---
 
@@ -194,6 +196,65 @@ This document explains how the project implements the requirements for **Parts 1
 
 ---
 
+## New Features: Defenders and Tower Mechanics
+
+### Defenders (Archer Turrets)
+- **Placement**: Defenders are now placed next to the path, not on it.
+- **Health Removal**: Defenders no longer have health; they are destructible in 5 hits.
+- **Attack Logic**: Defenders shoot projectiles at enemies within their attack range.
+
+### Tower (Angry Birds-style)
+- **Projectile Lobbing**: The tower now lobs projectiles (spheres) at enemies on the path.
+- **Terrain Alteration**: Projectiles can alter the terrain on impact (e.g., create craters).
+
+### Implementation Details
+1. **Defender.cs**:
+   - Removed `maxHealth` and `currentHealth` fields.
+   - Added `hitPoints` field set to 5.
+   - Updated `TakeDamage` and `IsAlive` methods to use `hitPoints`.
+
+2. **Tower.cs**:
+   - Added `projectilePrefab` and `projectileSpeed` fields.
+   - Modified `AutoAttackNearestEnemy` to lob projectiles at enemies.
+   - Added `LobProjectileAtEnemy` method to instantiate and initialize projectiles.
+
+3. **Projectile.cs**:
+   - Created a new script to handle projectile movement and collision with enemies.
+   - Projectiles move toward the target enemy and deal damage on collision.
+
+4. **VoxelTerrainGenerator.cs**:
+   - Updated `IsValidDefenderPlacement` to ensure defenders are placed next to the path, not on it.
+   - Added `IsAdjacentToPath` method to check if a position is adjacent to any path tile.
+
+---
+
+## Unity Editor Setup Instructions
+
+### 1. Create a Projectile Prefab
+- Create a new sphere GameObject in Unity.
+- Add a `Rigidbody` component to the sphere and disable gravity.
+- Add a `SphereCollider` component and set it as a trigger.
+- Attach the `Projectile.cs` script to the sphere.
+- Save the sphere as a prefab (e.g., `TowerProjectile.prefab`).
+
+### 2. Assign the Projectile Prefab to the Tower
+- Select the tower GameObject in the scene.
+- In the Inspector, find the `Tower` script component.
+- Assign the `TowerProjectile.prefab` to the `Projectile Prefab` field.
+
+### 3. Test the Game
+- Run the game and verify:
+  - Defenders are placed next to the path, not on it.
+  - Defenders are destroyed in 5 hits.
+  - The tower lobs projectiles at enemies on the path.
+  - Projectiles deal damage to enemies on collision.
+
+### 4. Further Adjustments
+- If defenders or the tower are not behaving as expected, check the Unity Console for errors and adjust the scripts as needed.
+- Fine-tune projectile speed, damage, and other parameters in the Unity Inspector.
+
+---
+
 ## Example Code Snippets
 ### 1. FastEnemy.cs
 ```csharp
@@ -271,6 +332,67 @@ public class SceneNavigationUI : MonoBehaviour
         #else
             Application.Quit();
         #endif
+    }
+}
+```
+
+### 5. Projectile.cs
+```csharp
+using UnityEngine;
+
+public class Projectile : MonoBehaviour
+{
+    private Transform target;
+    private float damage;
+    private float speed;
+    private bool isInitialized = false;
+
+    public void Initialize(Transform targetTransform, float damageAmount, float projectileSpeed)
+    {
+        target = targetTransform;
+        damage = damageAmount;
+        speed = projectileSpeed;
+        isInitialized = true;
+    }
+
+    void Update()
+    {
+        if (!isInitialized || target == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Vector3 direction = (target.position - transform.position).normalized;
+        transform.position += direction * speed * Time.deltaTime;
+
+        // Check if the projectile has reached the target
+        float distanceToTarget = Vector3.Distance(transform.position, target.position);
+        if (distanceToTarget < 0.5f)
+        {
+            HitTarget();
+        }
+    }
+
+    void HitTarget()
+    {
+        Enemy enemy = target.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.TakeDamage(damage);
+        }
+
+        Destroy(gameObject);
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        Enemy enemy = other.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.TakeDamage(damage);
+            Destroy(gameObject);
+        }
     }
 }
 ```

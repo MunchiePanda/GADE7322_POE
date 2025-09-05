@@ -10,7 +10,8 @@ public class TowerController : MonoBehaviour
     [Header("Path Selection")]
     [SerializeField] private VoxelTerrainGenerator terrainGenerator;
     [SerializeField] private int currentPathIndex = 0;
-    
+
+    private Camera mainCamera;
     private Transform targetTransform;
     private bool isRotating = false;
     private Vector3 targetDirection;
@@ -18,12 +19,15 @@ public class TowerController : MonoBehaviour
     void Start()
     {
         targetTransform = towerTurret != null ? towerTurret : transform;
-        
+
         // Get terrain generator reference if not assigned
         if (terrainGenerator == null)
         {
             terrainGenerator = FindFirstObjectByType<VoxelTerrainGenerator>();
         }
+
+        // Get main camera reference
+        mainCamera = Camera.main;
     }
     
     void Update()
@@ -42,7 +46,7 @@ public class TowerController : MonoBehaviour
                 SelectPath(i);
             }
         }
-        
+
         // Arrow keys for manual rotation
         if (Keyboard.current != null)
         {
@@ -54,6 +58,20 @@ public class TowerController : MonoBehaviour
             {
                 RotateTower(rotationSpeed * Time.deltaTime);
             }
+        }
+
+        // E key to shoot
+        if (Keyboard.current != null && Keyboard.current[Key.E].wasPressedThisFrame)
+        {
+            ShootAtMousePosition();
+        }
+    }
+
+    void HandleShooting()
+    {
+        if (UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            ShootAtMousePosition();
         }
     }
     
@@ -112,9 +130,38 @@ public class TowerController : MonoBehaviour
         targetDirection = direction.normalized;
         isRotating = true;
     }
-    
+
     public int GetCurrentPathIndex()
     {
         return currentPathIndex;
     }
-} 
+
+    private void ShootAtMousePosition()
+    {
+        Tower tower = GetComponent<Tower>();
+        if (tower != null && tower.projectilePrefab != null)
+        {
+            Vector3 spawnPosition = tower.projectileSpawnPoint != null ? tower.projectileSpawnPoint.position : targetTransform.position;  // Use targetTransform if no spawn point
+
+            // Instantiate with the turret's rotation
+            GameObject projectile = Instantiate(tower.projectilePrefab, spawnPosition, targetTransform.rotation);
+            Projectile projectileComponent = projectile.GetComponent<Projectile>();
+
+            if (projectileComponent != null)
+            {
+                // Create a temporary target in the direction the turret/tower is facing
+                GameObject tempTarget = new GameObject("TempTarget");
+                tempTarget.transform.position = spawnPosition + targetTransform.forward * 50f;  // Use targetTransform.forward
+                DummyEnemy dummyEnemy = tempTarget.AddComponent<DummyEnemy>();
+                projectileComponent.Initialize(dummyEnemy.transform, tower.attackDamage, tower.projectileSpeed);
+                Destroy(tempTarget, 5f);
+            }
+        }
+    }
+}
+
+// DummyEnemy class to act as a target for the projectile
+public class DummyEnemy : Enemy
+{
+    protected override void Start() { }
+}

@@ -38,7 +38,6 @@ public class CameraCullingConfig : MonoBehaviour
             distances[terrainLayer] = terrainCullDistance;
         }
         cam.layerCullDistances = distances;
-        cam.layerCullSpherical = useSphericalCulling;
 
         if (applyShadowDistance)
         {
