@@ -45,6 +45,22 @@ public class GameManager : MonoBehaviour
     [Tooltip("Resources the player starts with.")]
     public int startingResources = 100;
 
+    [Header("Placement Offsets")]
+    [Tooltip("Y-offset for tower placement (half height if pivot at center)")]
+    public float towerYOffset = 1f;
+    [Tooltip("Y-offset for enemy spawning (half height if pivot at center)")]
+    public float enemyYOffset = 1f;
+    [Tooltip("Y-offset for defender placement (half height if pivot at center)")]
+    public float defenderYOffset = 1f;
+
+    [Header("Placement Offsets")]
+    [Tooltip("Y-offset for tower placement (half height if pivot at center)")]
+    public float towerOffset = 2f;
+    [Tooltip("Y-offset for enemy spawning (half height if pivot at center)")]
+    public float enemyOffset = 2f;
+    [Tooltip("Y-offset for defender placement (half height if pivot at center)")]
+    public float defenderOffset = 2f;
+
     // UI References
     public HealthBarUI towerHealthBar;
     public ResourceCounterUI resourceCounterUI;
@@ -133,6 +149,7 @@ public class GameManager : MonoBehaviour
     {
         Vector3Int center = terrainGenerator.GetCenterGrid();
         Vector3 towerPos = terrainGenerator.GetSurfaceWorldPosition(center);
+        towerPos.y += towerYOffset;
         towerInstance = Instantiate(towerPrefab, towerPos, Quaternion.identity);
     }
 
@@ -163,6 +180,7 @@ public class GameManager : MonoBehaviour
         if (path == null || path.Count == 0) return;
         UnityEngine.Vector3Int entrance = path[0];
         Vector3 spawnPos = terrainGenerator.GetSurfaceWorldPosition(entrance);
+        spawnPos.y += enemyYOffset;
         GameObject enemyObj = Instantiate(defaultEnemyPrefab, spawnPos, Quaternion.identity);
         Enemy enemy = enemyObj.GetComponent<Enemy>();
         if (enemy != null)
@@ -286,7 +304,8 @@ public class GameManager : MonoBehaviour
         // Clamp to terrain bounds to avoid OOB
         int gx = Mathf.Clamp(gridPosition.x, 0, terrainGenerator.width - 1);
         int gz = Mathf.Clamp(gridPosition.z, 0, terrainGenerator.depth - 1);
-        Vector3 worldPos = terrainGenerator.GridToWorld(gx, gz);
+        Vector3 worldPos = terrainGenerator.GetSurfaceWorldPosition(new Vector3Int(gx, 0, gz));
+        worldPos.y += defenderYOffset;
         Instantiate(defenderPrefab, worldPos, Quaternion.identity);
         return true;
     }

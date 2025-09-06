@@ -24,13 +24,16 @@ public class Enemy : MonoBehaviour
     protected Defender currentDefenderTarget;
     protected float lastAttackTime = -999f;
 
-    public virtual void Initialize(List<Vector3Int> pathToFollow, int terrainTopY, Tower tower, GameManager gm)
+    private float yOffset = 1f;
+
+    public virtual void Initialize(List<Vector3Int> pathToFollow, int terrainTopY, Tower tower, GameManager gm, float offset = 1f)
     {
         path = pathToFollow;
         terrainHeight = terrainTopY;
         targetTower = tower;
         gameManager = gm;
         terrainGenerator = gameManager.terrainGenerator;
+        yOffset = offset;
         finalIndex = path != null && path.Count > 0 ? path.Count - 1 : 0;
     }
 
@@ -64,15 +67,15 @@ public class Enemy : MonoBehaviour
 
     void FollowPathTowardsTower()
     {
-        if (path == null || path.Count == 0)
+        if (path == null || path.Count == 0 || terrainGenerator == null)
             return;
 
         Vector3Int grid = path[currentPathIndex];
-        Vector3 targetPos = terrainGenerator != null
-            ? terrainGenerator.GetSurfaceWorldPosition(grid)
-            : new Vector3(grid.x, terrainHeight, grid.z);
+        Vector3 targetPos = terrainGenerator.GetSurfaceWorldPosition(grid);
+
         Vector3 toTarget = targetPos - transform.position;
         float step = moveSpeed * Time.deltaTime;
+
         if (toTarget.magnitude <= step)
         {
             transform.position = targetPos;
@@ -92,7 +95,8 @@ public class Enemy : MonoBehaviour
         }
         else
         {
-            transform.position += toTarget.normalized * step;
+            Vector3 direction = toTarget.normalized;
+            transform.position += direction * step;
         }
     }
 

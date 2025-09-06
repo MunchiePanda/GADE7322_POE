@@ -98,23 +98,23 @@ public class TowerController : MonoBehaviour
     public void SelectPath(int pathIndex)
     {
         if (terrainGenerator == null) return;
-        
+
         // Get the paths from terrain generator (you'll need to make this public)
         var paths = terrainGenerator.GetPaths();
         if (paths == null || pathIndex >= paths.Count || pathIndex < 0) return;
-        
+
         currentPathIndex = pathIndex;
-        
+
         // Get the entrance position of the selected path
         if (paths[pathIndex].Count > 0)
         {
             Vector3Int entrance = paths[pathIndex][0];
-            Vector3 entranceWorldPos = new Vector3(entrance.x, transform.position.y, entrance.z);
-            
+            Vector3 entranceWorldPos = terrainGenerator.GetSurfaceWorldPosition(entrance);
+
             // Calculate direction to face the path entrance
             targetDirection = (entranceWorldPos - transform.position).normalized;
             isRotating = true;
-            
+
             // Notify terrain generator to highlight this path
             terrainGenerator.HighlightPath(pathIndex);
         }

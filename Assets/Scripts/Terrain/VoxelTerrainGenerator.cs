@@ -13,10 +13,13 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
     [Header("Noise Settings")]
     public bool useNoise = true;
-    public int minColumnHeight = 2;
-    public int noiseAmplitude = 6;
-    public float noiseScale = 0.05f;
+    public int minColumnHeight = 4;
+    public int noiseAmplitude = 4;
+    public float noiseScale = 0.03f;
     public Vector2 noiseOffset = new Vector2(137.13f, 59.87f);
+    public int octaves = 4;
+    public float persistence = 0.5f;
+    public float lacunarity = 2f;
 
     [Header("Biome Settings")]
     public bool useBiomes = true;
@@ -28,7 +31,6 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
     [Header("Path Settings")]
     public int numPaths = 3;
-    public int pathHeight = 1;
     public int pathWidth = 2;
 
     [Header("Layer Settings")]
@@ -37,6 +39,7 @@ public class VoxelTerrainGenerator : MonoBehaviour
     private int[,] columnHeights;
     private List<List<Vector3Int>> paths = new List<List<Vector3Int>>();
     private Vector3Int center;
+    private HashSet<Vector2Int> pathPositions = new HashSet<Vector2Int>();
     private bool isGenerated = false;
     public bool IsReady => isGenerated;
 
@@ -100,11 +103,25 @@ public class VoxelTerrainGenerator : MonoBehaviour
     {
         if (!useNoise) return Mathf.Clamp(minColumnHeight + noiseAmplitude, 1, height);
 
-        float nx = (x + noiseOffset.x) * noiseScale;
-        float nz = (z + noiseOffset.y) * noiseScale;
-        float noiseValue = Mathf.PerlinNoise(nx, nz);
+        float totalNoise = 0f;
+        float frequency = 1f;
+        float amplitude = 1f;
+        float maxValue = 0f;
+
+        for (int o = 0; o < octaves; o++)
+        {
+            float nx = (x + noiseOffset.x) * noiseScale * frequency;
+            float nz = (z + noiseOffset.y) * noiseScale * frequency;
+            totalNoise += Mathf.PerlinNoise(nx, nz) * amplitude;
+
+            maxValue += amplitude;
+            amplitude *= persistence;
+            frequency *= lacunarity;
+        }
+
+        float noiseValue = totalNoise / maxValue;
         int h = minColumnHeight + Mathf.RoundToInt(noiseValue * noiseAmplitude);
-        return Mathf.Clamp(h, 1, height);
+        return Mathf.Clamp(h, minColumnHeight, height);
     }
 
     void CarvePaths()
@@ -125,21 +142,22 @@ public class VoxelTerrainGenerator : MonoBehaviour
             usedEntrances.Add(entrance);
             List<Vector3Int> path = GeneratePath(entrance, center);
 
-            if (path.Count > 0)
+            if (path.Count > 10 && !PathsIntersect(path))
             {
                 paths.Add(path);
-                // Carve wider paths
+
+                // Mark path positions without changing height
                 foreach (var pos in path)
                 {
                     for (int dx = -pathWidth / 2; dx <= pathWidth / 2; dx++)
                     {
                         for (int dz = -pathWidth / 2; dz <= pathWidth / 2; dz++)
                         {
-                            int nx = pos.x + dx;
-                            int nz = pos.z + dz;
-                            if (nx >= 0 && nx < width && nz >= 0 && nz < depth)
+                            int px = pos.x + dx;
+                            int pz = pos.z + dz;
+                            if (px >= 0 && px < width && pz >= 0 && pz < depth)
                             {
-                                columnHeights[nx, nz] = pathHeight;
+                                pathPositions.Add(new Vector2Int(px, pz));
                             }
                         }
                     }
@@ -147,6 +165,21 @@ public class VoxelTerrainGenerator : MonoBehaviour
             }
             attempts++;
         }
+    }
+
+    bool PathsIntersect(List<Vector3Int> newPath)
+    {
+        foreach (var path in paths)
+        {
+            foreach (var pos in path)
+            {
+                if (newPath.Contains(pos))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     Vector3Int GetRandomEdgePosition()
@@ -198,7 +231,9 @@ public class VoxelTerrainGenerator : MonoBehaviour
         if (colHeight <= 0) return false;
 
         if (pos.y != colHeight - 1) return false;
-        return true;
+
+        // Block placement on path tiles
+        return !pathPositions.Contains(new Vector2Int(pos.x, pos.z));
     }
 
     public List<List<Vector3Int>> GetPaths() => paths;

@@ -134,7 +134,7 @@ public class DefenderPlacement : MonoBehaviour
 
         int gx = Mathf.Clamp(gridPosition.x, 0, terrainGenerator.width - 1);
         int gz = Mathf.Clamp(gridPosition.z, 0, terrainGenerator.depth - 1);
-        Vector3 worldPos = terrainGenerator.GridToWorld(gx, gz);
+        Vector3 worldPos = terrainGenerator.GetSurfaceWorldPosition(new Vector3Int(gx, 0, gz));
         Debug.Log($"Placing defender at world position: {worldPos}");
         GameObject defender = Instantiate(defenderPrefab, worldPos, Quaternion.identity);
         Debug.Log($"Defender instantiated: {defender != null}");

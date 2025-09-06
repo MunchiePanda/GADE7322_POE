@@ -75,8 +75,10 @@ public class VoxelChunk : MonoBehaviour
                           List<Vector3> vertices, List<Vector2> uvs, List<int> triangles,
                           bool useBiomes, float biomeScale, Vector2 biomeOffset)
     {
-        if (IsFaceVisible(face, worldX, localY, worldZ, colHeight))
+        bool isVisible = IsFaceVisible(face, worldX, localY, worldZ, colHeight);
+        if (isVisible)
         {
+            Debug.Log($"Adding {face} face at {worldX}, {localY}, {worldZ}");
             AddFace(face, localPos, worldX, localY, worldZ, colHeight, vertices, uvs, triangles, useBiomes, biomeScale, biomeOffset);
         }
     }
@@ -89,7 +91,11 @@ public class VoxelChunk : MonoBehaviour
         int nZ = worldZ + offset.z;
 
         // Always show top faces
-        if (face == FaceDirection.Top && localY == colHeight - 1) return true;
+        if (face == FaceDirection.Top && localY == colHeight - 1)
+        {
+            Debug.Log($"Showing top face at {worldX}, {localY}, {worldZ}");
+            return true;
+        }
 
         // Check if neighbor is out of bounds
         if (nX < 0 || nX >= fullWidth || nZ < 0 || nZ >= fullDepth) return true;
@@ -99,7 +105,12 @@ public class VoxelChunk : MonoBehaviour
         if (nX >= 0 && nX < fullWidth && nZ >= 0 && nZ < fullDepth)
         {
             int neighborHeight = columnHeights[nX, nZ];
-            return nY >= neighborHeight || localY >= neighborHeight;
+            bool isVisible = nY >= neighborHeight || localY >= neighborHeight;
+            if (face == FaceDirection.Top)
+            {
+                Debug.Log($"Top face at {worldX}, {localY}, {worldZ} is {(isVisible ? "visible" : "not visible")}");
+            }
+            return isVisible;
         }
 
         return true;
@@ -131,7 +142,7 @@ public class VoxelChunk : MonoBehaviour
         vertices.AddRange(faceVerts);
         uvs.AddRange(atlasUVs);
 
-        bool reverseWinding = (face == FaceDirection.Bottom || face == FaceDirection.Back || face == FaceDirection.Left);
+        bool reverseWinding = (face == FaceDirection.Top || face == FaceDirection.Back);
         if (reverseWinding)
         {
             triangles.Add(vCount + 0);
