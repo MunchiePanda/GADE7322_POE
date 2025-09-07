@@ -6,7 +6,9 @@ public class Tower : MonoBehaviour
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float currentHealth;
     [Header("Combat")]
-    [SerializeField] private float attackRange = 8f;
+    [SerializeField] private float baseAttackRange = 15f;
+    [SerializeField] private float extendedAttackRange = 35f;
+    private float currentAttackRange;
     public float attackDamage = 8f;
     [SerializeField] private float attackIntervalSeconds = 0.7f;
     [SerializeField] private LayerMask enemyMask = ~0;
@@ -27,6 +29,7 @@ public class Tower : MonoBehaviour
     void Start()
     {
         currentHealth = maxHealth;
+        currentAttackRange = baseAttackRange;
 
         // Get GameManager reference if not assigned
         if (gameManager == null)
@@ -94,7 +97,7 @@ public class Tower : MonoBehaviour
         if (time - lastAttackTime < attackIntervalSeconds) return;
         Enemy nearest = null;
         float nearestDist = float.MaxValue;
-        Collider[] hits = Physics.OverlapSphere(transform.position, attackRange, enemyMask);
+        Collider[] hits = Physics.OverlapSphere(transform.position, currentAttackRange, enemyMask);
         foreach (var hit in hits)
         {
             Enemy e = hit.GetComponentInParent<Enemy>();
@@ -177,5 +180,11 @@ public class Tower : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    public void ExtendAttackRange(bool extend)
+    {
+        currentAttackRange = extend ? extendedAttackRange : baseAttackRange;
+        Debug.Log($"Tower attack range set to: {currentAttackRange}");
     }
 }

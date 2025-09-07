@@ -45,13 +45,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32da545d4c2622449b39eca8c9393b91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hitPoints: 5
+  hitPoints: 8
   attackDamage: 10
   attackIntervalSeconds: 0.8
   attackRange: 5
   enemyMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 128
   projectilePrefab: {fileID: 3042168292579264235, guid: 08f5d52e29511724285bc83cbd906ec6, type: 3}
   projectileSpawnPoint: {fileID: 1366413802540446164}
   projectileSpeed: 10

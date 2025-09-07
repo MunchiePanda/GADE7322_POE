@@ -11,6 +11,14 @@ public class DefenderPlacement : MonoBehaviour
     // Public property for defender prefab (can be set by DefenderSelectionUI)
     public GameObject defenderPrefab;
 
+    [Header("Defender Placement Settings")]
+    [SerializeField] private int maxDefenderLocations = 3; // Number of possible defender locations per path
+    [SerializeField] private GameObject placementMarkerPrefab; // Prefab to mark valid placement locations
+    [SerializeField] private GameObject placementHighlightPrefab; // Prefab to highlight valid placement locations
+
+    private List<GameObject> placementMarkers = new List<GameObject>();
+    private List<GameObject> placementHighlights = new List<GameObject>();
+
     void Start()
     {
         if (mainCamera == null)
@@ -33,9 +41,150 @@ public class DefenderPlacement : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Shows possible defender placement locations near the selected path.
+    /// </summary>
+    public void ShowPlacementLocations(int pathIndex)
+    {
+        ClearPlacementMarkers();
+        ClearPlacementHighlights();
+
+        List<List<Vector3Int>> paths = terrainGenerator.GetPaths();
+        if (paths == null || paths.Count <= pathIndex || pathIndex < 0)
+        {
+            Debug.LogError("Invalid path index for placement locations.");
+            return;
+        }
+
+        List<Vector3Int> path = paths[pathIndex];
+        if (path == null || path.Count == 0)
+        {
+            Debug.LogError("Selected path is empty.");
+            return;
+        }
+
+        List<Vector3Int> validLocations = new List<Vector3Int>();
+        for (int i = 0; i < path.Count; i++)
+        {
+            Vector3Int pathPos = path[i];
+            int surfaceY = terrainGenerator.GetSurfaceY(pathPos.x, pathPos.z);
+
+            // Check nearby positions for valid placement
+            for (int x = -2; x <= 2; x++)
+            {
+                for (int z = -2; z <= 2; z++)
+                {
+                    Vector3Int testPosition = new Vector3Int(pathPos.x + x, surfaceY - 1, pathPos.z + z);
+                    testPosition.x = Mathf.Clamp(testPosition.x, 0, terrainGenerator.width - 1);
+                    testPosition.z = Mathf.Clamp(testPosition.z, 0, terrainGenerator.depth - 1);
+
+                    if (terrainGenerator.IsValidDefenderPlacement(testPosition) && !validLocations.Contains(testPosition))
+                    {
+                        validLocations.Add(testPosition);
+                    }
+                }
+            }
+        }
+
+        // Randomly select a subset of valid locations
+        if (validLocations.Count > 0)
+        {
+            // Shuffle the list to randomize selection
+            for (int i = 0; i < validLocations.Count; i++)
+            {
+                Vector3Int temp = validLocations[i];
+                int randomIndex = Random.Range(i, validLocations.Count);
+                validLocations[i] = validLocations[randomIndex];
+                validLocations[randomIndex] = temp;
+            }
+
+            // Select up to maxDefenderLocations locations
+            int locationsToShow = Mathf.Min(maxDefenderLocations, validLocations.Count);
+            for (int i = 0; i < locationsToShow; i++)
+            {
+                Vector3Int location = validLocations[i];
+                Vector3 worldPos = terrainGenerator.GetSurfaceWorldPosition(new Vector3Int(location.x, 0, location.z));
+
+                // Create a highlight
+                GameObject highlight = Instantiate(placementHighlightPrefab, worldPos, Quaternion.identity);
+                placementHighlights.Add(highlight);
+
+                // Add a collider to the highlight for raycast detection
+                if (highlight.GetComponent<Collider>() == null)
+                {
+                    highlight.AddComponent<BoxCollider>();
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Clears all placement markers.
+    /// </summary>
+    public void ClearPlacementLocations()
+    {
+        ClearPlacementMarkers();
+        ClearPlacementHighlights();
+    }
+
+    private void ClearPlacementMarkers()
+    {
+        foreach (GameObject marker in placementMarkers)
+        {
+            if (marker != null)
+            {
+                Destroy(marker);
+            }
+        }
+        placementMarkers.Clear();
+    }
+
+    private void ClearPlacementHighlights()
+    {
+        foreach (GameObject highlight in placementHighlights)
+        {
+            if (highlight != null)
+            {
+                Destroy(highlight);
+            }
+        }
+        placementHighlights.Clear();
+    }
+
+    /// <summary>
+    /// Attempts to place a defender at the clicked placement marker.
+    /// </summary>
+    private void TryPlaceDefenderAtHighlight()
+    {
+        Ray ray = Camera.main.ScreenPointToRay(UnityEngine.InputSystem.Mouse.current.position.ReadValue());
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit))
+        {
+            // Check if the clicked object is a defender highlight quad
+            if (hit.transform != null && hit.transform.name.StartsWith("Highlight_Defender"))
+            {
+                // Extract grid position from the highlight's transform
+                Vector3 worldPos = hit.transform.position;
+                Vector3 localPos = terrainGenerator.transform.InverseTransformPoint(worldPos);
+                Vector3Int gridPos = new Vector3Int(Mathf.RoundToInt(localPos.x), 0, Mathf.RoundToInt(localPos.z));
+
+                // Get the surface height at the grid position
+                int surfaceY = terrainGenerator.GetSurfaceY(gridPos.x, gridPos.z);
+                gridPos.y = surfaceY - 1;
+
+                // Try to place the defender
+                TryPlaceDefenderAtMarker(gridPos);
+            }
+        }
+    }
+
     void Update()
     {
-        // Defender placement is now handled by a button, so no mouse input is needed here.
+        if (UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame && !gameManager.IsGameOver() && !gameManager.IsPaused())
+        {
+            TryPlaceDefenderAtHighlight();
+        }
     }
 
     void TryPlaceAtMouse()
@@ -141,70 +290,56 @@ public class DefenderPlacement : MonoBehaviour
         return true;
     }
 
-    public void PlaceDefenderAtMouse()
+    public void ShowDefenderLocations(int pathIndex)
     {
         if (gameManager == null || gameManager.IsGameOver() || gameManager.IsPaused() || terrainGenerator == null) return;
 
-        // Get a random path
-        List<List<Vector3Int>> paths = terrainGenerator.GetPaths();
-        if (paths == null || paths.Count == 0)
+        gameManager.HighlightDefenderLocations(pathIndex);
+    }
+
+    /// <summary>
+    /// Attempts to place a defender at the specified grid position.
+    /// </summary>
+    public bool TryPlaceDefenderAtMarker(Vector3Int gridPosition)
+    {
+        if (gameManager == null)
         {
-            Debug.LogError("No paths available for defender placement.");
-            return;
+            Debug.LogError("GameManager is not assigned in DefenderPlacement.");
+            return false;
+        }
+        if (defenderPrefab == null)
+        {
+            Debug.LogError("Defender prefab is not assigned in DefenderPlacement.");
+            return false;
+        }
+        if (terrainGenerator == null)
+        {
+            Debug.LogError("Terrain generator is not assigned in DefenderPlacement.");
+            return false;
         }
 
-        // Select the first path for simplicity
-        List<Vector3Int> path = paths[0];
-        if (path == null || path.Count == 0)
-        {
-            Debug.LogError("Selected path is empty.");
-            return;
-        }
+        Debug.Log($"Checking placement at {gridPosition}");
 
-        // Select the first position on the path
-        Vector3Int pathPos = path[0];
-
-        // Get the surface height at the path position
-        int surfaceY = terrainGenerator.GetSurfaceY(pathPos.x, pathPos.z);
-
-        // Try to find a valid position near the path
-        Vector3Int gridPosition = new Vector3Int(pathPos.x + 1, surfaceY - 1, pathPos.z + 1);
-
-        // Ensure the position is within bounds
-        gridPosition.x = Mathf.Clamp(gridPosition.x, 0, terrainGenerator.width - 1);
-        gridPosition.z = Mathf.Clamp(gridPosition.z, 0, terrainGenerator.depth - 1);
-
-        // Check if the position is valid
         if (!terrainGenerator.IsValidDefenderPlacement(gridPosition))
         {
-            // Try to find a valid position near the path
-            bool foundValidPosition = false;
-            for (int x = -2; x <= 2; x++)
-            {
-                for (int z = -2; z <= 2; z++)
-                {
-                    Vector3Int testPosition = new Vector3Int(pathPos.x + x, surfaceY - 1, pathPos.z + z);
-                    testPosition.x = Mathf.Clamp(testPosition.x, 0, terrainGenerator.width - 1);
-                    testPosition.z = Mathf.Clamp(testPosition.z, 0, terrainGenerator.depth - 1);
-
-                    if (terrainGenerator.IsValidDefenderPlacement(testPosition))
-                    {
-                        gridPosition = testPosition;
-                        foundValidPosition = true;
-                        break;
-                    }
-                }
-                if (foundValidPosition) break;
-            }
-
-            if (!foundValidPosition)
-            {
-                Debug.LogWarning("No valid position found near the path for defender placement.");
-                return;
-            }
+            Debug.LogWarning($"Invalid placement at {gridPosition}: Not on surface or too far from path");
+            return false;
         }
 
-        TryPlaceDefender(gridPosition);
+        if (!gameManager.SpendResources(gameManager.defenderCost))
+        {
+            Debug.LogWarning("Not enough resources to place defender");
+            return false;
+        }
+
+        int gx = Mathf.Clamp(gridPosition.x, 0, terrainGenerator.width - 1);
+        int gz = Mathf.Clamp(gridPosition.z, 0, terrainGenerator.depth - 1);
+        Vector3 worldPos = terrainGenerator.GetSurfaceWorldPosition(new Vector3Int(gx, 0, gz));
+        Debug.Log($"Placing defender at world position: {worldPos}");
+        GameObject defender = Instantiate(defenderPrefab, worldPos, Quaternion.identity);
+        Debug.Log($"Defender instantiated: {defender != null}");
+        ClearPlacementLocations();
+        return true;
     }
 }
 

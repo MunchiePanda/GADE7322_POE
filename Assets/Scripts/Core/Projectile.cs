@@ -32,7 +32,9 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        transform.position += transform.forward * speed * Time.deltaTime;
+        // Dynamically track the target
+        Vector3 direction = (target.position - transform.position).normalized;
+        transform.position += direction * speed * Time.deltaTime;
 
         // Check if the projectile has reached the target
         float distanceToTarget = Vector3.Distance(transform.position, target.position);
@@ -55,14 +57,18 @@ public class Projectile : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"Projectile collided with {other.gameObject.name}");
+
         Enemy enemy = other.GetComponent<Enemy>();
         if (enemy != null)
         {
+            Debug.Log($"Enemy found: {enemy.gameObject.name}, applying {damage} damage");
             enemy.TakeDamage(damage);
             Destroy(gameObject);
         }
         else if (other.CompareTag("Terrain"))
         {
+            Debug.Log("Projectile hit terrain, destroying");
             Destroy(gameObject);
         }
     }

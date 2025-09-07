@@ -62,8 +62,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0.853, z: 0.54}
   m_LocalScale: {x: 0.41142, y: 0.25146, z: 1.7245}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8082985073072006237}
+  m_Children: []
   m_Father: {fileID: 5165117484253539998}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &6708209130045047513
@@ -140,7 +139,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!1 &3433820433868155545
+--- !u!1 &4136010748715233354
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -148,10 +147,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8082985073072006237}
-  - component: {fileID: 2379526845057799445}
-  - component: {fileID: 8742934835352316050}
-  - component: {fileID: 3180287188749421429}
+  - component: {fileID: 2291348440524975428}
+  - component: {fileID: 4013584349907973935}
+  - component: {fileID: 8604550676523518500}
+  - component: {fileID: 8176807199763314268}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -159,28 +158,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &8082985073072006237
+--- !u!4 &2291348440524975428
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3433820433868155545}
+  m_GameObject: {fileID: 4136010748715233354}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.17441376, y: -0.09658255, z: -0.020499485, w: 0.9797099}
-  m_LocalPosition: {x: 0.04, y: 3.19, z: -1.62}
-  m_LocalScale: {x: 0.4569802, y: 0.4186428, z: 0.124707334}
+  m_LocalRotation: {x: 0.64449364, y: 0.035335876, z: -0.04335543, w: 0.7625613}
+  m_LocalPosition: {x: 0, y: 44.9, z: -10.7}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 700083402677405798}
-  m_LocalEulerAnglesHint: {x: 19.742, y: -12.044, z: -4.501}
---- !u!20 &2379526845057799445
+  m_Father: {fileID: 832022039725643337}
+  m_LocalEulerAnglesHint: {x: 80.4, y: -0.685, z: -7.087}
+--- !u!20 &4013584349907973935
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3433820433868155545}
+  m_GameObject: {fileID: 4136010748715233354}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
@@ -225,21 +224,21 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &8742934835352316050
+--- !u!81 &8604550676523518500
 AudioListener:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3433820433868155545}
+  m_GameObject: {fileID: 4136010748715233354}
   m_Enabled: 1
---- !u!114 &3180287188749421429
+--- !u!114 &8176807199763314268
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3433820433868155545}
+  m_GameObject: {fileID: 4136010748715233354}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
@@ -421,6 +420,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5165117484253539998}
+  - {fileID: 2291348440524975428}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6312660982866639386
@@ -437,12 +437,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   currentHealth: 0
-  attackRange: 8
-  attackDamage: 8
+  baseAttackRange: 50
+  extendedAttackRange: 50
+  attackDamage: 10
   attackIntervalSeconds: 0.7
   enemyMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 128
   projectilePrefab: {fileID: 3042168292579264235, guid: 08f5d52e29511724285bc83cbd906ec6, type: 3}
   projectileSpeed: 10
   projectileSpawnPoint: {fileID: 2018266337470435894}

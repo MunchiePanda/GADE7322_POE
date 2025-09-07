@@ -10,7 +10,8 @@ public class Enemy : MonoBehaviour
     [SerializeField] protected float attackDamage = 5f;
     [SerializeField] protected float attackIntervalSeconds = 1.0f;
     [SerializeField] protected float detectionRange = 2.0f;
-    [SerializeField] protected int resourceRewardOnDeath = 10;
+    [SerializeField] protected int minResourceRewardOnDeath = 5;
+    [SerializeField] protected int maxResourceRewardOnDeath = 15;
 
     protected List<Vector3Int> path;
     protected int currentPathIndex = 0;
@@ -72,6 +73,7 @@ public class Enemy : MonoBehaviour
 
         Vector3Int grid = path[currentPathIndex];
         Vector3 targetPos = terrainGenerator.GetSurfaceWorldPosition(grid);
+        targetPos.y += yOffset;
 
         Vector3 toTarget = targetPos - transform.position;
         float step = moveSpeed * Time.deltaTime;
@@ -174,7 +176,9 @@ public class Enemy : MonoBehaviour
 
         if (gameManager != null)
         {
-            gameManager.AddResources(resourceRewardOnDeath);
+            // Add a random amount of resources within the specified range
+            int resourceReward = Random.Range(minResourceRewardOnDeath, maxResourceRewardOnDeath + 1);
+            gameManager.AddResources(resourceReward);
             // Notify EnemySpawner that this enemy died
             EnemySpawner spawner = FindFirstObjectByType<EnemySpawner>();
             if (spawner != null)

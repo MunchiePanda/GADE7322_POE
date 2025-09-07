@@ -309,4 +309,25 @@ public class GameManager : MonoBehaviour
         Instantiate(defenderPrefab, worldPos, Quaternion.identity);
         return true;
     }
-} 
+
+    public void HighlightPath(int pathIndex)
+    {
+        if (terrainGenerator != null)
+        {
+            terrainGenerator.HighlightPath(pathIndex);
+        }
+
+        if (tower != null)
+        {
+            tower.ExtendAttackRange(true);
+        }
+    }
+
+    public void HighlightDefenderLocations(int pathIndex)
+    {
+        if (terrainGenerator != null)
+        {
+            terrainGenerator.HighlightDefenderLocations(pathIndex);
+        }
+    }
+}

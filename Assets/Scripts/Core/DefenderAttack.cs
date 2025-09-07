@@ -55,29 +55,24 @@ namespace GADE7322_POE.Core
                 }
             }
 
-            // Create a simple sphere projectile
-            GameObject projectile = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            projectile.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-            projectile.transform.position = transform.position;
-            Destroy(projectile, 5f); // Destroy after 5 seconds
-
-            // Add Rigidbody to move the projectile
-            Rigidbody rb = projectile.AddComponent<Rigidbody>();
-            rb.useGravity = false;
-            rb.mass = 0.1f;
-
-            // Move the projectile toward the enemy
-            Vector3 direction = (nearestEnemy.transform.position - transform.position).normalized;
-            rb.linearVelocity = direction * ProjectileSpeed;
-
-            // Add a trigger collider for damage
-            SphereCollider collider = projectile.AddComponent<SphereCollider>();
-            collider.isTrigger = true;
-
-            // Add a script to handle collision with enemies
-            ProjectileDamage projectileDamage = projectile.AddComponent<ProjectileDamage>();
-            projectileDamage.Damage = AttackDamage;
-            projectileDamage.TargetLayerMask = EnemyLayerMask;
+            // Use the ProjectilePrefab
+            if (ProjectilePrefab != null)
+            {
+                GameObject projectile = Instantiate(ProjectilePrefab, transform.position, Quaternion.identity);
+                Projectile projectileComponent = projectile.GetComponent<Projectile>();
+                if (projectileComponent != null)
+                {
+                    projectileComponent.Initialize(nearestEnemy.transform, AttackDamage, ProjectileSpeed);
+                }
+                else
+                {
+                    Debug.LogError("ProjectilePrefab does not have a Projectile component!");
+                }
+            }
+            else
+            {
+                Debug.LogError("ProjectilePrefab is not assigned!");
+            }
 
             Debug.Log($"{gameObject.name} shot a projectile at {nearestEnemy.name}!");
         }

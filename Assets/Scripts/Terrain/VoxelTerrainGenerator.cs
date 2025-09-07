@@ -29,6 +29,10 @@ public class VoxelTerrainGenerator : MonoBehaviour
     [Header("Voxel Prefab")]
     public GameObject voxelPrefab;
 
+    [Header("Tree Spawning")]
+    public GameObject treePrefab;
+    [Range(0, 1)] public float treeDensity = 0.05f; // Percentage of grass tiles that will have trees
+
     [Header("Path Settings")]
     public int numPaths = 3;
     public int pathWidth = 2;
@@ -42,6 +46,9 @@ public class VoxelTerrainGenerator : MonoBehaviour
     private HashSet<Vector2Int> pathPositions = new HashSet<Vector2Int>();
     private bool isGenerated = false;
     public bool IsReady => isGenerated;
+
+    private List<Vector3Int> defenderLocations = new List<Vector3Int>();
+    public List<Vector3Int> DefenderLocations => defenderLocations;
 
     void Awake() => GenerateAllIfNeeded();
     void Start() => GenerateAllIfNeeded();
@@ -64,7 +71,71 @@ public class VoxelTerrainGenerator : MonoBehaviour
         // Create chunks
         CreateChunks();
 
+        // Spawn trees in grass areas
+        SpawnTrees();
+
         isGenerated = true;
+
+        GenerateDefenderLocations();
+    }
+
+    private void GenerateDefenderLocations()
+    {
+        defenderLocations.Clear();
+
+        foreach (var path in paths)
+        {
+            foreach (var pos in path)
+            {
+                int surfaceY = GetSurfaceY(pos.x, pos.z);
+
+                // Check nearby positions for valid placement
+                for (int x = -2; x <= 2; x++)
+                {
+                    for (int z = -2; z <= 2; z++)
+                    {
+                        Vector3Int testPosition = new Vector3Int(pos.x + x, surfaceY - 1, pos.z + z);
+                        testPosition.x = Mathf.Clamp(testPosition.x, 0, width - 1);
+                        testPosition.z = Mathf.Clamp(testPosition.z, 0, depth - 1);
+
+                        if (IsValidDefenderPlacement(testPosition) && !defenderLocations.Contains(testPosition))
+                        {
+                            defenderLocations.Add(testPosition);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void SpawnTrees()
+    {
+        if (treePrefab == null || !useBiomes)
+            return;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < depth; z++)
+            {
+                // Check if this is a grass area
+                float nx = (x + biomeOffset.x) * biomeScale;
+                float nz = (z + biomeOffset.y) * biomeScale;
+                float biomeValue = Mathf.PerlinNoise(nx, nz);
+
+                TextureType topType = (biomeValue < 0.5f) ? TextureType.Grass : TextureType.Sand;
+
+                if (topType == TextureType.Grass && columnHeights[x, z] > 0)
+                {
+                    // Randomly decide if a tree should be placed here
+                    if (Random.value < treeDensity)
+                    {
+                        Vector3 spawnPosition = new Vector3(x, columnHeights[x, z], z);
+                        GameObject tree = Instantiate(treePrefab, spawnPosition, Quaternion.identity);
+                        tree.transform.SetParent(transform);
+                    }
+                }
+            }
+        }
     }
 
     private void CreateChunks()
@@ -169,13 +240,19 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
     bool PathsIntersect(List<Vector3Int> newPath)
     {
+        // Allow some overlap to generate more paths
+        int overlapCount = 0;
         foreach (var path in paths)
         {
             foreach (var pos in path)
             {
                 if (newPath.Contains(pos))
                 {
-                    return true;
+                    overlapCount++;
+                    if (overlapCount > 2) // Allow up to 2 overlapping positions
+                    {
+                        return true;
+                    }
                 }
             }
         }
@@ -279,6 +356,103 @@ public class VoxelTerrainGenerator : MonoBehaviour
             {
                 color = new Color(0, 1, 1, 0.5f) // Cyan with transparency
             };
+        }
+    }
+
+    public List<Vector3Int> GetDefenderLocationsNearPath(int pathIndex, int numLocations = 3, int range = 2)
+    {
+        List<Vector3Int> validLocations = new List<Vector3Int>();
+
+        if (pathIndex < 0 || pathIndex >= paths.Count) return validLocations;
+
+        var path = paths[pathIndex];
+
+        foreach (var pos in path)
+        {
+            int surfaceY = GetSurfaceY(pos.x, pos.z);
+
+            // Check nearby positions for valid placement within the specified range
+            for (int x = -range; x <= range; x++)
+            {
+                for (int z = -range; z <= range; z++)
+                {
+                    Vector3Int testPosition = new Vector3Int(pos.x + x, surfaceY - 1, pos.z + z);
+                    testPosition.x = Mathf.Clamp(testPosition.x, 0, width - 1);
+                    testPosition.z = Mathf.Clamp(testPosition.z, 0, depth - 1);
+
+                    if (IsValidDefenderPlacement(testPosition) && !validLocations.Contains(testPosition))
+                    {
+                        validLocations.Add(testPosition);
+                    }
+                }
+            }
+        }
+
+        // Randomly select a subset of valid locations
+        if (validLocations.Count > 0)
+        {
+            // Shuffle the list to randomize selection
+            for (int i = 0; i < validLocations.Count; i++)
+            {
+                Vector3Int temp = validLocations[i];
+                int randomIndex = Random.Range(i, validLocations.Count);
+                validLocations[i] = validLocations[randomIndex];
+                validLocations[randomIndex] = temp;
+            }
+
+            // Select up to numLocations locations
+            int locationsToShow = Mathf.Min(numLocations, validLocations.Count);
+            validLocations = validLocations.GetRange(0, locationsToShow);
+        }
+
+        return validLocations;
+    }
+
+    public void HighlightDefenderLocations(int pathIndex, int numLocations = 3, int range = 2)
+    {
+        // Reset previous highlights
+        foreach (Transform child in transform)
+        {
+            if (child.name.StartsWith("Highlight_Defender"))
+                Destroy(child.gameObject);
+        }
+
+        List<Vector3Int> validLocations = GetDefenderLocationsNearPath(pathIndex, numLocations, range);
+
+        // Randomly select a subset of valid locations
+        if (validLocations.Count > 0)
+        {
+            // Shuffle the list to randomize selection
+            for (int i = 0; i < validLocations.Count; i++)
+            {
+                Vector3Int temp = validLocations[i];
+                int randomIndex = Random.Range(i, validLocations.Count);
+                validLocations[i] = validLocations[randomIndex];
+                validLocations[randomIndex] = temp;
+            }
+
+            // Select up to numLocations locations
+            int locationsToShow = Mathf.Min(numLocations, validLocations.Count);
+            validLocations = validLocations.GetRange(0, locationsToShow);
+
+            foreach (Vector3Int location in validLocations)
+            {
+                int surfaceY = GetSurfaceY(location.x, location.z);
+
+                // Spawn flat quad overlay for highlight
+                GameObject highlight = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                highlight.name = "Highlight_Defender_" + location.x + "_" + location.z;
+                highlight.transform.SetParent(transform);
+                highlight.transform.localPosition = new Vector3(location.x + 0.5f, surfaceY + 0.01f, location.z + 0.5f);
+                highlight.transform.localRotation = Quaternion.Euler(90, 0, 0);
+                highlight.transform.localScale = Vector3.one * 0.9f;
+
+                Renderer rend = highlight.GetComponent<Renderer>();
+                rend.material = new Material(Shader.Find("Standard"))
+                {
+                    color = new Color(1, 0, 1, 0.5f) // Pink with transparency
+                };
+            }
         }
     }
 }

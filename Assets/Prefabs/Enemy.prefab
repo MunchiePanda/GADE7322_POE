@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8714245418744283186}
   - component: {fileID: 8472676101274367099}
   - component: {fileID: 2326161083459464837}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -118,7 +118,7 @@ GameObject:
   m_Component:
   - component: {fileID: 820385077123436877}
   - component: {fileID: 2471127363600878552}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Enemy
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -153,10 +153,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9fa36ce71b569549a486ca5e298fb99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 50
+  maxHealth: 25
   currentHealth: 0
   moveSpeed: 2.5
   attackDamage: 5
   attackIntervalSeconds: 1
   detectionRange: 2
-  resourceRewardOnDeath: 10
+  minResourceRewardOnDeath: 5
+  maxResourceRewardOnDeath: 25
