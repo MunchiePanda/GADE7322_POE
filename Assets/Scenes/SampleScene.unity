@@ -1605,9 +1605,6 @@ MonoBehaviour:
   towerYOffset: 1
   enemyYOffset: 1
   defenderYOffset: 1
-  towerOffset: 2
-  enemyOffset: 2
-  defenderOffset: 2
   towerHealthBar: {fileID: 320874842}
   resourceCounterUI: {fileID: 1747919790}
   defenderCostUI: {fileID: 745225628}
@@ -1847,7 +1844,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 1.4000015, y: 1.5356998}
+  m_AnchoredPosition: {x: 1.3999939, y: 1.5356979}
   m_SizeDelta: {x: -14.2461, y: -13.5186}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1567320043
@@ -1897,7 +1894,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
+  m_fontSize: 21.7
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2126,7 +2123,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 21.7
+  m_fontSize: 29.85
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2364,7 +2361,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.7787815, y: 0.05065381}
   m_AnchorMax: {x: 0.97587276, y: 0.21100001}
-  m_AnchoredPosition: {x: 1.9445953, y: -1.1015015}
+  m_AnchoredPosition: {x: 1.9445801, y: -1.1015015}
   m_SizeDelta: {x: 3.5481005, y: 5.1059}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1872080750
