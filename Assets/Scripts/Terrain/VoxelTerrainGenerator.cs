@@ -29,6 +29,14 @@ public class VoxelTerrainGenerator : MonoBehaviour
     [Header("Voxel Prefab")]
     public GameObject voxelPrefab;
 
+    [Header("Atlas Settings")]
+    public Texture2D atlasTexture;
+    public float atlasElevationScale = 10.0f;
+
+    [Header("Highlight Materials")]
+    public Material pathHighlightMaterial;
+    public Material defenderHighlightMaterial;
+
     [Header("Tree Spawning")]
     public GameObject treePrefab;
     [Range(0, 1)] public float treeDensity = 0.05f; // Percentage of grass tiles that will have trees
@@ -68,6 +76,9 @@ public class VoxelTerrainGenerator : MonoBehaviour
         // Carve paths
         CarvePaths();
 
+        // Generate defender locations
+        GenerateDefenderLocations();
+
         // Create chunks
         CreateChunks();
 
@@ -75,8 +86,6 @@ public class VoxelTerrainGenerator : MonoBehaviour
         SpawnTrees();
 
         isGenerated = true;
-
-        GenerateDefenderLocations();
     }
 
     private void GenerateDefenderLocations()
@@ -172,27 +181,41 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
     int ComputeColumnHeight(int x, int z)
     {
-        if (!useNoise) return Mathf.Clamp(minColumnHeight + noiseAmplitude, 1, height);
-
-        float totalNoise = 0f;
-        float frequency = 1f;
-        float amplitude = 1f;
-        float maxValue = 0f;
-
-        for (int o = 0; o < octaves; o++)
+        if (atlasTexture != null)
         {
-            float nx = (x + noiseOffset.x) * noiseScale * frequency;
-            float nz = (z + noiseOffset.y) * noiseScale * frequency;
-            totalNoise += Mathf.PerlinNoise(nx, nz) * amplitude;
-
-            maxValue += amplitude;
-            amplitude *= persistence;
-            frequency *= lacunarity;
+            // Sample the atlas texture for elevation
+            float atlasX = (float)x / width;
+            float atlasZ = (float)z / depth;
+            Color atlasColor = atlasTexture.GetPixelBilinear(atlasX, atlasZ);
+            float atlasElevation = atlasColor.grayscale * atlasElevationScale;
+            return Mathf.Clamp(Mathf.RoundToInt(atlasElevation), 1, height);
         }
+        else if (!useNoise)
+        {
+            return Mathf.Clamp(minColumnHeight + noiseAmplitude, 1, height);
+        }
+        else
+        {
+            float totalNoise = 0f;
+            float frequency = 1f;
+            float amplitude = 1f;
+            float maxValue = 0f;
 
-        float noiseValue = totalNoise / maxValue;
-        int h = minColumnHeight + Mathf.RoundToInt(noiseValue * noiseAmplitude);
-        return Mathf.Clamp(h, minColumnHeight, height);
+            for (int o = 0; o < octaves; o++)
+            {
+                float nx = (x + noiseOffset.x) * noiseScale * frequency;
+                float nz = (z + noiseOffset.y) * noiseScale * frequency;
+                totalNoise += Mathf.PerlinNoise(nx, nz) * amplitude;
+
+                maxValue += amplitude;
+                amplitude *= persistence;
+                frequency *= lacunarity;
+            }
+
+            float noiseValue = totalNoise / maxValue;
+            int h = minColumnHeight + Mathf.RoundToInt(noiseValue * noiseAmplitude);
+            return Mathf.Clamp(h, minColumnHeight, height);
+        }
     }
 
     void CarvePaths()
@@ -289,7 +312,22 @@ public class VoxelTerrainGenerator : MonoBehaviour
             if (dx != 0) options.Add(new Vector3Int(current.x + (int)Mathf.Sign(dx), 0, current.z));
             if (dz != 0) options.Add(new Vector3Int(current.x, 0, current.z + (int)Mathf.Sign(dz)));
 
-            if (Random.value < 0.3f && options.Count == 2) options.Reverse();
+            // Prefer paths with smaller elevation changes
+            if (options.Count > 1)
+            {
+                int currentHeight = columnHeights[current.x, current.z];
+                int option1Height = columnHeights[options[0].x, options[0].z];
+                int option2Height = columnHeights[options[1].x, options[1].z];
+
+                int delta1 = Mathf.Abs(option1Height - currentHeight);
+                int delta2 = Mathf.Abs(option2Height - currentHeight);
+
+                if (delta1 < delta2)
+                {
+                    options.Reverse();
+                }
+            }
+
             Vector3Int next = options[Random.Range(0, options.Count)];
             current = next;
 
@@ -448,9 +486,9 @@ public class VoxelTerrainGenerator : MonoBehaviour
                 highlight.transform.localScale = Vector3.one * 0.9f;
 
                 Renderer rend = highlight.GetComponent<Renderer>();
-                rend.material = new Material(Shader.Find("Standard"))
+                rend.material = defenderHighlightMaterial != null ? defenderHighlightMaterial : new Material(Shader.Find("Standard"))
                 {
-                    color = new Color(1, 0, 1, 0.5f) // Pink with transparency
+                    color = new Color(0, 0, 1, 0.5f) // Blue with transparency
                 };
             }
         }

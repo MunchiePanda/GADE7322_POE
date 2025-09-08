@@ -3,6 +3,21 @@ using System.Collections.Generic;
 
 public class Enemy : MonoBehaviour
 {
+    void OnCollisionEnter(Collision collision)
+    {
+        Debug.Log($"Enemy collided with {collision.gameObject.name}");
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        Debug.Log($"Enemy triggered with {other.gameObject.name}");
+
+        Projectile projectile = other.GetComponent<Projectile>();
+        if (projectile != null)
+        {
+            Debug.Log($"Enemy hit by projectile!");
+        }
+    }
     [Header("Stats")]
     [SerializeField] protected float maxHealth = 50f;
     [SerializeField] protected float currentHealth = 0f;
@@ -25,7 +40,7 @@ public class Enemy : MonoBehaviour
     protected Defender currentDefenderTarget;
     protected float lastAttackTime = -999f;
 
-    private float yOffset = 1f;
+    private float yOffset = 2f; // Increased yOffset to raise the enemy
 
     public virtual void Initialize(List<Vector3Int> pathToFollow, int terrainTopY, Tower tower, GameManager gm, float offset = 1f)
     {
@@ -48,6 +63,10 @@ public class Enemy : MonoBehaviour
     protected virtual void Start()
     {
         currentHealth = maxHealth;
+        Debug.Log($"Enemy initialized with health: {currentHealth}");
+
+        // Test: Force the enemy to die immediately
+        // TakeDamage(currentHealth);
     }
 
     void Update()
@@ -158,15 +177,22 @@ public class Enemy : MonoBehaviour
 
     public virtual void TakeDamage(float amount)
     {
+        Debug.Log($"Enemy taking {amount} damage. Current health before damage: {currentHealth}");
         currentHealth -= amount;
+        Debug.Log($"Enemy health after damage: {currentHealth}");
+
         if (currentHealth <= 0f)
         {
+            Debug.Log("Enemy health reached zero. Calling Die().");
+            currentHealth = 0f; // Ensure health doesn't go negative
             Die();
         }
     }
 
     void Die()
     {
+        Debug.Log("Enemy died!");
+
         // Play explosion effect
         ExplosionEffect explosionEffect = GetComponent<ExplosionEffect>();
         if (explosionEffect != null)
@@ -176,6 +202,7 @@ public class Enemy : MonoBehaviour
 
         if (gameManager != null)
         {
+            Debug.Log("Adding resources and notifying spawner.");
             // Add a random amount of resources within the specified range
             int resourceReward = Random.Range(minResourceRewardOnDeath, maxResourceRewardOnDeath + 1);
             gameManager.AddResources(resourceReward);
@@ -186,6 +213,8 @@ public class Enemy : MonoBehaviour
                 spawner.OnEnemyDeath(gameObject);
             }
         }
+
+        Debug.Log("Destroying enemy object.");
         Destroy(gameObject);
     }
 }
