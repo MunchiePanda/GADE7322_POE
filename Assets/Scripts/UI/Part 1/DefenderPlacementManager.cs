@@ -18,10 +18,10 @@ public class DefenderPlacementManager : MonoBehaviour
     void Start()
     {
         if (terrainGenerator == null)
-            terrainGenerator = FindObjectOfType<VoxelTerrainGenerator>();
+            terrainGenerator = Object.FindFirstObjectByType<VoxelTerrainGenerator>();
 
         if (gameManager == null)
-            gameManager = FindObjectOfType<GameManager>();
+            gameManager = Object.FindFirstObjectByType<GameManager>();
 
         if (placeDefenderButton != null)
             placeDefenderButton.onClick.AddListener(PlaceDefenderAtSelectedLocation);

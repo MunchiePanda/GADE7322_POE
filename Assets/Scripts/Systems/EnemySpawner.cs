@@ -165,7 +165,16 @@ public class EnemySpawner : MonoBehaviour
         if (!isSpawning && activeEnemies.Count == 0)
         {
             Debug.Log($"All enemies in Wave {currentWave} defeated!");
-            StartNextWave(); // Start the next wave
+            
+            StrategicWaveManager waveManager = FindFirstObjectByType<StrategicWaveManager>();
+            if (waveManager != null)
+            {
+                waveManager.OnWaveComplete();
+            }
+            else
+            {
+                StartNextWave();
+            }
         }
     }
 }
