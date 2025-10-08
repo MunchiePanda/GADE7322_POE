@@ -20,7 +20,7 @@ public class Defender : MonoBehaviour
     [SerializeField] private float healthUpgradeAmount = 15f;
     [SerializeField] private float damageUpgradeAmount = 2f;
 
-    private float lastAttackTime = -999f;
+    public float lastAttackTime = -999f;
     protected Enemy currentEnemyTarget;
     private GameManager gameManager;
 
@@ -63,7 +63,7 @@ public class Defender : MonoBehaviour
         }
     }
 
-    void TryAttackEnemy()
+    protected virtual void TryAttackEnemy()
     {
         if (currentEnemyTarget == null) return;
         float time = Time.time;
@@ -74,7 +74,7 @@ public class Defender : MonoBehaviour
         }
     }
 
-    void LobProjectileAtEnemy(Enemy enemy)
+    protected virtual void LobProjectileAtEnemy(Enemy enemy)
     {
         if (projectilePrefab == null)
         {
