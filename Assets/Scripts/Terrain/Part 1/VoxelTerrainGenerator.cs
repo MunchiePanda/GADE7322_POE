@@ -521,4 +521,88 @@ public class VoxelTerrainGenerator : MonoBehaviour
             };
         }
     }
+
+    /// <summary>
+    /// Converts world position to grid position for drag-drop system
+    /// </summary>
+    public Vector3Int WorldToGridPosition(Vector3 worldPos)
+    {
+        // Convert world position back to grid coordinates
+        Vector3 localPos = transform.InverseTransformPoint(worldPos);
+        int x = Mathf.RoundToInt(localPos.x);
+        int z = Mathf.RoundToInt(localPos.z);
+        int y = GetSurfaceY(x, z) - 1; // Surface level
+        
+        return new Vector3Int(x, y, z);
+    }
+
+    /// <summary>
+    /// Gets all valid defender placement positions for highlighting
+    /// </summary>
+    public List<Vector3Int> GetAllValidDefenderPositions()
+    {
+        List<Vector3Int> validPositions = new List<Vector3Int>();
+        
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < depth; z++)
+            {
+                int surfaceY = GetSurfaceY(x, z);
+                Vector3Int testPos = new Vector3Int(x, surfaceY - 1, z);
+                
+                if (IsValidDefenderPlacement(testPos))
+                {
+                    validPositions.Add(testPos);
+                }
+            }
+        }
+        
+        return validPositions;
+    }
+
+    /// <summary>
+    /// Highlights all valid defender placement areas
+    /// </summary>
+    public void HighlightAllValidDefenderAreas()
+    {
+        ClearPlacementHighlights();
+        
+        List<Vector3Int> validPositions = GetAllValidDefenderPositions();
+        
+        foreach (Vector3Int pos in validPositions)
+        {
+            Vector3 worldPos = GetSurfaceWorldPosition(pos);
+            worldPos.y += 0.1f; // Slightly above surface
+            
+            // Create highlight marker
+            GameObject highlight = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            highlight.transform.position = worldPos;
+            highlight.transform.localScale = Vector3.one * 0.8f;
+            highlight.name = "DefenderPlacementHighlight";
+            highlight.tag = "DefenderPlacementHighlight";
+            
+            // Make it semi-transparent green
+            Renderer renderer = highlight.GetComponent<Renderer>();
+            Material highlightMaterial = new Material(Shader.Find("Standard"));
+            highlightMaterial.color = new Color(0, 1, 0, 0.3f);
+            highlightMaterial.SetFloat("_Mode", 3); // Transparent mode
+            renderer.material = highlightMaterial;
+            
+            // Remove collider to prevent interference
+            Destroy(highlight.GetComponent<Collider>());
+        }
+    }
+
+    /// <summary>
+    /// Clears all placement highlights
+    /// </summary>
+    public void ClearPlacementHighlights()
+    {
+        // Find and destroy all highlight objects
+        GameObject[] highlights = GameObject.FindGameObjectsWithTag("DefenderPlacementHighlight");
+        foreach (GameObject highlight in highlights)
+        {
+            Destroy(highlight);
+        }
+    }
 }
