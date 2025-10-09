@@ -16,6 +16,8 @@ public class EnemySpawner : MonoBehaviour
     public GameObject defaultEnemyPrefab;
     public GameObject fastEnemyPrefab;
     public GameObject tankEnemyPrefab;
+    public GameObject kamikazeDragonPrefab;
+    public GameObject armoredDragonPrefab;
 
     [Header("Spawning Settings")]
     [Tooltip("Time between enemy spawns in a wave (seconds).")]
@@ -89,21 +91,12 @@ public class EnemySpawner : MonoBehaviour
 
     /// <summary>
     /// Spawns a random enemy type at a random path entrance.
+    /// Uses wave-based enemy selection for better progression.
     /// </summary>
     void SpawnRandomEnemy()
     {
-        // Choose a random enemy type
-        GameObject enemyPrefab = defaultEnemyPrefab;
-        int randomType = Random.Range(0, 3); // 0: default, 1: fast, 2: tank
-        switch (randomType)
-        {
-            case 1:
-                enemyPrefab = fastEnemyPrefab;
-                break;
-            case 2:
-                enemyPrefab = tankEnemyPrefab;
-                break;
-        }
+        // Choose enemy type based on wave progression
+        GameObject enemyPrefab = SelectEnemyTypeBasedOnWave();
 
         // Get a random path and spawn point
         List<List<Vector3Int>> paths = gameManager.terrainGenerator.GetPaths();
@@ -149,6 +142,37 @@ public class EnemySpawner : MonoBehaviour
         enemy.Initialize(randomPath, gameManager.terrainGenerator.height, towerComponent, gameManager);
 
         activeEnemies.Add(enemyObject);
+    }
+
+    /// <summary>
+    /// Selects enemy type based on current wave for better progression.
+    /// </summary>
+    GameObject SelectEnemyTypeBasedOnWave()
+    {
+        if (currentWave <= 2)
+        {
+            // Early waves: mostly default enemies
+            return Random.Range(0f, 1f) < 0.8f ? defaultEnemyPrefab : fastEnemyPrefab;
+        }
+        else if (currentWave <= 5)
+        {
+            // Mid waves: introduce kamikaze dragons
+            float rand = Random.Range(0f, 1f);
+            if (rand < 0.5f) return defaultEnemyPrefab;
+            else if (rand < 0.7f) return fastEnemyPrefab;
+            else if (rand < 0.9f) return tankEnemyPrefab;
+            else return kamikazeDragonPrefab;
+        }
+        else
+        {
+            // Late waves: all types including armored dragons
+            float rand = Random.Range(0f, 1f);
+            if (rand < 0.25f) return defaultEnemyPrefab;
+            else if (rand < 0.4f) return fastEnemyPrefab;
+            else if (rand < 0.55f) return tankEnemyPrefab;
+            else if (rand < 0.75f) return kamikazeDragonPrefab;
+            else return armoredDragonPrefab;
+        }
     }
 
     /// <summary>

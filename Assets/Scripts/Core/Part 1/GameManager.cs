@@ -32,10 +32,18 @@ public class GameManager : MonoBehaviour
     public float speedScalingFactor = 1.1f;
 
     [Header("Defenders & Resources")]
-    [Tooltip("Prefab for the defender that the player can place on the terrain.")]
+    [Tooltip("Prefab for the basic defender that the player can place on the terrain.")]
     public GameObject defenderPrefab;
-    [Tooltip("Cost in resources to place a defender.")]
+    [Tooltip("Prefab for the frost tower defender.")]
+    public GameObject frostTowerPrefab;
+    [Tooltip("Prefab for the lightning tower defender.")]
+    public GameObject lightningTowerPrefab;
+    [Tooltip("Cost in resources to place a basic defender.")]
     public int defenderCost = 25;
+    [Tooltip("Cost in resources to place a frost tower.")]
+    public int frostTowerCost = 40;
+    [Tooltip("Cost in resources to place a lightning tower.")]
+    public int lightningTowerCost = 35;
     [Tooltip("Initial amount of resources the player starts with.")]
     public int startingResources = 100;
 
@@ -339,15 +347,52 @@ public class GameManager : MonoBehaviour
     /// <returns>True if the defender was placed successfully, false otherwise.</returns>
     public bool TryPlaceDefender(Vector3Int gridPosition)
     {
+        return TryPlaceDefender(gridPosition, DefenderType.Basic);
+    }
+
+    /// <summary>
+    /// Attempts to place a specific type of defender at the specified grid position.
+    /// </summary>
+    /// <param name="gridPosition">Grid position where the defender should be placed.</param>
+    /// <param name="defenderType">Type of defender to place.</param>
+    /// <returns>True if the defender was placed successfully, false otherwise.</returns>
+    public bool TryPlaceDefender(Vector3Int gridPosition, DefenderType defenderType)
+    {
         // Exit if the game is over, paused, or required references are missing.
         if (isGameOver || isPaused) return false;
-        if (defenderPrefab == null || terrainGenerator == null) return false;
+        if (terrainGenerator == null) return false;
+
+        // Get the appropriate prefab and cost based on defender type
+        GameObject defenderPrefabToUse;
+        int cost;
+        
+        switch (defenderType)
+        {
+            case DefenderType.Basic:
+                defenderPrefabToUse = defenderPrefab;
+                cost = defenderCost;
+                break;
+            case DefenderType.FrostTower:
+                defenderPrefabToUse = frostTowerPrefab;
+                cost = frostTowerCost;
+                break;
+            case DefenderType.LightningTower:
+                defenderPrefabToUse = lightningTowerPrefab;
+                cost = lightningTowerCost;
+                break;
+            default:
+                defenderPrefabToUse = defenderPrefab;
+                cost = defenderCost;
+                break;
+        }
+
+        if (defenderPrefabToUse == null) return false;
 
         // Only allow placement on valid non-path tiles.
         if (!terrainGenerator.IsValidDefenderPlacement(gridPosition)) return false;
 
         // Check if the player has enough resources.
-        if (!SpendResources(defenderCost)) return false;
+        if (!SpendResources(cost)) return false;
 
         // Clamp the grid position to ensure it's within terrain bounds.
         int gx = Mathf.Clamp(gridPosition.x, 0, terrainGenerator.width - 1);
@@ -358,7 +403,7 @@ public class GameManager : MonoBehaviour
         worldPos.y += defenderYOffset;
 
         // Instantiate the defender prefab at the calculated position.
-        Instantiate(defenderPrefab, worldPos, Quaternion.identity);
+        Instantiate(defenderPrefabToUse, worldPos, Quaternion.identity);
         return true;
     }
 

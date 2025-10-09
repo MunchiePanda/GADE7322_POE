@@ -85,7 +85,7 @@ public class Enemy : MonoBehaviour
         FollowPathTowardsTower();
     }
 
-    void FollowPathTowardsTower()
+    protected void FollowPathTowardsTower()
     {
         if (path == null || path.Count == 0 || terrainGenerator == null)
             return;
@@ -121,7 +121,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    void AcquireDefenderIfAny()
+    protected void AcquireDefenderIfAny()
     {
         // If we already have a target that is alive and nearby, keep it
         if (currentDefenderTarget != null && currentDefenderTarget.IsAlive())
@@ -149,7 +149,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    void TryAttackDefender()
+    protected void TryAttackDefender()
     {
         if (currentDefenderTarget == null || !currentDefenderTarget.IsAlive())
         {

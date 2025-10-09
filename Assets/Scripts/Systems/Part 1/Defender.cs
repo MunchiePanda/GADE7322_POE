@@ -20,7 +20,7 @@ public class Defender : MonoBehaviour
     [SerializeField] private float healthUpgradeAmount = 15f;
     [SerializeField] private float damageUpgradeAmount = 2f;
 
-    private float lastAttackTime = -999f;
+    public float lastAttackTime = -999f;
     protected Enemy currentEnemyTarget;
     private GameManager gameManager;
 
@@ -37,7 +37,7 @@ public class Defender : MonoBehaviour
         TryAttackEnemy();
     }
 
-    void AcquireEnemyIfAny()
+    protected void AcquireEnemyIfAny()
     {
         if (currentEnemyTarget != null)
         {
