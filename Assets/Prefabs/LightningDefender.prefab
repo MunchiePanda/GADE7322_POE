@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 166026154423719839}
-  - component: {fileID: 8145807544834370341}
+  - component: {fileID: 2205190773371364875}
   m_Layer: 0
   m_Name: LightningDefender
   m_TagString: Untagged
@@ -34,7 +34,7 @@ Transform:
   - {fileID: 8619023972692020264}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8145807544834370341
+--- !u!114 &2205190773371364875
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -43,23 +43,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 4414111203060204694}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 32da545d4c2622449b39eca8c9393b91, type: 3}
+  m_Script: {fileID: 11500000, guid: 9c9109248bd1c4a429adef524ef3aed7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hitPoints: 8
-  attackDamage: 20
-  attackIntervalSeconds: 0.2
-  attackRange: 10
+  hitPoints: 5
+  attackDamage: 10
+  attackIntervalSeconds: 0.8
+  attackRange: 5
   enemyMask:
     serializedVersion: 2
     m_Bits: 128
   projectilePrefab: {fileID: 3042168292579264235, guid: 08f5d52e29511724285bc83cbd906ec6, type: 3}
-  projectileSpawnPoint: {fileID: 1366413802540446164}
+  projectileSpawnPoint: {fileID: 8619023972692020264}
   projectileSpeed: 10
   healthUpgradeCost: 30
   damageUpgradeCost: 40
   healthUpgradeAmount: 15
   damageUpgradeAmount: 2
+  lastAttackTime: -999
+  maxChainTargets: 3
+  chainRange: 4
+  chainDamageReduction: 0.8
+  lightningEffectPrefab: {fileID: 0}
+  lightningLine: {fileID: 0}
 --- !u!1 &5197257281517026576
 GameObject:
   m_ObjectHideFlags: 0

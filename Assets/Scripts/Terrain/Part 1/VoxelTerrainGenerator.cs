@@ -579,7 +579,6 @@ public class VoxelTerrainGenerator : MonoBehaviour
             highlight.transform.position = worldPos;
             highlight.transform.localScale = Vector3.one * 0.8f;
             highlight.name = "DefenderPlacementHighlight";
-            highlight.tag = "DefenderPlacementHighlight";
             
             // Make it semi-transparent green
             Renderer renderer = highlight.GetComponent<Renderer>();
@@ -598,11 +597,14 @@ public class VoxelTerrainGenerator : MonoBehaviour
     /// </summary>
     public void ClearPlacementHighlights()
     {
-        // Find and destroy all highlight objects
-        GameObject[] highlights = GameObject.FindGameObjectsWithTag("DefenderPlacementHighlight");
-        foreach (GameObject highlight in highlights)
+        // Find and destroy all highlight objects by name instead of tag
+        GameObject[] allObjects = FindObjectsOfType<GameObject>();
+        foreach (GameObject obj in allObjects)
         {
-            Destroy(highlight);
+            if (obj.name == "DefenderPlacementHighlight")
+            {
+                Destroy(obj);
+            }
         }
     }
 }

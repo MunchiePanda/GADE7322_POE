@@ -74,7 +74,16 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         if (previewPrefab != null)
         {
             previewObject = Instantiate(previewPrefab);
-            previewObject.GetComponent<Renderer>().material = invalidPlacementMaterial;
+            // Check if renderer exists before accessing it
+            Renderer renderer = previewObject.GetComponent<Renderer>();
+            if (renderer != null)
+            {
+                renderer.material = invalidPlacementMaterial;
+            }
+            else
+            {
+                Debug.LogWarning($"Preview prefab {previewPrefab.name} has no Renderer component!");
+            }
         }
         else
         {
@@ -116,6 +125,10 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
             if (renderer != null)
             {
                 renderer.material = isValidPlacement ? validPlacementMaterial : invalidPlacementMaterial;
+            }
+            else
+            {
+                Debug.LogWarning("Preview object has no Renderer component for visual feedback!");
             }
         }
     }
