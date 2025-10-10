@@ -102,11 +102,8 @@ public class Defender : MonoBehaviour
         hitPoints--;
         if (hitPoints <= 0)
         {
-            ExplosionEffect explosionEffect = GetComponent<ExplosionEffect>();
-            if (explosionEffect != null)
-            {
-                explosionEffect.PlayExplosion();
-            }
+            // Play explosion effect if available
+            // Note: ExplosionEffect script was removed - add particle effects here if needed
             Destroy(gameObject);
         }
     }

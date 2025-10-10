@@ -193,12 +193,8 @@ public class Enemy : MonoBehaviour
     {
         Debug.Log("Enemy died!");
 
-        // Play explosion effect
-        ExplosionEffect explosionEffect = GetComponent<ExplosionEffect>();
-        if (explosionEffect != null)
-        {
-            explosionEffect.PlayExplosion();
-        }
+        // Play explosion effect if available
+        // Note: ExplosionEffect script was removed - add particle effects here if needed
 
         if (gameManager != null)
         {

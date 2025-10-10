@@ -2532,7 +2532,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1117801837}
   - component: {fileID: 1117801836}
-  - component: {fileID: 1117801838}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -2593,28 +2592,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1117801838
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1117801835}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c483baf30f9b9234c870c4df35d058ba, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mainCamera: {fileID: 330585545}
-  gameManager: {fileID: 1117801836}
-  placementPlaneMask:
-    serializedVersion: 2
-    m_Bits: 64
-  terrainGenerator: {fileID: 1975398409}
-  defenderPrefab: {fileID: 4414111203060204694, guid: c4b2c8828ec9be54b8b58fd73b10808a, type: 3}
-  maxDefenderLocations: 3
-  placementMarkerPrefab: {fileID: 0}
-  placementHighlightPrefab: {fileID: 0}
 --- !u!1 &1189634346
 GameObject:
   m_ObjectHideFlags: 0
@@ -2892,60 +2869,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1322769847}
   m_CullTransparentMesh: 1
---- !u!1 &1451616393
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1451616395}
-  - component: {fileID: 1451616394}
-  m_Layer: 0
-  m_Name: DefenderPlacement
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1451616394
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1451616393}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c483baf30f9b9234c870c4df35d058ba, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mainCamera: {fileID: 330585545}
-  gameManager: {fileID: 1117801836}
-  placementPlaneMask:
-    serializedVersion: 2
-    m_Bits: 64
-  terrainGenerator: {fileID: 1975398409}
-  defenderPrefab: {fileID: 4414111203060204694, guid: c4b2c8828ec9be54b8b58fd73b10808a, type: 3}
-  maxDefenderLocations: 5
-  placementMarkerPrefab: {fileID: 3268727406298683723, guid: 944f9986885b8d54f9911345df1d6a79, type: 3}
-  placementHighlightPrefab: {fileID: 3268727406298683723, guid: 944f9986885b8d54f9911345df1d6a79, type: 3}
---- !u!4 &1451616395
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1451616393}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 85.6337, y: 0, z: 70.32521}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1492471692
 GameObject:
   m_ObjectHideFlags: 0
@@ -3138,7 +3061,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 27.25
+  m_fontSize: 26.85
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3367,7 +3290,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36.9
+  m_fontSize: 36.35
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -4011,6 +3934,10 @@ MonoBehaviour:
   atlasElevationScale: 5
   pathHighlightMaterial: {fileID: 2100000, guid: 97d113f65febef54d890efeb67730e47, type: 2}
   defenderHighlightMaterial: {fileID: 2100000, guid: b5aa66c28f25f7a4bba6dbc4289c4353, type: 2}
+  useEfficientHighlighting: 1
+  useSimplifiedHighlighting: 1
+  validPlacementMaterial: {fileID: 0}
+  invalidPlacementMaterial: {fileID: 0}
   treePrefab: {fileID: 4032642331417584291, guid: e133dac167ef59c40b7678ba58107c6a, type: 3}
   treeDensity: 0.007
   numPaths: 5
@@ -4315,7 +4242,6 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 1975398410}
-  - {fileID: 1451616395}
   - {fileID: 1117801837}
   - {fileID: 754197284}
   - {fileID: 790079341}
