@@ -18,6 +18,9 @@ public class Projectile : MonoBehaviour
 
     // Speed at which the projectile moves.
     private float speed;
+    
+    // Whether this projectile is a critical hit.
+    private bool isCriticalHit;
 
     // Flag to check if the projectile has been initialized.
     private bool isInitialized = false;
@@ -28,11 +31,13 @@ public class Projectile : MonoBehaviour
     /// <param name="targetTransform">The target the projectile will track.</param>
     /// <param name="damageAmount">The amount of damage the projectile will deal.</param>
     /// <param name="projectileSpeed">The speed at which the projectile will move.</param>
-    public void Initialize(Transform targetTransform, float damageAmount, float projectileSpeed)
+    /// <param name="criticalHit">Whether this is a critical hit.</param>
+    public void Initialize(Transform targetTransform, float damageAmount, float projectileSpeed, bool criticalHit = false)
     {
         target = targetTransform;
         damage = damageAmount;
         speed = projectileSpeed;
+        isCriticalHit = criticalHit;
         isInitialized = true;
     }
 
@@ -76,8 +81,16 @@ public class Projectile : MonoBehaviour
         Enemy enemy = target.GetComponent<Enemy>();
         if (enemy != null)
         {
-            Debug.Log($"Projectile hit target! Applying {damage} damage to {enemy.gameObject.name}");
+            Debug.Log($"Projectile hit target! Applying {damage} damage to {enemy.gameObject.name} (Critical: {isCriticalHit})");
             enemy.TakeDamage(damage);
+            
+            // Show damage number and screen shake for critical hits
+            CriticalHitSystem criticalSystem = FindFirstObjectByType<CriticalHitSystem>();
+            if (criticalSystem != null)
+            {
+                criticalSystem.ShowDamageNumber(damage, enemy.transform.position, isCriticalHit);
+                criticalSystem.TriggerScreenShake(isCriticalHit);
+            }
         }
         else
         {

@@ -172,6 +172,10 @@ public class Enemy : MonoBehaviour
         {
             lastAttackTime = time;
             targetTower.TakeDamage(attackDamage);
+            
+            // Enemy dies after first attack on tower
+            Debug.Log("Enemy attacked tower and will now die!");
+            Die();
         }
     }
 

@@ -23,10 +23,12 @@ public class Defender : MonoBehaviour
     public float lastAttackTime = -999f;
     protected Enemy currentEnemyTarget;
     private GameManager gameManager;
+    private CriticalHitSystem criticalHitSystem;
 
     protected virtual void Start()
     {
         gameManager = FindFirstObjectByType<GameManager>();
+        criticalHitSystem = FindFirstObjectByType<CriticalHitSystem>();
     }
 
     void Update()
@@ -82,6 +84,16 @@ public class Defender : MonoBehaviour
             return;
         }
 
+        // Calculate critical hit
+        bool isCritical = false;
+        float finalDamage = attackDamage;
+        
+        if (criticalHitSystem != null)
+        {
+            isCritical = criticalHitSystem.RollCriticalHit();
+            finalDamage = criticalHitSystem.CalculateDamage(attackDamage, isCritical);
+        }
+
         Vector3 spawnPosition = projectileSpawnPoint != null ? projectileSpawnPoint.position : transform.position;
         GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
         Projectile projectileComponent = projectile.GetComponent<Projectile>();
@@ -92,8 +104,17 @@ public class Defender : MonoBehaviour
             return;
         }
 
-        projectileComponent.Initialize(enemy.transform, attackDamage, projectileSpeed);
-        Debug.Log($"{gameObject.name} shot a projectile at {enemy.name}!");
+        // Initialize projectile with critical hit info
+        projectileComponent.Initialize(enemy.transform, finalDamage, projectileSpeed, isCritical);
+        
+        if (isCritical)
+        {
+            Debug.Log($"{gameObject.name} CRITICAL HIT! Damage: {finalDamage}");
+        }
+        else
+        {
+            Debug.Log($"{gameObject.name} shot a projectile at {enemy.name}!");
+        }
     }
 
     public void TakeDamage(float amount)

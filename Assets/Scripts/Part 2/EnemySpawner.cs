@@ -12,6 +12,9 @@ public class EnemySpawner : MonoBehaviour
     [Tooltip("Assign in Inspector: GameManager instance.")]
     public GameManager gameManager;
 
+    [Tooltip("Assign in Inspector: WaveCountdownUI component for displaying countdown.")]
+    public WaveCountdownUI waveCountdownUI;
+
     [Tooltip("Assign in Inspector: Prefabs for enemy types.")]
     public GameObject defaultEnemyPrefab;
     public GameObject fastEnemyPrefab;
@@ -35,7 +38,11 @@ public class EnemySpawner : MonoBehaviour
     [Tooltip("Factor by which enemy speed increases per wave.")]
     public float speedScalingFactor = 1.1f;
 
-    private int currentWave = 1;
+    [Header("Wave Timer")]
+    [Tooltip("Time to wait between waves (seconds).")]
+    public float waveDelay = 10f;
+
+    private int currentWave = 0; // Start at 0 so first wave is 1
     private int enemiesRemainingInWave;
     private bool isSpawning = false;
     private List<GameObject> activeEnemies = new List<GameObject>();
@@ -44,6 +51,14 @@ public class EnemySpawner : MonoBehaviour
     {
         if (gameManager == null)
             gameManager = FindFirstObjectByType<GameManager>();
+
+        // Check if enemy prefabs are assigned
+        if (defaultEnemyPrefab == null)
+        {
+            Debug.LogError("EnemySpawner: No enemy prefabs assigned! Please assign at least defaultEnemyPrefab in the Inspector.");
+            enabled = false;
+            return;
+        }
 
         StartCoroutine(StartFirstWave());
     }
@@ -58,6 +73,31 @@ public class EnemySpawner : MonoBehaviour
     }
 
     /// <summary>
+    /// Starts the next wave with a delay timer.
+    /// </summary>
+    IEnumerator StartNextWaveWithDelay()
+    {
+        Debug.Log($"Wave {currentWave} complete! Next wave starting in {waveDelay} seconds...");
+        
+        // Start the countdown UI
+        if (waveCountdownUI != null)
+        {
+            waveCountdownUI.StartCountdown(waveDelay);
+        }
+        
+        // Wait for the delay
+        yield return new WaitForSeconds(waveDelay);
+        
+        // Stop the countdown UI
+        if (waveCountdownUI != null)
+        {
+            waveCountdownUI.StopCountdown();
+        }
+        
+        StartNextWave();
+    }
+
+    /// <summary>
     /// Starts the next wave with scaled enemy count and stats.
     /// </summary>
     public void StartNextWave()
@@ -67,6 +107,18 @@ public class EnemySpawner : MonoBehaviour
         currentWave++;
         enemiesRemainingInWave = Mathf.RoundToInt(initialWaveEnemyCount * Mathf.Pow(waveScalingFactor, currentWave - 1));
         isSpawning = true;
+
+        // Update GameManager's wave counter for UI display
+        if (gameManager != null)
+        {
+            gameManager.currentWave = currentWave;
+            
+            // Update critical hit system with new wave
+            if (gameManager.criticalHitSystem != null)
+            {
+                gameManager.criticalHitSystem.SetCurrentWave(currentWave);
+            }
+        }
 
         Debug.Log($"Starting Wave {currentWave} with {enemiesRemainingInWave} enemies.");
         StartCoroutine(SpawnWave());
@@ -78,15 +130,18 @@ public class EnemySpawner : MonoBehaviour
     IEnumerator SpawnWave()
     {
         int enemiesSpawned = 0;
+        Debug.Log($"Starting to spawn {enemiesRemainingInWave} enemies for Wave {currentWave}");
+        
         while (enemiesSpawned < enemiesRemainingInWave)
         {
             SpawnRandomEnemy();
             enemiesSpawned++;
+            Debug.Log($"Spawned enemy {enemiesSpawned}/{enemiesRemainingInWave} for Wave {currentWave}");
             yield return new WaitForSeconds(spawnInterval);
         }
 
         isSpawning = false;
-        Debug.Log($"Wave {currentWave} complete. Waiting for all enemies to die...");
+        Debug.Log($"Wave {currentWave} spawning complete. Waiting for all enemies to die... Active enemies: {activeEnemies.Count}");
     }
 
     /// <summary>
@@ -188,8 +243,8 @@ public class EnemySpawner : MonoBehaviour
         // Check if wave is complete and no enemies are left
         if (!isSpawning && activeEnemies.Count == 0)
         {
-            Debug.Log($"All enemies in Wave {currentWave} defeated!");
-            StartNextWave(); // Start the next wave
+            Debug.Log($"All enemies in Wave {currentWave} defeated! Active enemies: {activeEnemies.Count}");
+            StartCoroutine(StartNextWaveWithDelay()); // Start the next wave after delay
         }
     }
 }

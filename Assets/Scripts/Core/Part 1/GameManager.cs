@@ -30,6 +30,8 @@ public class GameManager : MonoBehaviour
     public float healthScalingFactor = 1.2f;
     [Tooltip("Multiplier for increasing enemy speed per wave.")]
     public float speedScalingFactor = 1.1f;
+    [Tooltip("Time to wait between waves (seconds).")]
+    public float waveDelay = 10f;
 
     [Header("Defenders & Resources")]
     [Tooltip("Prefab for the basic defender that the player can place on the terrain.")]
@@ -66,6 +68,10 @@ public class GameManager : MonoBehaviour
     public GameOverUI gameOverUI;
     [Tooltip("UI panel for pausing the game.")]
     public PauseMenuUI pauseMenuUI;
+    [Tooltip("UI element for displaying the wave countdown timer.")]
+    public WaveCountdownUI waveCountdownUI;
+    [Tooltip("Critical hit system for enhanced combat feedback.")]
+    public CriticalHitSystem criticalHitSystem;
 
     
 
@@ -73,8 +79,8 @@ public class GameManager : MonoBehaviour
     private GameObject towerInstance;
     public GameObject TowerInstance { get { return towerInstance; } }
 
-    // Current wave number (starts at 1).
-    public int currentWave = 1;
+    // Current wave number (starts at 0, will be updated by EnemySpawner).
+    public int currentWave = 0;
 
     // Current resources available to the player.
     private int resources = 0;
@@ -138,6 +144,14 @@ public class GameManager : MonoBehaviour
         enemySpawner.waveScalingFactor = waveScalingFactor;
         enemySpawner.healthScalingFactor = healthScalingFactor;
         enemySpawner.speedScalingFactor = speedScalingFactor;
+        enemySpawner.waveDelay = waveDelay;
+        enemySpawner.waveCountdownUI = waveCountdownUI;
+        
+        // Initialize critical hit system
+        if (criticalHitSystem == null)
+        {
+            criticalHitSystem = gameObject.AddComponent<CriticalHitSystem>();
+        }
     }
 
     void Update()
