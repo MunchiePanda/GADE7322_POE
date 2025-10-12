@@ -163,6 +163,13 @@ public class EnemySpawner : MonoBehaviour
 
         List<Vector3Int> randomPath = paths[Random.Range(0, paths.Count)];
         Vector3 spawnPosition = new Vector3(randomPath[0].x, gameManager.terrainGenerator.height, randomPath[0].z);
+        
+        // Special spawn height for armored dragons (more important, spawn higher)
+        if (enemyPrefab == armoredDragonPrefab)
+        {
+            spawnPosition.y += 3f; // Spawn 3 units higher for more importance
+            Debug.Log("Armored Dragon spawning with elevated importance!");
+        }
 
         // Instantiate the enemy
         if (enemyPrefab == null)

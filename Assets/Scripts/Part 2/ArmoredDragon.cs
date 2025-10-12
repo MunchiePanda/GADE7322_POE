@@ -30,25 +30,32 @@ public class ArmoredDragon : Enemy
         attackIntervalSeconds = 2.5f; // Slow attack speed
         originalMaxHealth = maxHealth;
         
-        // Visual setup
-        transform.localScale *= 1.3f; // Larger than regular enemies
+        // Visual setup - Make it significantly bigger for more importance
+        transform.localScale *= 1.8f; // Much larger than regular enemies (was 1.3f)
         
         Renderer renderer = GetComponent<Renderer>();
         if (renderer != null)
         {
-            renderer.material.color = Color.gray;
+            // Make it more distinct with a darker, more metallic color
+            renderer.material.color = new Color(0.3f, 0.3f, 0.4f, 1f); // Dark metallic blue-gray
         }
         else
         {
             // Add a renderer if none exists
             renderer = gameObject.AddComponent<MeshRenderer>();
             Material mat = new Material(Shader.Find("Standard"));
-            mat.color = Color.gray;
+            mat.color = new Color(0.3f, 0.3f, 0.4f, 1f); // Dark metallic blue-gray
             renderer.material = mat;
         }
         
         // Add armor visual effect
         AddArmorVisuals();
+        
+        // Add imposing visual effects for importance
+        AddImposingVisuals();
+        
+        // Add dramatic spawn effect
+        StartCoroutine(DramaticSpawnEffect());
     }
 
     public override void TakeDamage(float amount)
@@ -152,5 +159,96 @@ public class ArmoredDragon : Enemy
         }
 
         Destroy(gameObject);
+    }
+    
+    /// <summary>
+    /// Adds imposing visual effects to make the dragon look more important
+    /// </summary>
+    void AddImposingVisuals()
+    {
+        // Add a subtle glow effect by creating a child object with a light
+        GameObject glowObject = new GameObject("ArmorGlow");
+        glowObject.transform.SetParent(transform);
+        glowObject.transform.localPosition = Vector3.zero;
+        glowObject.transform.localScale = Vector3.one * 1.2f; // Slightly larger than the dragon
+        
+        // Add a point light for the glow effect
+        Light glowLight = glowObject.AddComponent<Light>();
+        glowLight.type = LightType.Point;
+        glowLight.color = new Color(0.2f, 0.3f, 0.8f, 1f); // Blue glow
+        glowLight.intensity = 0.5f;
+        glowLight.range = 8f;
+        
+        // Add a subtle pulsing effect
+        StartCoroutine(PulseGlow(glowLight));
+    }
+    
+    /// <summary>
+    /// Creates a subtle pulsing glow effect
+    /// </summary>
+    System.Collections.IEnumerator PulseGlow(Light glowLight)
+    {
+        float baseIntensity = glowLight.intensity;
+        float time = 0f;
+        
+        while (glowLight != null)
+        {
+            time += Time.deltaTime;
+            glowLight.intensity = baseIntensity + Mathf.Sin(time * 2f) * 0.2f; // Subtle pulsing
+            yield return null;
+        }
+    }
+    
+    /// <summary>
+    /// Creates a dramatic spawn effect for the armored dragon
+    /// </summary>
+    System.Collections.IEnumerator DramaticSpawnEffect()
+    {
+        // Start with the dragon slightly transparent and smaller
+        Vector3 originalScale = transform.localScale;
+        transform.localScale = originalScale * 0.5f;
+        
+        // Make it transparent initially
+        Renderer renderer = GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            Color originalColor = renderer.material.color;
+            Color transparentColor = new Color(originalColor.r, originalColor.g, originalColor.b, 0.3f);
+            renderer.material.color = transparentColor;
+        }
+        
+        // Animate the dragon growing and becoming opaque
+        float duration = 1.5f; // 1.5 seconds for dramatic effect
+        float elapsed = 0f;
+        
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = elapsed / duration;
+            
+            // Scale up from 0.5x to full size
+            transform.localScale = Vector3.Lerp(originalScale * 0.5f, originalScale, progress);
+            
+            // Fade in from transparent to opaque
+            if (renderer != null)
+            {
+                Color currentColor = renderer.material.color;
+                currentColor.a = Mathf.Lerp(0.3f, 1f, progress);
+                renderer.material.color = currentColor;
+            }
+            
+            yield return null;
+        }
+        
+        // Ensure final values are correct
+        transform.localScale = originalScale;
+        if (renderer != null)
+        {
+            Color finalColor = renderer.material.color;
+            finalColor.a = 1f;
+            renderer.material.color = finalColor;
+        }
+        
+        Debug.Log("Armored Dragon has fully materialized with imposing presence!");
     }
 }

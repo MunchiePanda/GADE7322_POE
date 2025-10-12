@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9fa36ce71b569549a486ca5e298fb99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 10
+  maxHealth: 2
   currentHealth: 0
   moveSpeed: 2.5
   attackDamage: 2
@@ -248,7 +248,8 @@ Animation:
   m_Enabled: 1
   serializedVersion: 4
   m_Animation: {fileID: -7710415605997073860, guid: 4cb9a3ce33d50284ab516bd908076a24, type: 3}
-  m_Animations: []
+  m_Animations:
+  - {fileID: -7710415605997073860, guid: 4cb9a3ce33d50284ab516bd908076a24, type: 3}
   m_WrapMode: 0
   m_PlayAutomatically: 1
   m_AnimatePhysics: 0
