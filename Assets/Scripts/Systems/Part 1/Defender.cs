@@ -1,9 +1,13 @@
 using UnityEngine;
+using GADE7322_POE.Core;
 
 public class Defender : MonoBehaviour
 {
     [Header("Stats")]
     [SerializeField] protected int hitPoints = 5;
+    
+    // Health component reference
+    private Health healthComponent;
 
     [Header("Combat")]
     [SerializeField] protected float attackDamage = 10f;
@@ -29,6 +33,18 @@ public class Defender : MonoBehaviour
     {
         gameManager = FindFirstObjectByType<GameManager>();
         criticalHitSystem = FindFirstObjectByType<CriticalHitSystem>();
+        
+        // Get the Health component
+        healthComponent = GetComponent<Health>();
+        if (healthComponent == null)
+        {
+            Debug.LogError($"Defender {gameObject.name} is missing Health component!");
+        }
+        else
+        {
+            // Set up the OnDeath event to notify performance tracker
+            healthComponent.OnDeath.AddListener(OnDefenderDeath);
+        }
     }
 
     void Update()
@@ -120,17 +136,35 @@ public class Defender : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (!IsAlive()) return;
-        hitPoints--;
-        if (hitPoints <= 0)
+        
+        Debug.Log($"Defender taking {amount} damage!");
+        
+        // Use Health component if available, otherwise use hit points system
+        if (healthComponent != null)
         {
-            // Play explosion effect if available
-            // Note: ExplosionEffect script was removed - add particle effects here if needed
-            Destroy(gameObject);
+            healthComponent.TakeDamage(amount);
+        }
+        else
+        {
+            // Fallback to hit points system
+            hitPoints -= Mathf.RoundToInt(amount);
+            Debug.Log($"Defender took {amount} damage! Hit points remaining: {hitPoints}");
+            
+            if (hitPoints <= 0)
+            {
+                Debug.Log($"Defender destroyed by {amount} damage!");
+                NotifyDefenderLoss();
+                Destroy(gameObject);
+            }
         }
     }
 
     public bool IsAlive()
     {
+        if (healthComponent != null)
+        {
+            return healthComponent.CurrentHealth > 0;
+        }
         return hitPoints > 0;
     }
 
@@ -159,5 +193,25 @@ public class Defender : MonoBehaviour
             return true;
         }
         return false;
+    }
+    
+    /// <summary>
+    /// Called when the defender dies (via Health component)
+    /// </summary>
+    private void OnDefenderDeath()
+    {
+        Debug.Log($"Defender {gameObject.name} died!");
+        NotifyDefenderLoss();
+    }
+    
+    /// <summary>
+    /// Notifies the performance tracker of defender loss
+    /// </summary>
+    private void NotifyDefenderLoss()
+    {
+        if (gameManager != null && gameManager.performanceTracker != null)
+        {
+            gameManager.performanceTracker.OnDefenderLost();
+        }
     }
 }

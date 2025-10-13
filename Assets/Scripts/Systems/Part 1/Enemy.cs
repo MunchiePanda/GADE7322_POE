@@ -19,7 +19,7 @@ public class Enemy : MonoBehaviour
         }
     }
     [Header("Stats")]
-    [SerializeField] protected float maxHealth = 50f;
+    [SerializeField] protected float maxHealth = 10f;
     [SerializeField] protected float currentHealth = 0f;
     [SerializeField] protected float moveSpeed = 2.5f;
     [SerializeField] protected float attackDamage = 5f;
@@ -59,6 +59,8 @@ public class Enemy : MonoBehaviour
     public void SetMaxHealth(float value) { maxHealth = value; }
     public void SetCurrentHealth(float value) { currentHealth = value; }
     public void SetMoveSpeed(float value) { moveSpeed = value; }
+    public float GetAttackDamage() { return attackDamage; }
+    public void SetAttackDamage(float value) { attackDamage = value; }
 
     protected virtual void Start()
     {
@@ -133,6 +135,8 @@ public class Enemy : MonoBehaviour
 
         currentDefenderTarget = null;
         Collider[] hits = Physics.OverlapSphere(transform.position, detectionRange);
+        Debug.Log($"Enemy {gameObject.name} found {hits.Length} objects in detection range {detectionRange}");
+        
         float nearest = float.MaxValue;
         foreach (var hit in hits)
         {
@@ -140,12 +144,18 @@ public class Enemy : MonoBehaviour
             if (defender != null && defender.IsAlive())
             {
                 float d = Vector3.Distance(transform.position, defender.transform.position);
+                Debug.Log($"Enemy {gameObject.name} found defender {defender.name} at distance {d}");
                 if (d < nearest)
                 {
                     nearest = d;
                     currentDefenderTarget = defender;
                 }
             }
+        }
+        
+        if (currentDefenderTarget != null)
+        {
+            Debug.Log($"Enemy {gameObject.name} acquired defender target: {currentDefenderTarget.name}");
         }
     }
 
@@ -161,6 +171,7 @@ public class Enemy : MonoBehaviour
         if (time - lastAttackTime >= attackIntervalSeconds)
         {
             lastAttackTime = time;
+            Debug.Log($"Enemy {gameObject.name} attacking defender {currentDefenderTarget.name} for {attackDamage} damage!");
             currentDefenderTarget.TakeDamage(attackDamage);
         }
     }
@@ -181,28 +192,45 @@ public class Enemy : MonoBehaviour
 
     public virtual void TakeDamage(float amount)
     {
-        Debug.Log($"Enemy taking {amount} damage. Current health before damage: {currentHealth}");
+        // Prevent damage if already dead
+        if (currentHealth <= 0f)
+        {
+            Debug.Log($"Enemy {gameObject.name} is already dead, ignoring damage");
+            return;
+        }
+        
+        Debug.Log($"Enemy {gameObject.name} taking {amount} damage. Current health before damage: {currentHealth}");
         currentHealth -= amount;
-        Debug.Log($"Enemy health after damage: {currentHealth}");
+        Debug.Log($"Enemy {gameObject.name} health after damage: {currentHealth}");
 
         if (currentHealth <= 0f)
         {
-            Debug.Log("Enemy health reached zero. Calling Die().");
+            Debug.Log($"Enemy {gameObject.name} health reached zero. Calling Die().");
             currentHealth = 0f; // Ensure health doesn't go negative
             Die();
         }
     }
 
-    void Die()
+    private bool isDead = false;
+    
+    protected virtual void Die()
     {
-        Debug.Log("Enemy died!");
+        // Prevent multiple death calls
+        if (isDead)
+        {
+            Debug.Log($"Enemy {gameObject.name} already dead, ignoring duplicate death call");
+            return;
+        }
+        
+        isDead = true;
+        Debug.Log($"Enemy {gameObject.name} died!");
 
         // Play explosion effect if available
         // Note: ExplosionEffect script was removed - add particle effects here if needed
 
         if (gameManager != null)
         {
-            Debug.Log("Adding resources and notifying spawner.");
+            Debug.Log($"Adding resources and notifying spawner for {gameObject.name}");
             // Add a random amount of resources within the specified range
             int resourceReward = Random.Range(minResourceRewardOnDeath, maxResourceRewardOnDeath + 1);
             gameManager.AddResources(resourceReward);
@@ -214,7 +242,7 @@ public class Enemy : MonoBehaviour
             }
         }
 
-        Debug.Log("Destroying enemy object.");
+        Debug.Log($"Destroying enemy object: {gameObject.name}");
         Destroy(gameObject);
     }
 }

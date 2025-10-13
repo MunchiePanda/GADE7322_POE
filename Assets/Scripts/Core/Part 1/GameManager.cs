@@ -72,8 +72,9 @@ public class GameManager : MonoBehaviour
     public WaveCountdownUI waveCountdownUI;
     [Tooltip("Critical hit system for enhanced combat feedback.")]
     public CriticalHitSystem criticalHitSystem;
-
     
+    [Tooltip("Performance tracker for adaptive difficulty scaling.")]
+    public PlayerPerformanceTracker performanceTracker;
 
     // Reference to the instantiated tower in the scene.
     private GameObject towerInstance;
@@ -151,6 +152,22 @@ public class GameManager : MonoBehaviour
         if (criticalHitSystem == null)
         {
             criticalHitSystem = gameObject.AddComponent<CriticalHitSystem>();
+        }
+        
+        // Initialize performance tracker
+        if (performanceTracker == null)
+        {
+            performanceTracker = GetComponent<PlayerPerformanceTracker>();
+            if (performanceTracker == null)
+            {
+                performanceTracker = gameObject.AddComponent<PlayerPerformanceTracker>();
+            }
+        }
+        
+        // Connect performance tracker to enemy spawner
+        if (enemySpawner != null && performanceTracker != null)
+        {
+            enemySpawner.performanceTracker = performanceTracker;
         }
     }
 
@@ -243,6 +260,12 @@ public class GameManager : MonoBehaviour
         resources += amount;
         if (resourceCounterUI != null)
             resourceCounterUI.SetResource(resources);
+            
+        // Notify performance tracker of resource gain
+        if (performanceTracker != null)
+        {
+            performanceTracker.OnResourcesGained(amount);
+        }
     }
 
     /// <summary>
@@ -257,6 +280,12 @@ public class GameManager : MonoBehaviour
             resources -= amount;
             if (resourceCounterUI != null)
                 resourceCounterUI.SetResource(resources);
+                
+            // Notify performance tracker of resource spending
+            if (performanceTracker != null)
+            {
+                performanceTracker.OnResourcesSpent(amount);
+            }
             return true;
         }
         return false;

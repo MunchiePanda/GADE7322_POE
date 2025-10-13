@@ -109,13 +109,11 @@ public class Projectile : MonoBehaviour
     {
         Debug.Log($"Projectile collided with {other.gameObject.name}");
 
-        // Check if the collider belongs to an enemy.
-        Enemy enemy = other.GetComponent<Enemy>();
-        if (enemy != null)
+        // Only handle collision if we haven't already hit our target
+        if (target != null && other.transform == target)
         {
-            Debug.Log($"Enemy found: {enemy.gameObject.name}, applying {damage} damage");
-            enemy.TakeDamage(damage);
-            Destroy(gameObject);
+            Debug.Log("Projectile hit its intended target via collision");
+            HitTarget();
         }
         // Destroy the projectile if it hits the terrain.
         else if (other.CompareTag("Terrain"))

@@ -34,7 +34,7 @@ public class KamikazeDragon : Enemy
         maxHealth = 8f;          // Low health
         currentHealth = maxHealth;
         attackDamage = 0f;       // No regular attack damage (explodes instead)
-        detectionRange = 10f;    // Long detection range
+        detectionRange = 15f;    // Long detection range
         originalSpeed = moveSpeed;
         
         // Visual setup
@@ -160,13 +160,17 @@ public class KamikazeDragon : Enemy
         
         // Deal explosion damage to nearby targets
         Collider[] explosionHits = Physics.OverlapSphere(transform.position, explosionRadius);
+        Debug.Log($"Explosion hit {explosionHits.Length} objects in radius {explosionRadius}");
         
         foreach (Collider hit in explosionHits)
         {
+            Debug.Log($"Explosion hit: {hit.name}");
+            
             // Damage defenders
             Defender defender = hit.GetComponent<Defender>();
             if (defender != null)
             {
+                Debug.Log($"Explosion damaging defender {defender.name} for {explosionDamage} damage!");
                 defender.TakeDamage(explosionDamage);
             }
             

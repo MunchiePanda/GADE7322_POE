@@ -158,6 +158,7 @@ public class ArmoredDragon : Enemy
             }
         }
 
+        Debug.Log($"Destroying Armored Dragon: {gameObject.name}");
         Destroy(gameObject);
     }
     

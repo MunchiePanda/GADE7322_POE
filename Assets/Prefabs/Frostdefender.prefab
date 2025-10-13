@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 166026154423719839}
   - component: {fileID: -6271887849456716587}
+  - component: {fileID: 787697642100830334}
   m_Layer: 0
   m_Name: Frostdefender
   m_TagString: Untagged
@@ -69,6 +70,26 @@ MonoBehaviour:
   frostLine: {fileID: 0}
   frostProjectilePrefab: {fileID: 0}
   frostColor: {r: 0, g: 1, b: 1, a: 1}
+--- !u!114 &787697642100830334
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4414111203060204694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f32f8bd87d00a04e964ae06e217dae5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MaxHealth: 100
+  CurrentHealth: 0
+  OnTakeDamage:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDeath:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &5197257281517026576
 GameObject:
   m_ObjectHideFlags: 0
@@ -396,7 +417,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: b8b8a4d303f86154793fb667499b6550, type: 3}
       propertyPath: 'm_Materials.Array.data[4]'
       value: 
-      objectReference: {fileID: 2100000, guid: b5aa66c28f25f7a4bba6dbc4289c4353, type: 2}
+      objectReference: {fileID: 2100000, guid: 590c195661ebb444798ba2bffce6f7a7, type: 2}
     - target: {fileID: 919132149155446097, guid: b8b8a4d303f86154793fb667499b6550, type: 3}
       propertyPath: m_Name
       value: tower

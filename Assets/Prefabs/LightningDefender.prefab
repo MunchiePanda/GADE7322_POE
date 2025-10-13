@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 166026154423719839}
   - component: {fileID: 2205190773371364875}
+  - component: {fileID: 1866280684419928503}
   m_Layer: 0
   m_Name: LightningDefender
   m_TagString: Untagged
@@ -68,6 +69,26 @@ MonoBehaviour:
   lightningLine: {fileID: 0}
   lightningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   lightningProjectilePrefab: {fileID: 0}
+--- !u!114 &1866280684419928503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4414111203060204694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f32f8bd87d00a04e964ae06e217dae5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MaxHealth: 100
+  CurrentHealth: 0
+  OnTakeDamage:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDeath:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &5197257281517026576
 GameObject:
   m_ObjectHideFlags: 0
@@ -387,7 +408,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: b8b8a4d303f86154793fb667499b6550, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
-      objectReference: {fileID: 2100000, guid: 59613139d0a3e03498542a2377b36d74, type: 2}
+      objectReference: {fileID: 2100000, guid: 103243cca893e5d4ea88309c6d80e6f0, type: 2}
     - target: {fileID: -7511558181221131132, guid: b8b8a4d303f86154793fb667499b6550, type: 3}
       propertyPath: 'm_Materials.Array.data[2]'
       value: 
@@ -395,11 +416,11 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: b8b8a4d303f86154793fb667499b6550, type: 3}
       propertyPath: 'm_Materials.Array.data[3]'
       value: 
-      objectReference: {fileID: 2100000, guid: 103243cca893e5d4ea88309c6d80e6f0, type: 2}
+      objectReference: {fileID: 2100000, guid: 59613139d0a3e03498542a2377b36d74, type: 2}
     - target: {fileID: -7511558181221131132, guid: b8b8a4d303f86154793fb667499b6550, type: 3}
       propertyPath: 'm_Materials.Array.data[4]'
       value: 
-      objectReference: {fileID: 2100000, guid: b5aa66c28f25f7a4bba6dbc4289c4353, type: 2}
+      objectReference: {fileID: 2100000, guid: 103243cca893e5d4ea88309c6d80e6f0, type: 2}
     - target: {fileID: 919132149155446097, guid: b8b8a4d303f86154793fb667499b6550, type: 3}
       propertyPath: m_Name
       value: tower
