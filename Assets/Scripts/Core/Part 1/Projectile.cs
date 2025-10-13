@@ -68,6 +68,7 @@ public class Projectile : MonoBehaviour
         float distanceToTarget = Vector3.Distance(transform.position, target.position);
         if (distanceToTarget < 0.5f)
         {
+            Debug.Log($"Projectile reached target! Distance: {distanceToTarget:F2}");
             HitTarget();
         }
     }
@@ -107,18 +108,18 @@ public class Projectile : MonoBehaviour
     /// <param name="other">The collider the projectile hit.</param>
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"Projectile collided with {other.gameObject.name}");
+        // Debug logging disabled
 
         // Only handle collision if we haven't already hit our target
         if (target != null && other.transform == target)
         {
-            Debug.Log("Projectile hit its intended target via collision");
+            // Debug logging disabled
             HitTarget();
         }
         // Destroy the projectile if it hits the terrain.
         else if (other.CompareTag("Terrain"))
         {
-            Debug.Log("Projectile hit terrain, destroying");
+            // Debug logging disabled
             Destroy(gameObject);
         }
     }

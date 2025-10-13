@@ -52,6 +52,13 @@ public class DefenderShopManager : MonoBehaviour
     [Tooltip("Reference to the game manager")]
     public GameManager gameManager;
     
+    [Header("Progressive Unlocking")]
+    [Tooltip("Wave when frost tower becomes available (after bomber introduction)")]
+    public int frostTowerUnlockWave = 3; // After wave 2 (bomber introduced)
+    
+    [Tooltip("Wave when lightning tower becomes available (after armored dragon introduction)")]
+    public int lightningTowerUnlockWave = 6; // After armored dragon threshold
+    
     private void Start()
     {
         // Find game manager if not assigned
@@ -116,17 +123,80 @@ public class DefenderShopManager : MonoBehaviour
     
     private void Update()
     {
-        // Update button states based on available resources
+        // Update button states based on available resources and wave progression
         if (gameManager != null)
         {
             int resources = gameManager.GetResources();
+            int currentWave = gameManager.currentWave;
             
+            // Basic defender is always available
             if (basicDefenderButton != null)
                 basicDefenderButton.interactable = resources >= basicDefenderCost;
+            
+            // Frost tower unlocks after wave 2 (when bomber is introduced)
             if (frostTowerButton != null)
-                frostTowerButton.interactable = resources >= frostTowerCost;
+            {
+                bool isUnlocked = currentWave >= frostTowerUnlockWave;
+                bool hasResources = resources >= frostTowerCost;
+                frostTowerButton.interactable = isUnlocked && hasResources;
+                
+                // Update button appearance to show locked state
+                UpdateButtonLockState(frostTowerButton, isUnlocked, currentWave, frostTowerUnlockWave);
+            }
+            
+            // Lightning tower unlocks after armored dragon threshold
             if (lightningTowerButton != null)
-                lightningTowerButton.interactable = resources >= lightningTowerCost;
+            {
+                bool isUnlocked = currentWave >= lightningTowerUnlockWave;
+                bool hasResources = resources >= lightningTowerCost;
+                lightningTowerButton.interactable = isUnlocked && hasResources;
+                
+                // Update button appearance to show locked state
+                UpdateButtonLockState(lightningTowerButton, isUnlocked, currentWave, lightningTowerUnlockWave);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Updates button appearance to show locked/unlocked state
+    /// </summary>
+    void UpdateButtonLockState(Button button, bool isUnlocked, int currentWave, int unlockWave)
+    {
+        if (button == null) return;
+        
+        // Get the button's image component
+        Image buttonImage = button.GetComponent<Image>();
+        if (buttonImage == null) return;
+        
+        if (isUnlocked)
+        {
+            // Button is unlocked - normal appearance
+            buttonImage.color = Color.white;
+        }
+        else
+        {
+            // Button is locked - grayed out appearance
+            buttonImage.color = Color.gray;
+        }
+        
+        // Update button text to show unlock requirement
+        TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (buttonText != null)
+        {
+            if (isUnlocked)
+            {
+                // Show normal cost
+                if (button == frostTowerButton)
+                    buttonText.text = $"Frost Tower\n{frostTowerCost} Resources";
+                else if (button == lightningTowerButton)
+                    buttonText.text = $"Lightning Tower\n{lightningTowerCost} Resources";
+            }
+            else
+            {
+                // Show unlock requirement
+                int wavesNeeded = unlockWave - currentWave;
+                buttonText.text = $"Locked\nUnlocks in {wavesNeeded} wave{(wavesNeeded == 1 ? "" : "s")}";
+            }
         }
     }
 }

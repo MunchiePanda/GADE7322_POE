@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -21,6 +22,15 @@ public class PlayerPerformanceTracker : MonoBehaviour
     
     [Tooltip("Time taken to complete current wave (seconds)")]
     public float waveCompletionTime { get; private set; } = 0f;
+    
+    [Tooltip("Average path progression of enemies (0-100%)")]
+    public float averageEnemyPathProgression { get; private set; } = 0f;
+    
+    [Tooltip("Maximum path progression reached by any enemy")]
+    public float maxEnemyPathProgression { get; private set; } = 0f;
+    
+    [Tooltip("Strategic placement score based on tower positioning")]
+    public float strategicPlacementScore { get; private set; } = 50f;
     
     [Tooltip("Resources spent in current wave")]
     public int resourcesSpentThisWave { get; private set; } = 0;
@@ -47,6 +57,12 @@ public class PlayerPerformanceTracker : MonoBehaviour
     [Tooltip("How much defender losses affect performance score")]
     public float defenderLossWeight = 10f;
     
+    [Tooltip("How much path progression affects performance score")]
+    public float pathProgressionWeight = 15f;
+    
+    [Tooltip("How much strategic placement affects performance score")]
+    public float strategicPlacementWeight = 10f;
+    
     [Header("Debug")]
     [Tooltip("Show performance calculations in console")]
     public bool showDebugInfo = true;
@@ -56,6 +72,11 @@ public class PlayerPerformanceTracker : MonoBehaviour
     private float waveStartTime;
     private float initialTowerHealth;
     private int initialDefenderCount;
+    
+    // Path progression tracking
+    private List<float> enemyPathProgressions = new List<float>();
+    private int totalEnemiesSpawned = 0;
+    private int totalEnemiesKilled = 0;
     
     void Start()
     {
@@ -95,9 +116,17 @@ public class PlayerPerformanceTracker : MonoBehaviour
         resourcesGainedThisWave = 0;
         waveCompletionTime = 0f;
         
+        // Reset path progression tracking
+        enemyPathProgressions.Clear();
+        totalEnemiesSpawned = 0;
+        totalEnemiesKilled = 0;
+        averageEnemyPathProgression = 0f;
+        maxEnemyPathProgression = 0f;
+        
         if (showDebugInfo)
         {
-            Debug.Log($"Performance Tracker: Wave started. Tower Health: {towerHealthPercentage:F1}%");
+            Debug.Log($"ADAPTIVE SCALING: Wave starting - Performance Level: {GetPerformanceLevel()}");
+            LogPlayerBehaviorAnalysis();
         }
     }
     
@@ -111,7 +140,10 @@ public class PlayerPerformanceTracker : MonoBehaviour
         
         if (showDebugInfo)
         {
-            Debug.Log($"Performance Tracker: Wave completed in {waveCompletionTime:F1}s. Performance Score: {performanceScore:F1}");
+            Debug.Log($"WAVE COMPLETED in {waveCompletionTime:F1}s - Performance: {GetPerformanceLevel()}");
+            LogWaveCompletionSummary();
+            LogPerformanceBreakdown();
+            LogScalingRecommendations();
         }
     }
     
@@ -121,12 +153,46 @@ public class PlayerPerformanceTracker : MonoBehaviour
     public void OnEnemyKilled()
     {
         enemiesKilledThisWave++;
+        totalEnemiesKilled++;
         UpdatePerformanceScore();
         
-        if (showDebugInfo)
+        // Removed excessive logging
+    }
+    
+    /// <summary>
+    /// Called when an enemy is spawned
+    /// </summary>
+    public void OnEnemySpawned()
+    {
+        totalEnemiesSpawned++;
+        // Removed excessive logging
+    }
+    
+    /// <summary>
+    /// Called to update enemy path progression
+    /// </summary>
+    public void OnEnemyPathProgression(float progressionPercentage)
+    {
+        enemyPathProgressions.Add(progressionPercentage);
+        
+        // Update max progression
+        if (progressionPercentage > maxEnemyPathProgression)
         {
-            Debug.Log($"Performance Tracker: Enemy killed. Total: {enemiesKilledThisWave}");
+            maxEnemyPathProgression = progressionPercentage;
         }
+        
+        // Calculate average progression
+        if (enemyPathProgressions.Count > 0)
+        {
+            float totalProgression = 0f;
+            foreach (float prog in enemyPathProgressions)
+            {
+                totalProgression += prog;
+            }
+            averageEnemyPathProgression = totalProgression / enemyPathProgressions.Count;
+        }
+        
+        UpdatePerformanceScore();
     }
     
     /// <summary>
@@ -137,10 +203,7 @@ public class PlayerPerformanceTracker : MonoBehaviour
         enemiesReachedTowerThisWave++;
         UpdatePerformanceScore();
         
-        if (showDebugInfo)
-        {
-            Debug.Log($"Performance Tracker: Enemy reached tower. Total: {enemiesReachedTowerThisWave}");
-        }
+        // Removed excessive logging
     }
     
     /// <summary>
@@ -151,10 +214,7 @@ public class PlayerPerformanceTracker : MonoBehaviour
         defendersLostThisWave++;
         UpdatePerformanceScore();
         
-        if (showDebugInfo)
-        {
-            Debug.Log($"Performance Tracker: Defender lost. Total: {defendersLostThisWave}");
-        }
+        // Removed excessive logging
     }
     
     /// <summary>
@@ -165,10 +225,7 @@ public class PlayerPerformanceTracker : MonoBehaviour
         resourcesSpentThisWave += amount;
         UpdatePerformanceScore();
         
-        if (showDebugInfo)
-        {
-            Debug.Log($"Performance Tracker: Resources spent: {amount}. Total: {resourcesSpentThisWave}");
-        }
+        // Removed excessive logging
     }
     
     /// <summary>
@@ -179,10 +236,7 @@ public class PlayerPerformanceTracker : MonoBehaviour
         resourcesGainedThisWave += amount;
         UpdatePerformanceScore();
         
-        if (showDebugInfo)
-        {
-            Debug.Log($"Performance Tracker: Resources gained: {amount}. Total: {resourcesGainedThisWave}");
-        }
+        // Removed excessive logging
     }
     
     /// <summary>
@@ -195,18 +249,15 @@ public class PlayerPerformanceTracker : MonoBehaviour
         float waveSpeedScore = CalculateWaveSpeedScore();
         float resourceEfficiencyScore = CalculateResourceEfficiencyScore();
         float defenderLossScore = CalculateDefenderLossScore();
+        float pathProgressionScore = CalculatePathProgressionScore();
+        float strategicPlacementScore = CalculateStrategicPlacementScore();
         
         performanceScore = towerHealthScore + killEfficiencyScore + waveSpeedScore + 
-                          resourceEfficiencyScore + defenderLossScore;
+                          resourceEfficiencyScore + defenderLossScore + pathProgressionScore + strategicPlacementScore;
         
         performanceScore = Mathf.Clamp(performanceScore, 0f, 100f);
         
-        if (showDebugInfo)
-        {
-            Debug.Log($"Performance Score: {performanceScore:F1} (Tower: {towerHealthScore:F1}, " +
-                     $"Kills: {killEfficiencyScore:F1}, Speed: {waveSpeedScore:F1}, " +
-                     $"Resources: {resourceEfficiencyScore:F1}, Defenders: {defenderLossScore:F1})");
-        }
+        // Removed detailed performance logging
     }
     
     /// <summary>
@@ -264,6 +315,62 @@ public class PlayerPerformanceTracker : MonoBehaviour
     }
     
     /// <summary>
+    /// Calculates score based on enemy path progression
+    /// </summary>
+    private float CalculatePathProgressionScore()
+    {
+        if (totalEnemiesSpawned == 0) return pathProgressionWeight * 0.5f; // Neutral if no enemies
+        
+        // Lower average progression = higher score (enemies not getting far)
+        float progressionPenalty = averageEnemyPathProgression / 100f;
+        float score = (1f - progressionPenalty) * pathProgressionWeight;
+        
+        // Bonus for preventing enemies from reaching the tower
+        if (enemiesReachedTowerThisWave == 0 && totalEnemiesSpawned > 0)
+        {
+            score += pathProgressionWeight * 0.2f; // 20% bonus for perfect defense
+        }
+        
+        return Mathf.Clamp(score, 0f, pathProgressionWeight);
+    }
+    
+    /// <summary>
+    /// Calculates score based on strategic placement and behavior
+    /// </summary>
+    private float CalculateStrategicPlacementScore()
+    {
+        // Analyze strategic behavior
+        float strategicScore = 50f; // Base neutral score
+        
+        // Bonus for efficient resource usage
+        if (resourcesSpentThisWave > 0)
+        {
+            float resourceEfficiency = (float)resourcesGainedThisWave / resourcesSpentThisWave;
+            if (resourceEfficiency > 1.5f) strategicScore += 20f; // Good resource management
+            else if (resourceEfficiency < 0.5f) strategicScore -= 15f; // Poor resource management
+        }
+        
+        // Bonus for quick wave completion (shows good strategy)
+        if (waveCompletionTime > 0)
+        {
+            if (waveCompletionTime < 20f) strategicScore += 15f; // Very fast completion
+            else if (waveCompletionTime > 60f) strategicScore -= 10f; // Slow completion
+        }
+        
+        // Bonus for low defender losses (shows good placement)
+        if (defendersLostThisWave == 0) strategicScore += 10f;
+        else if (defendersLostThisWave > 3) strategicScore -= 15f;
+        
+        // Penalty for enemies reaching tower (shows poor defense strategy)
+        if (enemiesReachedTowerThisWave > 0)
+        {
+            strategicScore -= enemiesReachedTowerThisWave * 5f;
+        }
+        
+        return Mathf.Clamp(strategicScore / 100f * strategicPlacementWeight, 0f, strategicPlacementWeight);
+    }
+    
+    /// <summary>
     /// Counts initial defenders in the scene
     /// </summary>
     private void CountInitialDefenders()
@@ -283,6 +390,7 @@ public class PlayerPerformanceTracker : MonoBehaviour
         return "Excellent";
     }
     
+    
     /// <summary>
     /// Gets a difficulty multiplier based on performance (0.5 = easier, 2.0 = harder)
     /// </summary>
@@ -290,5 +398,131 @@ public class PlayerPerformanceTracker : MonoBehaviour
     {
         // Higher performance = higher difficulty
         return 0.5f + (performanceScore / 100f) * 1.5f;
+    }
+    
+    /// <summary>
+    /// Logs detailed analysis of player behavior and performance
+    /// </summary>
+    private void LogPlayerBehaviorAnalysis()
+    {
+        Debug.Log($"PLAYER BEHAVIOR ANALYSIS:");
+        
+        // Tower Health Analysis
+        if (towerHealthPercentage >= 90f)
+        {
+            Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Player is protecting tower well!");
+        }
+        else if (towerHealthPercentage >= 70f)
+        {
+            Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Some damage taken, but manageable");
+        }
+        else if (towerHealthPercentage >= 50f)
+        {
+            Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Significant damage! Player needs better defense");
+        }
+        else
+        {
+            Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Critical damage! Player is struggling");
+        }
+        
+        // Performance Level Analysis
+        string performanceLevel = GetPerformanceLevel();
+        switch (performanceLevel)
+        {
+            case "Struggling":
+                Debug.Log($"   Performance: Player is struggling - System will make enemies EASIER");
+                break;
+            case "Neutral":
+                Debug.Log($"   Performance: Player is balanced - System will use NORMAL scaling");
+                break;
+            case "Doing Well":
+                Debug.Log($"   Performance: Player is doing well - System will make enemies HARDER");
+                break;
+            case "Excellent":
+                Debug.Log($"   Performance: Player is excellent - System will make enemies MUCH HARDER");
+                break;
+        }
+    }
+    
+    /// <summary>
+    /// Logs comprehensive wave completion summary
+    /// </summary>
+    private void LogWaveCompletionSummary()
+    {
+        Debug.Log($"WAVE SUMMARY:");
+        Debug.Log($"   Completion Time: {waveCompletionTime:F1}s");
+        Debug.Log($"   Enemies Killed: {enemiesKilledThisWave}");
+        Debug.Log($"   Enemies Reached Tower: {enemiesReachedTowerThisWave}");
+        Debug.Log($"   Defenders Lost: {defendersLostThisWave}");
+        Debug.Log($"   Resources Spent: {resourcesSpentThisWave}");
+        Debug.Log($"   Resources Gained: {resourcesGainedThisWave}");
+        Debug.Log($"   Tower Health: {towerHealthPercentage:F1}%");
+        Debug.Log($"   Average Enemy Path Progression: {averageEnemyPathProgression:F1}%");
+        Debug.Log($"   Max Enemy Path Progression: {maxEnemyPathProgression:F1}%");
+        Debug.Log($"   Strategic Placement Score: {strategicPlacementScore:F1}");
+    }
+    
+    /// <summary>
+    /// Logs detailed performance metric breakdown
+    /// </summary>
+    private void LogPerformanceBreakdown()
+    {
+        float towerHealthScore = CalculateTowerHealthScore();
+        float killEfficiencyScore = CalculateKillEfficiencyScore();
+        float waveSpeedScore = CalculateWaveSpeedScore();
+        float resourceEfficiencyScore = CalculateResourceEfficiencyScore();
+        float defenderLossScore = CalculateDefenderLossScore();
+        float pathProgressionScore = CalculatePathProgressionScore();
+        float strategicPlacementScore = CalculateStrategicPlacementScore();
+        
+        Debug.Log($"PERFORMANCE BREAKDOWN:");
+        Debug.Log($"   Tower Health Score: {towerHealthScore:F1}/{towerHealthWeight} - {(towerHealthScore/towerHealthWeight*100):F1}%");
+        Debug.Log($"   Kill Efficiency Score: {killEfficiencyScore:F1}/{killEfficiencyWeight} - {(killEfficiencyScore/killEfficiencyWeight*100):F1}%");
+        Debug.Log($"   Wave Speed Score: {waveSpeedScore:F1}/{waveSpeedWeight} - {(waveSpeedScore/waveSpeedWeight*100):F1}%");
+        Debug.Log($"   Resource Efficiency Score: {resourceEfficiencyScore:F1}/{resourceEfficiencyWeight} - {(resourceEfficiencyScore/resourceEfficiencyWeight*100):F1}%");
+        Debug.Log($"   Defender Loss Score: {defenderLossScore:F1}/{defenderLossWeight} - {(defenderLossScore/defenderLossWeight*100):F1}%");
+        Debug.Log($"   Path Progression Score: {pathProgressionScore:F1}/{pathProgressionWeight} - {(pathProgressionScore/pathProgressionWeight*100):F1}%");
+        Debug.Log($"   Strategic Placement Score: {strategicPlacementScore:F1}/{strategicPlacementWeight} - {(strategicPlacementScore/strategicPlacementWeight*100):F1}%");
+        Debug.Log($"   TOTAL PERFORMANCE SCORE: {performanceScore:F1}/100");
+    }
+    
+    /// <summary>
+    /// Logs scaling recommendations based on performance
+    /// </summary>
+    private void LogScalingRecommendations()
+    {
+        Debug.Log($"SCALING RECOMMENDATIONS:");
+        
+        if (performanceScore >= 70f)
+        {
+            Debug.Log($"   Player is EXCELLENT - Increasing difficulty:");
+            Debug.Log($"      - More enemies (1.5x - 3x more)");
+            Debug.Log($"      - Stronger enemies (1.2x - 2.5x stats)");
+            Debug.Log($"      - More fast enemies (up to 4x frequency)");
+            Debug.Log($"      - Faster enemies (up to 1.5x speed)");
+            Debug.Log($"      - Tank enemies first (30% chance)");
+        }
+        else if (performanceScore >= 50f)
+        {
+            Debug.Log($"   Player is DOING WELL - Moderate difficulty increase:");
+            Debug.Log($"      - Slightly more enemies");
+            Debug.Log($"      - Slightly stronger enemies");
+            Debug.Log($"      - Some fast enemy frequency increase");
+        }
+        else if (performanceScore >= 30f)
+        {
+            Debug.Log($"   Player is NEUTRAL - Normal scaling:");
+            Debug.Log($"      - Standard enemy count");
+            Debug.Log($"      - Standard enemy stats");
+            Debug.Log($"      - Normal enemy frequency");
+        }
+        else
+        {
+            Debug.Log($"   Player is STRUGGLING - Decreasing difficulty:");
+            Debug.Log($"      - Fewer enemies (0.3x - 0.7x)");
+            Debug.Log($"      - Weaker enemies (0.4x - 0.8x stats)");
+            Debug.Log($"      - Base enemy frequency only");
+            Debug.Log($"      - Only basic enemies (no tank enemies)");
+        }
     }
 }

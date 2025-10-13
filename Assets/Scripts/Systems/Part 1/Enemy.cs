@@ -5,17 +5,16 @@ public class Enemy : MonoBehaviour
 {
     void OnCollisionEnter(Collision collision)
     {
-        Debug.Log($"Enemy collided with {collision.gameObject.name}");
+        // Debug logging disabled
     }
 
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"Enemy triggered with {other.gameObject.name}");
-
+        // Debug logging disabled
         Projectile projectile = other.GetComponent<Projectile>();
         if (projectile != null)
         {
-            Debug.Log($"Enemy hit by projectile!");
+            // Debug logging disabled
         }
     }
     [Header("Stats")]
@@ -65,7 +64,7 @@ public class Enemy : MonoBehaviour
     protected virtual void Start()
     {
         currentHealth = maxHealth;
-        Debug.Log($"Enemy initialized with health: {currentHealth}");
+        Debug.Log($"Enemy {gameObject.name} initialized with health: {currentHealth}/{maxHealth}");
 
         // Test: Force the enemy to die immediately
         // TakeDamage(currentHealth);
@@ -106,6 +105,13 @@ public class Enemy : MonoBehaviour
             if (currentPathIndex < finalIndex)
             {
                 currentPathIndex++;
+                
+                // Report path progression to performance tracker
+                if (gameManager != null && gameManager.performanceTracker != null)
+                {
+                    float progressionPercentage = ((float)currentPathIndex / finalIndex) * 100f;
+                    gameManager.performanceTracker.OnEnemyPathProgression(progressionPercentage);
+                }
             }
             else
             {
@@ -135,7 +141,7 @@ public class Enemy : MonoBehaviour
 
         currentDefenderTarget = null;
         Collider[] hits = Physics.OverlapSphere(transform.position, detectionRange);
-        Debug.Log($"Enemy {gameObject.name} found {hits.Length} objects in detection range {detectionRange}");
+        // Debug logging disabled
         
         float nearest = float.MaxValue;
         foreach (var hit in hits)
@@ -144,7 +150,7 @@ public class Enemy : MonoBehaviour
             if (defender != null && defender.IsAlive())
             {
                 float d = Vector3.Distance(transform.position, defender.transform.position);
-                Debug.Log($"Enemy {gameObject.name} found defender {defender.name} at distance {d}");
+                // Debug logging disabled
                 if (d < nearest)
                 {
                     nearest = d;
@@ -155,7 +161,7 @@ public class Enemy : MonoBehaviour
         
         if (currentDefenderTarget != null)
         {
-            Debug.Log($"Enemy {gameObject.name} acquired defender target: {currentDefenderTarget.name}");
+            // Debug logging disabled
         }
     }
 
@@ -171,7 +177,7 @@ public class Enemy : MonoBehaviour
         if (time - lastAttackTime >= attackIntervalSeconds)
         {
             lastAttackTime = time;
-            Debug.Log($"Enemy {gameObject.name} attacking defender {currentDefenderTarget.name} for {attackDamage} damage!");
+            // Debug logging disabled
             currentDefenderTarget.TakeDamage(attackDamage);
         }
     }
@@ -185,7 +191,7 @@ public class Enemy : MonoBehaviour
             targetTower.TakeDamage(attackDamage);
             
             // Enemy dies after first attack on tower
-            Debug.Log("Enemy attacked tower and will now die!");
+            // Debug logging disabled
             Die();
         }
     }
@@ -199,9 +205,8 @@ public class Enemy : MonoBehaviour
             return;
         }
         
-        Debug.Log($"Enemy {gameObject.name} taking {amount} damage. Current health before damage: {currentHealth}");
+        Debug.Log($"Enemy {gameObject.name} taking {amount} damage. Health: {currentHealth} -> {currentHealth - amount}");
         currentHealth -= amount;
-        Debug.Log($"Enemy {gameObject.name} health after damage: {currentHealth}");
 
         if (currentHealth <= 0f)
         {

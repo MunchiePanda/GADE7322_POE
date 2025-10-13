@@ -80,6 +80,7 @@ public class KamikazeDragon : Enemy
     {
         // Look for defenders first
         Collider[] hits = Physics.OverlapSphere(transform.position, detectionRange);
+        Debug.Log($"Bomber looking for targets in range {detectionRange}, found {hits.Length} colliders");
         float nearestDistance = float.MaxValue;
         Transform nearestTarget = null;
 
@@ -89,6 +90,7 @@ public class KamikazeDragon : Enemy
             if (defender != null && defender.IsAlive())
             {
                 float distance = Vector3.Distance(transform.position, defender.transform.position);
+                Debug.Log($"Bomber found defender {defender.name} at distance {distance}");
                 if (distance < nearestDistance)
                 {
                     nearestDistance = distance;
@@ -148,8 +150,10 @@ public class KamikazeDragon : Enemy
         
         // Check if we're close enough to explode
         float distanceToTarget = Vector3.Distance(transform.position, chargeTarget.position);
+        Debug.Log($"Bomber distance to target: {distanceToTarget:F2}, explosion threshold: 1.5f");
         if (distanceToTarget <= 1.5f) // Close enough to explode
         {
+            Debug.Log("Bomber is close enough to explode!");
             Explode();
         }
     }
@@ -166,12 +170,13 @@ public class KamikazeDragon : Enemy
         {
             Debug.Log($"Explosion hit: {hit.name}");
             
-            // Damage defenders
+            // Touch of Death - Instantly destroy defenders
             Defender defender = hit.GetComponent<Defender>();
             if (defender != null)
             {
-                Debug.Log($"Explosion damaging defender {defender.name} for {explosionDamage} damage!");
-                defender.TakeDamage(explosionDamage);
+                Debug.Log($"BOMBER TOUCH OF DEATH: Instantly destroying defender {defender.name}!");
+                // Instantly kill the defender regardless of health
+                defender.TakeDamage(9999f); // Massive damage to ensure instant death
             }
             
             // Damage tower

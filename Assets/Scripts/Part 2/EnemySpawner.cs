@@ -19,8 +19,7 @@ public class EnemySpawner : MonoBehaviour
     public GameObject defaultEnemyPrefab;
     public GameObject fastEnemyPrefab;
     public GameObject tankEnemyPrefab;
-    public GameObject kamikazeDragonPrefab;
-    public GameObject armoredDragonPrefab;
+    public GameObject bomberEnemyPrefab;
 
     [Header("Spawning Settings")]
     [Tooltip("Time between enemy spawns in a wave (seconds).")]
@@ -64,15 +63,6 @@ public class EnemySpawner : MonoBehaviour
     [Tooltip("Minimum stat multiplier")]
     public float minStatMultiplier = 0.4f;
 
-    [Header("Bomber Adaptive Scaling")]
-    [Tooltip("Base bomber spawn chance")]
-    public float baseBomberChance = 0.1f;
-
-    [Tooltip("Maximum bomber spawn chance")]
-    public float maxBomberChance = 0.4f;
-
-    [Tooltip("Bomber speed multiplier when player doing well")]
-    public float bomberSpeedMultiplier = 1.5f;
 
     private int currentWave = 0; // Start at 0 so first wave is 1
     private int enemiesRemainingInWave;
@@ -214,11 +204,11 @@ public class EnemySpawner : MonoBehaviour
         List<Vector3Int> randomPath = paths[Random.Range(0, paths.Count)];
         Vector3 spawnPosition = new Vector3(randomPath[0].x, gameManager.terrainGenerator.height, randomPath[0].z);
         
-        // Special spawn height for armored dragons (more important, spawn higher)
-        if (enemyPrefab == armoredDragonPrefab)
+        // Special spawn height for tank enemies (more important, spawn higher)
+        if (enemyPrefab == tankEnemyPrefab)
         {
-            spawnPosition.y += 3f; // Spawn 3 units higher for more importance
-            Debug.Log("Armored Dragon spawning with elevated importance!");
+            spawnPosition.y += 2f; // Spawn 2 units higher for more importance
+            Debug.Log("Tank Enemy spawning with elevated importance!");
         }
 
         // Instantiate the enemy
@@ -251,6 +241,12 @@ public class EnemySpawner : MonoBehaviour
         enemy.Initialize(randomPath, gameManager.terrainGenerator.height, towerComponent, gameManager);
 
         activeEnemies.Add(enemyObject);
+        
+        // Notify performance tracker of enemy spawn
+        if (performanceTracker != null)
+        {
+            performanceTracker.OnEnemySpawned();
+        }
     }
 
     /// <summary>
@@ -265,22 +261,21 @@ public class EnemySpawner : MonoBehaviour
         }
         else if (currentWave <= 5)
         {
-            // Mid waves: introduce kamikaze dragons
+            // Mid waves: introduce bomber enemies (wave 3+) and tank enemies
             float rand = Random.Range(0f, 1f);
-            if (rand < 0.5f) return defaultEnemyPrefab;
-            else if (rand < 0.7f) return fastEnemyPrefab;
-            else if (rand < 0.9f) return tankEnemyPrefab;
-            else return kamikazeDragonPrefab;
+            if (rand < 0.4f) return defaultEnemyPrefab;
+            else if (rand < 0.6f) return fastEnemyPrefab;
+            else if (rand < 0.8f) return bomberEnemyPrefab; // Bomber introduced at wave 3
+            else return tankEnemyPrefab;
         }
         else
         {
-            // Late waves: all types including armored dragons
+            // Late waves: all available types including bombers
             float rand = Random.Range(0f, 1f);
-            if (rand < 0.25f) return defaultEnemyPrefab;
-            else if (rand < 0.4f) return fastEnemyPrefab;
-            else if (rand < 0.55f) return tankEnemyPrefab;
-            else if (rand < 0.75f) return kamikazeDragonPrefab;
-            else return armoredDragonPrefab;
+            if (rand < 0.3f) return defaultEnemyPrefab;
+            else if (rand < 0.5f) return fastEnemyPrefab;
+            else if (rand < 0.7f) return bomberEnemyPrefab;
+            else return tankEnemyPrefab;
         }
     }
 
@@ -324,6 +319,7 @@ public class EnemySpawner : MonoBehaviour
         
         if (performanceTracker == null)
         {
+            Debug.Log($"ENEMY COUNT: No performance tracker - using base count: {baseCount:F1}");
             return Mathf.RoundToInt(baseCount);
         }
         
@@ -338,8 +334,23 @@ public class EnemySpawner : MonoBehaviour
         
         int adaptiveCount = Mathf.RoundToInt(baseCount * performanceMultiplier);
         
-        Debug.Log($"Adaptive Enemy Count: Base={baseCount:F1}, Performance={performanceScore:F1}, " +
-                 $"Multiplier={performanceMultiplier:F2}, Final={adaptiveCount}");
+        // Clear, player-friendly adaptive scaling messages
+        if (performanceScore >= 70f)
+        {
+            Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (more than usual) because you're doing GREAT!");
+        }
+        else if (performanceScore >= 50f)
+        {
+            Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (slightly more) because you're doing well!");
+        }
+        else if (performanceScore >= 30f)
+        {
+            Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (standard amount) for balanced challenge");
+        }
+        else
+        {
+            Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (fewer than usual) to help you succeed!");
+        }
         
         return adaptiveCount;
     }
@@ -351,6 +362,7 @@ public class EnemySpawner : MonoBehaviour
     {
         if (performanceTracker == null)
         {
+            Debug.Log($"ENEMY TYPE: No performance tracker - using wave-based selection");
             return SelectEnemyTypeBasedOnWave();
         }
         
@@ -359,53 +371,47 @@ public class EnemySpawner : MonoBehaviour
         // If player doing well, spawn harder enemies more frequently
         if (performanceScore > 70f && currentWave > 3)
         {
-            // 30% chance to spawn armored dragon first as tank
+            // 30% chance to spawn tank enemy for high-performing players
             if (Random.Range(0f, 1f) < 0.3f)
             {
-                Debug.Log("Adaptive Scaling: Spawning Armored Dragon as tank for high-performing player!");
-                return armoredDragonPrefab;
+                Debug.Log($"ADAPTIVE SCALING: Spawning TANK ENEMY because you're doing GREAT and need a real challenge!");
+                return tankEnemyPrefab;
+            }
+        }
+        
+        // Spawn bombers more frequently for high-performing players (wave 3+)
+        if (performanceScore > 60f && currentWave >= 3)
+        {
+            float bomberChance = 0.2f + (performanceScore - 60f) / 40f * 0.3f; // 20% to 50% chance
+            if (Random.Range(0f, 1f) < bomberChance)
+            {
+                Debug.Log($"ADAPTIVE SCALING: Spawning BOMBER because you're doing well and can handle the challenge!");
+                return bomberEnemyPrefab;
             }
         }
         
         // If player struggling, spawn easier enemies
         if (performanceScore < 30f)
         {
+            Debug.Log($"ADAPTIVE SCALING: Spawning basic enemy only because you're struggling - let's help you learn!");
             return defaultEnemyPrefab; // Only basic enemies
         }
         
-        // Adaptive bomber frequency
-        float bomberChance = CalculateAdaptiveBomberChance();
-        if (Random.Range(0f, 1f) < bomberChance)
+        // Adaptive fast enemy frequency for high-performing players
+        if (performanceScore > 60f)
         {
-            Debug.Log($"Adaptive Scaling: Spawning bomber (chance: {bomberChance:F2})");
-            return kamikazeDragonPrefab;
+            float fastEnemyChance = 0.3f + (performanceScore - 60f) / 40f * 0.4f; // 30% to 70% chance
+            if (Random.Range(0f, 1f) < fastEnemyChance)
+            {
+                Debug.Log($"ADAPTIVE SCALING: Spawning FAST ENEMY because you're doing well and can handle speed!");
+                return fastEnemyPrefab;
+            }
         }
         
         // Otherwise use normal wave-based selection
         return SelectEnemyTypeBasedOnWave();
     }
 
-    /// <summary>
-    /// Calculates adaptive bomber spawn chance based on player performance
-    /// </summary>
-    float CalculateAdaptiveBomberChance()
-    {
-        if (performanceTracker == null)
-        {
-            return baseBomberChance;
-        }
-        
-        float performanceScore = performanceTracker.performanceScore;
-        
-        // If player doing well, increase bomber frequency
-        if (performanceScore > 60f)
-        {
-            float bomberChance = Mathf.Lerp(baseBomberChance, maxBomberChance, (performanceScore - 60f) / 40f);
-            return bomberChance;
-        }
-        
-        return baseBomberChance;
-    }
 
     /// <summary>
     /// Applies adaptive scaling to enemy stats
@@ -445,39 +451,21 @@ public class EnemySpawner : MonoBehaviour
         enemy.SetMoveSpeed(finalSpeed);
         enemy.SetAttackDamage(finalDamage);
         
-        // Special bomber scaling
-        ApplyBomberScaling(enemy);
+        // Adaptive scaling applied
         
-        Debug.Log($"Adaptive Scaling: Health={finalHealth:F1} (x{healthMultiplier:F2}), " +
-                 $"Speed={finalSpeed:F1} (x{speedMultiplier:F2}), Damage={finalDamage:F1} (x{damageMultiplier:F2})");
-    }
-
-    /// <summary>
-    /// Applies special scaling to bomber enemies
-    /// </summary>
-    void ApplyBomberScaling(Enemy enemy)
-    {
-        if (performanceTracker == null) return;
-        
-        // Check if this is a bomber (kamikaze dragon)
-        if (enemy is KamikazeDragon bomber)
+        // Clear, player-friendly stat scaling messages
+        if (performanceScore >= 70f)
         {
-            float performanceScore = performanceTracker.performanceScore;
-            
-            // If player doing well, make bombers faster
-            if (performanceScore > 70f)
-            {
-                float speedBoost = 1.0f + (performanceScore - 70f) / 30f * bomberSpeedMultiplier;
-                bomber.SetMoveSpeed(bomber.GetMoveSpeed() * speedBoost);
-                
-                // Also increase charge speed
-                bomber.chargeSpeedMultiplier *= speedBoost;
-                
-                Debug.Log($"Bomber Adaptive Scaling: Speed boost x{speedBoost:F2}");
-            }
+            Debug.Log($"ADAPTIVE SCALING: Making enemies STRONGER because you're doing GREAT!");
+        }
+        else if (performanceScore < 30f)
+        {
+            Debug.Log($"ADAPTIVE SCALING: Making enemies WEAKER to help you succeed!");
         }
     }
 
+
+    
     /// <summary>
     /// Gets the current performance level for debug display
     /// </summary>

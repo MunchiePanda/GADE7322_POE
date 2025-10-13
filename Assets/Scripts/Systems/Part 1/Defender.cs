@@ -38,7 +38,7 @@ public class Defender : MonoBehaviour
         healthComponent = GetComponent<Health>();
         if (healthComponent == null)
         {
-            Debug.LogError($"Defender {gameObject.name} is missing Health component!");
+            // Debug logging disabled
         }
         else
         {
@@ -65,6 +65,7 @@ public class Defender : MonoBehaviour
         }
         currentEnemyTarget = null;
         Collider[] hits = Physics.OverlapSphere(transform.position, attackRange, enemyMask);
+        Debug.Log($"Defender {gameObject.name} looking for enemies in range {attackRange}, found {hits.Length} colliders");
         float nearest = float.MaxValue;
         foreach (var hit in hits)
         {
@@ -72,12 +73,18 @@ public class Defender : MonoBehaviour
             if (enemy != null)
             {
                 float d = Vector3.Distance(transform.position, enemy.transform.position);
+                Debug.Log($"Defender found enemy {enemy.name} at distance {d:F2}");
                 if (d < nearest)
                 {
                     nearest = d;
                     currentEnemyTarget = enemy;
                 }
             }
+        }
+        
+        if (currentEnemyTarget != null)
+        {
+            Debug.Log($"Defender {gameObject.name} acquired target: {currentEnemyTarget.name}");
         }
     }
 
@@ -88,6 +95,7 @@ public class Defender : MonoBehaviour
         if (time - lastAttackTime >= attackIntervalSeconds)
         {
             lastAttackTime = time;
+            Debug.Log($"Defender {gameObject.name} attacking enemy {currentEnemyTarget.name}!");
             LobProjectileAtEnemy(currentEnemyTarget);
         }
     }
@@ -96,7 +104,7 @@ public class Defender : MonoBehaviour
     {
         if (projectilePrefab == null)
         {
-            Debug.LogError($"{gameObject.name}: Projectile prefab is not assigned!");
+            // Debug logging disabled
             return;
         }
 
@@ -115,7 +123,7 @@ public class Defender : MonoBehaviour
         Projectile projectileComponent = projectile.GetComponent<Projectile>();
         if (projectileComponent == null)
         {
-            Debug.LogError($"{gameObject.name}: Projectile prefab does not have a Projectile component!");
+            // Debug logging disabled
             Destroy(projectile);
             return;
         }
@@ -125,11 +133,11 @@ public class Defender : MonoBehaviour
         
         if (isCritical)
         {
-            Debug.Log($"{gameObject.name} CRITICAL HIT! Damage: {finalDamage}");
+            // Debug logging disabled
         }
         else
         {
-            Debug.Log($"{gameObject.name} shot a projectile at {enemy.name}!");
+            // Debug logging disabled
         }
     }
 
@@ -137,7 +145,7 @@ public class Defender : MonoBehaviour
     {
         if (!IsAlive()) return;
         
-        Debug.Log($"Defender taking {amount} damage!");
+        // Debug logging disabled
         
         // Use Health component if available, otherwise use hit points system
         if (healthComponent != null)
@@ -148,11 +156,11 @@ public class Defender : MonoBehaviour
         {
             // Fallback to hit points system
             hitPoints -= Mathf.RoundToInt(amount);
-            Debug.Log($"Defender took {amount} damage! Hit points remaining: {hitPoints}");
+            // Debug logging disabled
             
             if (hitPoints <= 0)
             {
-                Debug.Log($"Defender destroyed by {amount} damage!");
+                // Debug logging disabled
                 NotifyDefenderLoss();
                 Destroy(gameObject);
             }
@@ -175,7 +183,7 @@ public class Defender : MonoBehaviour
         if (gameManager.SpendResources(healthUpgradeCost))
         {
             hitPoints += Mathf.RoundToInt(healthUpgradeAmount);
-            Debug.Log($"Defender durability upgraded! New hit points: {hitPoints}");
+            // Debug logging disabled
             transform.localScale *= 1.1f;
             return true;
         }
@@ -189,7 +197,7 @@ public class Defender : MonoBehaviour
         if (gameManager.SpendResources(damageUpgradeCost))
         {
             attackDamage += damageUpgradeAmount;
-            Debug.Log($"Defender damage upgraded! New damage: {attackDamage}");
+            // Debug logging disabled
             return true;
         }
         return false;
@@ -200,7 +208,7 @@ public class Defender : MonoBehaviour
     /// </summary>
     private void OnDefenderDeath()
     {
-        Debug.Log($"Defender {gameObject.name} died!");
+        // Debug logging disabled
         NotifyDefenderLoss();
     }
     

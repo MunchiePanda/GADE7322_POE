@@ -109,7 +109,7 @@ public class GameManager : MonoBehaviour
         // Check if the terrain generator is assigned.
         if (terrainGenerator == null)
         {
-            Debug.LogError("GameManager: No VoxelTerrainGenerator assigned!");
+            // Debug logging disabled
             return;
         }
 
@@ -299,6 +299,26 @@ public class GameManager : MonoBehaviour
     {
         return resources;
     }
+    
+    /// <summary>
+    /// Checks if a defender type is unlocked based on current wave progression
+    /// </summary>
+    /// <param name="defenderType">The defender type to check</param>
+    /// <returns>True if the defender type is unlocked, false otherwise</returns>
+    public bool IsDefenderTypeUnlocked(DefenderType defenderType)
+    {
+        switch (defenderType)
+        {
+            case DefenderType.Basic:
+                return true; // Basic defender is always available
+            case DefenderType.FrostTower:
+                return currentWave >= 3; // Unlocks after wave 2 (bomber introduction)
+            case DefenderType.LightningTower:
+                return currentWave >= 6; // Unlocks after armored dragon threshold
+            default:
+                return false;
+        }
+    }
 
 
     /// <summary>
@@ -310,7 +330,7 @@ public class GameManager : MonoBehaviour
         // Show the game over UI and stop enemy spawning.
         if (gameOverUI != null)
             gameOverUI.Show("Game Over!");
-        Debug.Log("Game Over!");
+        // Debug logging disabled
     }
 
     /// <summary>
@@ -404,6 +424,13 @@ public class GameManager : MonoBehaviour
         // Exit if the game is over, paused, or required references are missing.
         if (isGameOver || isPaused) return false;
         if (terrainGenerator == null) return false;
+        
+        // Check progressive unlocking system
+        if (!IsDefenderTypeUnlocked(defenderType))
+        {
+            Debug.Log($"Defender type {defenderType} is not yet unlocked! Current wave: {currentWave}");
+            return false;
+        }
 
         // Get the appropriate prefab and cost based on defender type
         GameObject defenderPrefabToUse;
