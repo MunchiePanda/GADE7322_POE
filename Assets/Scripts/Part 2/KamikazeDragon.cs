@@ -206,7 +206,7 @@ public class KamikazeDragon : Enemy
     }
 
     // Override to prevent normal death behavior
-    protected void Die()
+    protected override void Die()
     {
         Debug.Log("Kamikaze Dragon died!");
         

@@ -137,7 +137,7 @@ public class ArmoredDragon : Enemy
     }
 
     // Override to give more resources when killed (harder to kill)
-    protected void Die()
+    protected override void Die()
     {
         Debug.Log("Armored Dragon defeated!");
         
