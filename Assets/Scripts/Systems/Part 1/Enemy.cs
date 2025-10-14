@@ -27,6 +27,7 @@ public class Enemy : MonoBehaviour
     [SerializeField] protected int minResourceRewardOnDeath = 5;
     [SerializeField] protected int maxResourceRewardOnDeath = 15;
 
+
     protected List<Vector3Int> path;
     protected int currentPathIndex = 0;
     protected int terrainHeight = 1; // legacy; not used for uneven per-tile heights
@@ -65,6 +66,7 @@ public class Enemy : MonoBehaviour
     {
         currentHealth = maxHealth;
         Debug.Log($"Enemy {gameObject.name} initialized with health: {currentHealth}/{maxHealth}");
+
 
         // Test: Force the enemy to die immediately
         // TakeDamage(currentHealth);
@@ -208,6 +210,7 @@ public class Enemy : MonoBehaviour
         Debug.Log($"Enemy {gameObject.name} taking {amount} damage. Health: {currentHealth} -> {currentHealth - amount}");
         currentHealth -= amount;
 
+
         if (currentHealth <= 0f)
         {
             Debug.Log($"Enemy {gameObject.name} health reached zero. Calling Die().");
@@ -250,6 +253,7 @@ public class Enemy : MonoBehaviour
         Debug.Log($"Destroying enemy object: {gameObject.name}");
         Destroy(gameObject);
     }
+    
 }
 
 

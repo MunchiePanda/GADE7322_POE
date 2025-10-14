@@ -9,6 +9,7 @@ public class Defender : MonoBehaviour
     // Health component reference
     private Health healthComponent;
 
+
     [Header("Combat")]
     [SerializeField] protected float attackDamage = 10f;
     [SerializeField] protected float attackIntervalSeconds = 0.8f;
@@ -45,6 +46,7 @@ public class Defender : MonoBehaviour
             // Set up the OnDeath event to notify performance tracker
             healthComponent.OnDeath.AddListener(OnDefenderDeath);
         }
+        
     }
 
     void Update()
@@ -165,6 +167,7 @@ public class Defender : MonoBehaviour
                 Destroy(gameObject);
             }
         }
+        
     }
 
     public bool IsAlive()
@@ -185,6 +188,7 @@ public class Defender : MonoBehaviour
             hitPoints += Mathf.RoundToInt(healthUpgradeAmount);
             // Debug logging disabled
             transform.localScale *= 1.1f;
+            
             return true;
         }
         return false;
@@ -222,4 +226,5 @@ public class Defender : MonoBehaviour
             gameManager.performanceTracker.OnDefenderLost();
         }
     }
+    
 }

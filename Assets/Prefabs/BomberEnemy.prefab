@@ -53,11 +53,12 @@ MonoBehaviour:
   detectionRange: 2
   minResourceRewardOnDeath: 5
   maxResourceRewardOnDeath: 15
+  healthBarSlider: {fileID: 0}
   chargeSpeedMultiplier: 3
   explosionRadius: 4
   explosionDamage: 25
-  explosionEffectPrefab: {fileID: 0}
-  chargeParticles: {fileID: 0}
+  explosionEffectPrefab: {fileID: 8464950693656172981, guid: 83ad694f134ab954580473212156b35a, type: 3}
+  chargeParticles: {fileID: 2413333106277601229, guid: 108ca465382c11742bd2c91fe4fdb13f, type: 3}
 --- !u!1001 &3524602141331722352
 PrefabInstance:
   m_ObjectHideFlags: 0

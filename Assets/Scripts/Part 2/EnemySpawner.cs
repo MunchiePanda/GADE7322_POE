@@ -45,6 +45,9 @@ public class EnemySpawner : MonoBehaviour
     [Tooltip("Reference to the performance tracker for adaptive difficulty")]
     public PlayerPerformanceTracker performanceTracker;
 
+    [Tooltip("Reference to the wave progression system")]
+    public WaveProgressionSystem waveProgressionSystem;
+
     [Tooltip("How much player performance affects enemy count (0.5 = 50% influence)")]
     public float performanceCountMultiplier = 0.5f;
 
@@ -81,6 +84,20 @@ public class EnemySpawner : MonoBehaviour
             if (performanceTracker == null)
             {
                 Debug.LogWarning("EnemySpawner: No PlayerPerformanceTracker found! Adaptive scaling will be disabled.");
+            }
+        }
+        
+        // Auto-find WaveProgressionSystem if not assigned
+        if (waveProgressionSystem == null)
+        {
+            waveProgressionSystem = FindFirstObjectByType<WaveProgressionSystem>();
+            if (waveProgressionSystem != null)
+            {
+                Debug.Log($"EnemySpawner: Auto-found WaveProgressionSystem on {waveProgressionSystem.gameObject.name}");
+            }
+            else
+            {
+                Debug.LogWarning("EnemySpawner: No WaveProgressionSystem found in scene! Please add one to GameManager.");
             }
         }
 
@@ -144,8 +161,11 @@ public class EnemySpawner : MonoBehaviour
             performanceTracker.OnWaveStart();
         }
         
-        // Calculate adaptive enemy count
-        enemiesRemainingInWave = CalculateAdaptiveEnemyCount();
+        // Calculate adaptive enemy count using wave progression system
+        int baseEnemyCount = Mathf.RoundToInt(initialWaveEnemyCount * Mathf.Pow(waveScalingFactor, currentWave - 1));
+        enemiesRemainingInWave = waveProgressionSystem != null ? 
+            waveProgressionSystem.GetAdaptiveEnemyCount(baseEnemyCount, currentWave) : 
+            CalculateAdaptiveEnemyCount();
         isSpawning = true;
 
         // Update GameManager's wave counter for UI display
@@ -161,6 +181,13 @@ public class EnemySpawner : MonoBehaviour
         }
 
         Debug.Log($"Starting Wave {currentWave} with {enemiesRemainingInWave} enemies (Adaptive scaling: {GetPerformanceLevel()}).");
+        
+        // Log wave progression info
+        if (waveProgressionSystem != null)
+        {
+            waveProgressionSystem.LogWaveProgression(currentWave);
+        }
+        
         StartCoroutine(SpawnWave());
     }
 
@@ -190,8 +217,8 @@ public class EnemySpawner : MonoBehaviour
     /// </summary>
     void SpawnRandomEnemy()
     {
-        // Choose enemy type based on performance and wave progression
-        GameObject enemyPrefab = SelectEnemyTypeWithAdaptiveScaling();
+        // Choose enemy type using wave progression system
+        GameObject enemyPrefab = SelectEnemyTypeWithWaveProgression();
 
         // Get a random path and spawn point
         List<List<Vector3Int>> paths = gameManager.terrainGenerator.GetPaths();
@@ -228,8 +255,15 @@ public class EnemySpawner : MonoBehaviour
             return;
         }
 
-        // Apply adaptive scaling to enemy stats
-        ApplyAdaptiveScaling(enemy);
+        // Apply adaptive scaling to enemy stats using wave progression system
+        if (waveProgressionSystem != null)
+        {
+            ApplyWaveProgressionScaling(enemy);
+        }
+        else
+        {
+            ApplyAdaptiveScaling(enemy);
+        }
 
         // Initialize the enemy
         Tower towerComponent = gameManager.TowerInstance != null ? gameManager.TowerInstance.GetComponent<Tower>() : null;
@@ -249,6 +283,56 @@ public class EnemySpawner : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Selects enemy type using wave progression system
+    /// </summary>
+    GameObject SelectEnemyTypeWithWaveProgression()
+    {
+        if (waveProgressionSystem == null)
+        {
+            Debug.LogWarning("No WaveProgressionSystem found - using fallback selection");
+            return SelectEnemyTypeBasedOnWave();
+        }
+        
+        WaveProgressionSystem.EnemyType enemyType = waveProgressionSystem.GetEnemyTypeForWave(currentWave);
+        
+        // Convert to GameObject prefab
+        switch (enemyType)
+        {
+            case WaveProgressionSystem.EnemyType.Regular:
+                return defaultEnemyPrefab;
+            case WaveProgressionSystem.EnemyType.Fast:
+                return fastEnemyPrefab;
+            case WaveProgressionSystem.EnemyType.Bomber:
+                return bomberEnemyPrefab;
+            case WaveProgressionSystem.EnemyType.Armored:
+                return tankEnemyPrefab;
+            default:
+                return defaultEnemyPrefab;
+        }
+    }
+    
+    /// <summary>
+    /// Applies wave progression scaling to enemy stats
+    /// </summary>
+    void ApplyWaveProgressionScaling(Enemy enemy)
+    {
+        if (waveProgressionSystem == null) return;
+        
+        Vector3 statMultipliers = waveProgressionSystem.GetAdaptiveStatMultipliers(currentWave);
+        
+        float finalHealth = enemy.GetMaxHealth() * statMultipliers.x;
+        float finalSpeed = enemy.GetMoveSpeed() * statMultipliers.y;
+        float finalDamage = enemy.GetAttackDamage() * statMultipliers.z;
+        
+        enemy.SetMaxHealth(Mathf.RoundToInt(finalHealth));
+        enemy.SetCurrentHealth(enemy.GetMaxHealth());
+        enemy.SetMoveSpeed(finalSpeed);
+        enemy.SetAttackDamage(finalDamage);
+        
+        Debug.Log($"WAVE PROGRESSION SCALING: Wave {currentWave} - Health: {finalHealth:F1}, Speed: {finalSpeed:F1}, Damage: {finalDamage:F1}");
+    }
+    
     /// <summary>
     /// Selects enemy type based on current wave for better progression.
     /// </summary>
