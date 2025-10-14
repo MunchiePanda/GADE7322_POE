@@ -55,6 +55,7 @@ public class Enemy : MonoBehaviour
     // Public getters and setters for fields accessed by EnemySpawner and WeatherManager
     public float GetMoveSpeed() { return moveSpeed; }
     public float GetMaxHealth() { return maxHealth; }
+    public float GetCurrentHealth() { return currentHealth; }
     public void SetMaxHealth(float value) { maxHealth = value; }
     public void SetCurrentHealth(float value) { currentHealth = value; }
     public void SetMoveSpeed(float value) { moveSpeed = value; }
@@ -199,9 +200,9 @@ public class Enemy : MonoBehaviour
     public virtual void TakeDamage(float amount)
     {
         // Prevent damage if already dead
-        if (currentHealth <= 0f)
+        if (currentHealth <= 0f || isDead)
         {
-            Debug.Log($"Enemy {gameObject.name} is already dead, ignoring damage");
+            Debug.Log($"Enemy {gameObject.name} is already dead, ignoring {amount} damage");
             return;
         }
         
@@ -213,6 +214,10 @@ public class Enemy : MonoBehaviour
             Debug.Log($"Enemy {gameObject.name} health reached zero. Calling Die().");
             currentHealth = 0f; // Ensure health doesn't go negative
             Die();
+        }
+        else
+        {
+            Debug.Log($"Enemy {gameObject.name} health: {currentHealth}/{maxHealth}");
         }
     }
 

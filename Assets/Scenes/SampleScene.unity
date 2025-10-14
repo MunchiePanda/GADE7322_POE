@@ -1435,7 +1435,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0.374, y: 0.165}
-  m_AnchoredPosition: {x: 3.7026367, y: 16.858902}
+  m_AnchoredPosition: {x: 3.7026367, y: 16.858871}
   m_SizeDelta: {x: 7.4053, y: 33.7178}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &442468312
@@ -1781,7 +1781,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30.55
+  m_fontSize: 44.35
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2174,6 +2174,8 @@ MonoBehaviour:
   frostTowerDragDrop: {fileID: 1189634348}
   lightningTowerDragDrop: {fileID: 1039556532}
   gameManager: {fileID: 1117801836}
+  frostTowerUnlockWave: 3
+  lightningTowerUnlockWave: 6
 --- !u!4 &824818026
 Transform:
   m_ObjectHideFlags: 0
@@ -2745,6 +2747,7 @@ MonoBehaviour:
   pauseMenuUI: {fileID: 1676361400}
   waveCountdownUI: {fileID: 1951697462}
   criticalHitSystem: {fileID: 0}
+  performanceTracker: {fileID: 0}
   currentWave: 1
 --- !u!4 &1117801837
 Transform:
@@ -3323,7 +3326,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 44.4
+  m_fontSize: 47
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3908,6 +3911,17 @@ MonoBehaviour:
   treeDensity: 0.007
   numPaths: 5
   pathWidth: 2
+  maxDefendersPerPath: 2
+  maxTotalDefenders: 6
+  preSelectedSpotsPerPath: 3
+  defenderPlacementDistance: 3
+  defenderSpotSpacing: 2
+  basicPlacementAreaPrefab: {fileID: 3268727406298683723, guid: 4cdc295c0645f8445a5dc4f6c6cb90b4, type: 3}
+  advancedPlacementAreaPrefab: {fileID: 3268727406298683723, guid: 944f9986885b8d54f9911345df1d6a79, type: 3}
+  maxDynamicPaths: 5
+  firstDynamicPathWave: 5
+  performanceThresholdForNewPath: 70
+  minPerformanceForNewPath: 60
   terrainLayer: 6
 --- !u!4 &1975398410
 Transform:

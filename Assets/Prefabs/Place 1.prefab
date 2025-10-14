@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 2853859760603019757}
   - component: {fileID: 7223399811413324243}
   - component: {fileID: 365466018222402934}
-  - component: {fileID: -1368757931767659452}
+  - component: {fileID: -3454147976712924411}
   m_Layer: 0
-  m_Name: Place
+  m_Name: Place 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -66,7 +66,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 590c195661ebb444798ba2bffce6f7a7, type: 2}
+  - {fileID: 2100000, guid: e00917ff0dd55354686a1c88b9571ebf, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -110,7 +110,7 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &-1368757931767659452
+--- !u!114 &-3454147976712924411
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -122,7 +122,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a3364a0d0483fb4894c1297545659f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  placementType: 0
+  placementType: 1
   isOccupied: 0
   gridPosition: {x: 0, y: 0, z: 0}
   availableMaterial: {fileID: 2100000, guid: 97d113f65febef54d890efeb67730e47, type: 2}

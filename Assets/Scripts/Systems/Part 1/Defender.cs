@@ -104,7 +104,7 @@ public class Defender : MonoBehaviour
     {
         if (projectilePrefab == null)
         {
-            // Debug logging disabled
+            Debug.LogError($"Defender {gameObject.name} has no projectile prefab assigned!");
             return;
         }
 
@@ -123,7 +123,7 @@ public class Defender : MonoBehaviour
         Projectile projectileComponent = projectile.GetComponent<Projectile>();
         if (projectileComponent == null)
         {
-            // Debug logging disabled
+            Debug.LogError($"Projectile prefab {projectilePrefab.name} has no Projectile component!");
             Destroy(projectile);
             return;
         }
@@ -131,13 +131,15 @@ public class Defender : MonoBehaviour
         // Initialize projectile with critical hit info
         projectileComponent.Initialize(enemy.transform, finalDamage, projectileSpeed, isCritical);
         
+        Debug.Log($"🏹 Defender {gameObject.name} fired projectile at {enemy.name} for {finalDamage} damage (Critical: {isCritical})");
+        
         if (isCritical)
         {
-            // Debug logging disabled
+            Debug.Log($"💥 CRITICAL HIT! {finalDamage} damage!");
         }
         else
         {
-            // Debug logging disabled
+            Debug.Log($"Normal hit: {finalDamage} damage");
         }
     }
 
@@ -210,6 +212,17 @@ public class Defender : MonoBehaviour
     {
         // Debug logging disabled
         NotifyDefenderLoss();
+        
+        // NEW: Notify GameManager that this spot is now available
+        if (gameManager != null)
+        {
+            Vector3Int gridPos = new Vector3Int(
+                Mathf.RoundToInt(transform.position.x),
+                Mathf.RoundToInt(transform.position.y),
+                Mathf.RoundToInt(transform.position.z)
+            );
+            gameManager.OnDefenderDestroyed(gridPos);
+        }
     }
     
     /// <summary>

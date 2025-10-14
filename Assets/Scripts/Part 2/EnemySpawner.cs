@@ -138,6 +138,9 @@ public class EnemySpawner : MonoBehaviour
 
         currentWave++;
         
+        // NEW: Check for dynamic path addition
+        CheckForDynamicPathAddition();
+        
         // Notify performance tracker of wave start
         if (performanceTracker != null)
         {
@@ -473,5 +476,41 @@ public class EnemySpawner : MonoBehaviour
     {
         if (performanceTracker == null) return "No Tracker";
         return performanceTracker.GetPerformanceLevel();
+    }
+
+    /// <summary>
+    /// Checks if a new dynamic path should be added
+    /// </summary>
+    void CheckForDynamicPathAddition()
+    {
+        if (gameManager.terrainGenerator == null) return;
+        
+        // Check if we should add a new path
+        if (gameManager.terrainGenerator.ShouldAddDynamicPath(currentWave, 
+            performanceTracker != null ? performanceTracker.performanceScore : 50f))
+        {
+            bool pathAdded = gameManager.terrainGenerator.TryAddDynamicPath();
+            if (pathAdded)
+            {
+                Debug.Log($"🎯 DYNAMIC PATH ADDED! Wave {currentWave}, Performance: {performanceTracker?.performanceScore:F1}");
+                Debug.Log($"Total paths now: {gameManager.terrainGenerator.GetTotalPathCount()}");
+                
+                // Show visual feedback
+                gameManager.terrainGenerator.HighlightAllPaths();
+                StartCoroutine(ClearPathHighlightsAfterDelay(3f));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Clears path highlights after a delay
+    /// </summary>
+    System.Collections.IEnumerator ClearPathHighlightsAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (gameManager.terrainGenerator != null)
+        {
+            gameManager.terrainGenerator.ClearPathHighlights();
+        }
     }
 }

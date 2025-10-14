@@ -1,6 +1,16 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+/// <summary>
+/// Types of defender placement spots with different constraints
+/// </summary>
+public enum DefenderPlacementType
+{
+    Basic,      // Can place any defender type
+    Advanced,   // Can only place Frost/Lightning towers
+    Restricted  // Special placement rules
+}
+
 // Generates a voxel-based terrain with noise, biomes, paths, defender locations, and tree spawning.
 public class VoxelTerrainGenerator : MonoBehaviour
 {
@@ -71,6 +81,7 @@ public class VoxelTerrainGenerator : MonoBehaviour
     
     // Cache for highlighted chunks
     private List<GameObject> highlightedChunks = new List<GameObject>();
+    private List<GameObject> placementHighlights = new List<GameObject>();
     private bool isHighlighting = false;
 
     [Header("Tree Spawning")]
@@ -84,6 +95,42 @@ public class VoxelTerrainGenerator : MonoBehaviour
     public int numPaths = 3;
     // Width of paths in voxels.
     public int pathWidth = 2;
+
+    [Header("Defender Placement Limits")]
+    [Tooltip("Maximum number of defenders allowed per lane")]
+    public int maxDefendersPerLane = 10;
+    
+    [Tooltip("Maximum total defenders allowed")]
+    public int maxTotalDefenders = 30;
+    
+    [Tooltip("Number of placement areas per lane")]
+    public int placementAreasPerLane = 15;
+    
+    [Tooltip("Distance from path for defender placement (in grid units)")]
+    public int defenderPlacementDistance = 3;
+    
+    [Tooltip("Spacing between defender spots along the path")]
+    public int defenderSpotSpacing = 2;
+    
+    [Header("Placement Area Prefabs")]
+    [Tooltip("Prefab for basic defender placement areas")]
+    public GameObject basicPlacementAreaPrefab;
+    
+    [Tooltip("Prefab for advanced defender placement areas")]
+    public GameObject advancedPlacementAreaPrefab;
+
+    [Header("Dynamic Path System")]
+    [Tooltip("Maximum number of paths that can be added dynamically")]
+    public int maxDynamicPaths = 5;
+    
+    [Tooltip("Wave threshold for adding first dynamic path")]
+    public int firstDynamicPathWave = 5;
+    
+    [Tooltip("Performance threshold for adding dynamic paths (0-100)")]
+    public float performanceThresholdForNewPath = 70f;
+    
+    [Tooltip("Minimum performance score required to add a new path")]
+    public float minPerformanceForNewPath = 60f;
 
     [Header("Layer Settings")]
     // Unity layer for terrain objects.
@@ -105,6 +152,21 @@ public class VoxelTerrainGenerator : MonoBehaviour
     private List<Vector3Int> defenderLocations = new List<Vector3Int>();
     // Public property to access defender locations.
     public List<Vector3Int> DefenderLocations => defenderLocations;
+    
+    // Pre-selected defender spots and tracking
+    private List<Vector3Int> preSelectedDefenderSpots = new List<Vector3Int>();
+    private Dictionary<Vector3Int, bool> defenderSpotsOccupied = new Dictionary<Vector3Int, bool>();
+    private Dictionary<Vector3Int, DefenderPlacementType> defenderSpotTypes = new Dictionary<Vector3Int, DefenderPlacementType>();
+    private List<DefenderPlacementArea> placementAreas = new List<DefenderPlacementArea>(); // Track placement area components
+    
+    // Lane-based tracking
+    private Dictionary<int, List<DefenderPlacementArea>> placementAreasByLane = new Dictionary<int, List<DefenderPlacementArea>>();
+    private Dictionary<int, int> defendersPerLane = new Dictionary<int, int>(); // Track defenders per lane
+    
+    // Dynamic path system
+    private int currentDynamicPaths = 0;
+    private List<List<Vector3Int>> dynamicPaths = new List<List<Vector3Int>>();
+    private PlayerPerformanceTracker performanceTracker;
 
     // Ensures terrain is generated when the script is initialized.
     void Awake() => GenerateAllIfNeeded();
@@ -141,32 +203,99 @@ public class VoxelTerrainGenerator : MonoBehaviour
     }
 
     // Generates valid defender placement locations near paths.
-    private void GenerateDefenderLocations()
+    public void GenerateDefenderLocations()
     {
         defenderLocations.Clear();
-        foreach (var path in paths)
+        preSelectedDefenderSpots.Clear();
+        defenderSpotsOccupied.Clear();
+        defenderSpotTypes.Clear();
+        
+        // Clear existing placement areas
+        foreach (var area in placementAreas)
         {
-            foreach (var pos in path)
+            if (area != null) Destroy(area.gameObject);
+        }
+        placementAreas.Clear();
+        placementAreasByLane.Clear();
+        defendersPerLane.Clear();
+        
+        Debug.Log($"GenerateDefenderLocations: Starting with {paths.Count} paths");
+        
+        // Generate spots along each path (lane)
+        for (int pathIndex = 0; pathIndex < paths.Count; pathIndex++)
+        {
+            var path = paths[pathIndex];
+            int spotsCreated = 0;
+            defendersPerLane[pathIndex] = 0; // Initialize defender count for this lane
+            
+            // Create placement areas for this lane
+            List<DefenderPlacementArea> laneAreas = new List<DefenderPlacementArea>();
+            
+            // Create spots along the entire path
+            for (int i = 0; i < path.Count && spotsCreated < placementAreasPerLane; i += defenderSpotSpacing)
             {
-                int surfaceY = GetSurfaceY(pos.x, pos.z);
-                // Check a 5x5 grid around each path position for valid defender spots.
-                for (int x = -2; x <= 2; x++)
+                var pathPos = path[i];
+                int surfaceY = GetSurfaceY(pathPos.x, pathPos.z);
+                
+                // Calculate direction perpendicular to path
+                Vector3Int direction = GetPerpendicularDirection(path, i);
+                
+                // Create spots on both sides of the path
+                for (int side = -1; side <= 1 && spotsCreated < placementAreasPerLane; side += 2) // -1 and 1 (left and right)
                 {
-                    for (int z = -2; z <= 2; z++)
+                    Vector3Int spotPos = new Vector3Int(
+                        pathPos.x + direction.x * defenderPlacementDistance * side,
+                        surfaceY - 1,
+                        pathPos.z + direction.z * defenderPlacementDistance * side
+                    );
+                    
+                    // Clamp to terrain bounds
+                    spotPos.x = Mathf.Clamp(spotPos.x, 0, width - 1);
+                    spotPos.z = Mathf.Clamp(spotPos.z, 0, depth - 1);
+                    
+                    // Check if this is a valid placement (not on path, not already used)
+                    if (IsValidDefenderPlacement(spotPos) && !preSelectedDefenderSpots.Contains(spotPos))
                     {
-                        Vector3Int testPosition = new Vector3Int(pos.x + x, surfaceY - 1, pos.z + z);
-                        // Clamp position to terrain bounds.
-                        testPosition.x = Mathf.Clamp(testPosition.x, 0, width - 1);
-                        testPosition.z = Mathf.Clamp(testPosition.z, 0, depth - 1);
-                        // Add position if valid and not already included.
-                        if (IsValidDefenderPlacement(testPosition) && !defenderLocations.Contains(testPosition))
+                        preSelectedDefenderSpots.Add(spotPos);
+                        defenderSpotsOccupied[spotPos] = false;
+                        
+                        // Determine spot type based on position along path
+                        float pathProgress = (float)i / path.Count;
+                        DefenderPlacementType spotType;
+                        if (pathProgress < 0.3f || pathProgress > 0.7f)
                         {
-                            defenderLocations.Add(testPosition);
+                            // Early or late in path - Advanced spots (Frost/Lightning)
+                            spotType = DefenderPlacementType.Advanced;
                         }
+                        else
+                        {
+                            // Middle of path - Basic spots (any defender)
+                            spotType = DefenderPlacementType.Basic;
+                        }
+                        defenderSpotTypes[spotPos] = spotType;
+                        
+                        // Create placement area prefab
+                        DefenderPlacementArea area = CreatePlacementArea(spotPos, spotType, pathIndex);
+                        if (area != null)
+                        {
+                            laneAreas.Add(area);
+                        }
+                        
+                        spotsCreated++;
                     }
                 }
             }
+            
+            // Store areas for this lane
+            placementAreasByLane[pathIndex] = laneAreas;
+            
+            Debug.Log($"Lane {pathIndex}: Generated {spotsCreated} placement areas along {path.Count} path positions");
         }
+        
+        // Use pre-selected spots as the only valid locations
+        defenderLocations = new List<Vector3Int>(preSelectedDefenderSpots);
+        
+        Debug.Log($"GenerateDefenderLocations: Final result - {preSelectedDefenderSpots.Count} pre-selected spots, {defenderLocations.Count} defender locations");
     }
 
     // Spawns trees randomly on grass tiles based on biome and density settings.
@@ -881,16 +1010,710 @@ public class VoxelTerrainGenerator : MonoBehaviour
         }
         highlightedChunks.Clear();
         
+        // Clear placement highlights
+        foreach (GameObject highlight in placementHighlights)
+        {
+            if (highlight != null)
+            {
+                Destroy(highlight);
+            }
+        }
+        placementHighlights.Clear();
+        
         // Clear legacy highlighting (fallback)
         GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
         foreach (GameObject obj in allObjects)
         {
-            if (obj.name == "DefenderPlacementHighlight" || obj.name.StartsWith("ChunkHighlight_"))
+            if (obj.name == "DefenderPlacementHighlight" || obj.name.StartsWith("ChunkHighlight_") || obj.name == "DefenderSpotHighlight")
             {
                 Destroy(obj);
             }
         }
         
         isHighlighting = false;
+    }
+
+    // ===== LIMITED DEFENDER PLACEMENT SYSTEM =====
+    
+    /// <summary>
+    /// Checks if a defender can be placed at the specified position
+    /// </summary>
+    public bool CanPlaceDefenderAt(Vector3Int position)
+    {
+        return preSelectedDefenderSpots.Contains(position) && 
+               !defenderSpotsOccupied[position];
+    }
+
+    /// <summary>
+    /// Checks if a specific defender type can be placed at the specified position
+    /// </summary>
+    public bool CanPlaceDefenderAt(Vector3Int position, DefenderType defenderType)
+    {
+        // First check if it's a valid basic placement (not on path, within bounds, etc.)
+        if (!IsValidDefenderPlacement(position))
+            return false;
+            
+        // Check if it's a pre-selected spot and not occupied
+        if (!preSelectedDefenderSpots.Contains(position) || defenderSpotsOccupied[position])
+            return false;
+        
+        // Get the placement type for this spot
+        DefenderPlacementType spotType = defenderSpotTypes.ContainsKey(position) ? 
+            defenderSpotTypes[position] : DefenderPlacementType.Basic;
+        
+        // Check constraints based on defender type and spot type
+        switch (defenderType)
+        {
+            case DefenderType.Basic:
+                // Basic defenders can be placed anywhere
+                return true;
+                
+            case DefenderType.FrostTower:
+            case DefenderType.LightningTower:
+                // Advanced defenders can only be placed on Advanced spots
+                return spotType == DefenderPlacementType.Advanced;
+                
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Marks a defender spot as occupied
+    /// </summary>
+    public void MarkDefenderSpotOccupied(Vector3Int position)
+    {
+        if (defenderSpotsOccupied.ContainsKey(position))
+        {
+            defenderSpotsOccupied[position] = true;
+        }
+    }
+
+    /// <summary>
+    /// Marks a defender spot as unoccupied
+    /// </summary>
+    public void MarkDefenderSpotUnoccupied(Vector3Int position)
+    {
+        if (defenderSpotsOccupied.ContainsKey(position))
+        {
+            defenderSpotsOccupied[position] = false;
+        }
+    }
+
+    /// <summary>
+    /// Gets all available (unoccupied) defender spots
+    /// </summary>
+    public List<Vector3Int> GetAvailableDefenderSpots()
+    {
+        List<Vector3Int> available = new List<Vector3Int>();
+        foreach (var spot in preSelectedDefenderSpots)
+        {
+            if (!defenderSpotsOccupied[spot])
+            {
+                available.Add(spot);
+            }
+        }
+        return available;
+    }
+
+    /// <summary>
+    /// Gets all placement area components
+    /// </summary>
+    public List<DefenderPlacementArea> GetPlacementAreas()
+    {
+        return placementAreas;
+    }
+
+    /// <summary>
+    /// Gets available placement areas (not occupied)
+    /// </summary>
+    public List<DefenderPlacementArea> GetAvailablePlacementAreas()
+    {
+        List<DefenderPlacementArea> available = new List<DefenderPlacementArea>();
+        foreach (var area in placementAreas)
+        {
+            if (area != null && !area.isOccupied)
+            {
+                available.Add(area);
+            }
+        }
+        return available;
+    }
+
+    /// <summary>
+    /// Gets placement areas for a specific lane
+    /// </summary>
+    public List<DefenderPlacementArea> GetPlacementAreasForLane(int laneIndex)
+    {
+        if (placementAreasByLane.ContainsKey(laneIndex))
+        {
+            return placementAreasByLane[laneIndex];
+        }
+        return new List<DefenderPlacementArea>();
+    }
+
+    /// <summary>
+    /// Gets the number of defenders placed in a specific lane
+    /// </summary>
+    public int GetDefendersInLane(int laneIndex)
+    {
+        if (defendersPerLane.ContainsKey(laneIndex))
+        {
+            return defendersPerLane[laneIndex];
+        }
+        return 0;
+    }
+
+    /// <summary>
+    /// Checks if a lane has reached its defender limit
+    /// </summary>
+    public bool IsLaneAtDefenderLimit(int laneIndex)
+    {
+        return GetDefendersInLane(laneIndex) >= maxDefendersPerLane;
+    }
+
+    /// <summary>
+    /// Gets the lane index for a specific placement area
+    /// </summary>
+    public int GetLaneForPlacementArea(DefenderPlacementArea area)
+    {
+        foreach (var kvp in placementAreasByLane)
+        {
+            if (kvp.Value.Contains(area))
+            {
+                return kvp.Key;
+            }
+        }
+        return -1; // Not found
+    }
+
+    /// <summary>
+    /// Increments the defender count for a specific lane
+    /// </summary>
+    public void IncrementDefendersInLane(int laneIndex)
+    {
+        if (defendersPerLane.ContainsKey(laneIndex))
+        {
+            defendersPerLane[laneIndex]++;
+        }
+        else
+        {
+            defendersPerLane[laneIndex] = 1;
+        }
+    }
+
+    /// <summary>
+    /// Decrements the defender count for a specific lane
+    /// </summary>
+    public void DecrementDefendersInLane(int laneIndex)
+    {
+        if (defendersPerLane.ContainsKey(laneIndex))
+        {
+            defendersPerLane[laneIndex] = Mathf.Max(0, defendersPerLane[laneIndex] - 1);
+        }
+    }
+
+    /// <summary>
+    /// Gets the count of defenders placed
+    /// </summary>
+    public int GetDefenderCount()
+    {
+        int count = 0;
+        foreach (var occupied in defenderSpotsOccupied.Values)
+        {
+            if (occupied) count++;
+        }
+        return count;
+    }
+
+    /// <summary>
+    /// Checks if the defender limit has been reached
+    /// </summary>
+    public bool IsDefenderLimitReached()
+    {
+        return GetDefenderCount() >= maxTotalDefenders;
+    }
+
+    /// <summary>
+    /// Highlights only the pre-selected defender spots (not all valid areas)
+    /// </summary>
+    public void HighlightPreSelectedDefenderSpots()
+    {
+        Debug.Log($"HighlightPreSelectedDefenderSpots called");
+        Debug.Log($"Placement areas count: {placementAreas.Count}");
+        
+        // If no placement areas exist, generate them first
+        if (placementAreas.Count == 0)
+        {
+            Debug.Log("No placement areas found - regenerating defender locations");
+            GenerateDefenderLocations();
+        }
+        
+        // Simply update visual state for each placement area
+        foreach (var area in placementAreas)
+        {
+            if (area != null)
+            {
+                area.UpdateVisualState();
+            }
+        }
+        
+        Debug.Log($"Updated {placementAreas.Count} placement areas");
+    }
+
+    /// <summary>
+    /// Test method to force create some defender spots for debugging
+    /// </summary>
+    public void CreateTestDefenderSpots()
+    {
+        Debug.Log("Creating test defender spots along paths...");
+        preSelectedDefenderSpots.Clear();
+        defenderSpotsOccupied.Clear();
+        defenderSpotTypes.Clear();
+        
+        // Create spots along each path
+        for (int pathIndex = 0; pathIndex < paths.Count; pathIndex++)
+        {
+            var path = paths[pathIndex];
+            int spotsCreated = 0;
+            
+            // Create spots along the entire path
+            for (int i = 0; i < path.Count; i += defenderSpotSpacing)
+            {
+                var pathPos = path[i];
+                int surfaceY = GetSurfaceY(pathPos.x, pathPos.z);
+                
+                // Calculate direction perpendicular to path
+                Vector3Int direction = GetPerpendicularDirection(path, i);
+                
+                // Create spots on both sides of the path
+                for (int side = -1; side <= 1; side += 2) // -1 and 1 (left and right)
+                {
+                    Vector3Int spotPos = new Vector3Int(
+                        pathPos.x + direction.x * defenderPlacementDistance * side,
+                        surfaceY - 1,
+                        pathPos.z + direction.z * defenderPlacementDistance * side
+                    );
+                    
+                    // Clamp to terrain bounds
+                    spotPos.x = Mathf.Clamp(spotPos.x, 0, width - 1);
+                    spotPos.z = Mathf.Clamp(spotPos.z, 0, depth - 1);
+                    
+                    // Check if this is a valid placement (not on path, not already used)
+                    if (IsValidDefenderPlacement(spotPos) && !preSelectedDefenderSpots.Contains(spotPos))
+                    {
+                        preSelectedDefenderSpots.Add(spotPos);
+                        defenderSpotsOccupied[spotPos] = false;
+                        
+                        // Determine spot type based on position along path
+                        float pathProgress = (float)i / path.Count;
+                        if (pathProgress < 0.3f || pathProgress > 0.7f)
+                        {
+                            // Early or late in path - Advanced spots (Frost/Lightning)
+                            defenderSpotTypes[spotPos] = DefenderPlacementType.Advanced;
+                        }
+                        else
+                        {
+                            // Middle of path - Basic spots (any defender)
+                            defenderSpotTypes[spotPos] = DefenderPlacementType.Basic;
+                        }
+                        
+                        spotsCreated++;
+                    }
+                }
+            }
+            
+            Debug.Log($"Path {pathIndex}: Created {spotsCreated} test spots along {path.Count} path positions");
+        }
+        
+        Debug.Log($"Created {preSelectedDefenderSpots.Count} test spots total");
+    }
+
+    /// <summary>
+    /// Gets advanced defender spots (Frost/Lightning towers) with strategic placement
+    /// </summary>
+    private List<Vector3Int> GetAdvancedDefenderSpots(int pathIndex, int numSpots)
+    {
+        List<Vector3Int> advancedSpots = new List<Vector3Int>();
+        if (pathIndex < 0 || pathIndex >= paths.Count) return advancedSpots;
+
+        var path = paths[pathIndex];
+        int pathLength = path.Count;
+        
+        // Advanced spots are placed at strategic positions:
+        // - Near the beginning of the path (early defense)
+        // - Near the end of the path (close to tower)
+        // - At the middle of the path (mid-range defense)
+        
+        List<int> strategicPositions = new List<int>();
+        
+        // Add positions at 25%, 50%, and 75% of the path
+        strategicPositions.Add(pathLength / 4);           // 25% - early defense
+        strategicPositions.Add(pathLength / 2);           // 50% - mid defense  
+        strategicPositions.Add((pathLength * 3) / 4);     // 75% - late defense
+        
+        foreach (int posIndex in strategicPositions)
+        {
+            if (posIndex < path.Count)
+            {
+                var pathPos = path[posIndex];
+                int surfaceY = GetSurfaceY(pathPos.x, pathPos.z);
+                
+                // Check a 3x3 grid around the strategic position
+                for (int x = -1; x <= 1; x++)
+                {
+                    for (int z = -1; z <= 1; z++)
+                    {
+                        Vector3Int testPosition = new Vector3Int(pathPos.x + x, surfaceY - 1, pathPos.z + z);
+                        testPosition.x = Mathf.Clamp(testPosition.x, 0, width - 1);
+                        testPosition.z = Mathf.Clamp(testPosition.z, 0, depth - 1);
+                        
+                        if (IsValidDefenderPlacement(testPosition) && !advancedSpots.Contains(testPosition))
+                        {
+                            advancedSpots.Add(testPosition);
+                            if (advancedSpots.Count >= numSpots) break;
+                        }
+                    }
+                    if (advancedSpots.Count >= numSpots) break;
+                }
+            }
+            if (advancedSpots.Count >= numSpots) break;
+        }
+        
+        return advancedSpots;
+    }
+
+    /// <summary>
+    /// Gets the perpendicular direction to the path at a specific position
+    /// </summary>
+    private Vector3Int GetPerpendicularDirection(List<Vector3Int> path, int position)
+    {
+        Vector3Int direction = Vector3Int.zero;
+        
+        if (position < path.Count - 1)
+        {
+            // Calculate direction from current to next position
+            Vector3Int current = path[position];
+            Vector3Int next = path[position + 1];
+            
+            int dx = next.x - current.x;
+            int dz = next.z - current.z;
+            
+            // Perpendicular direction (rotate 90 degrees)
+            direction = new Vector3Int(-dz, 0, dx);
+        }
+        else if (position > 0)
+        {
+            // Use previous direction if at end of path
+            Vector3Int current = path[position];
+            Vector3Int prev = path[position - 1];
+            
+            int dx = current.x - prev.x;
+            int dz = current.z - prev.z;
+            
+            // Perpendicular direction (rotate 90 degrees)
+            direction = new Vector3Int(-dz, 0, dx);
+        }
+        
+        // Normalize direction
+        if (direction.x != 0 || direction.z != 0)
+        {
+            direction.x = direction.x > 0 ? 1 : (direction.x < 0 ? -1 : 0);
+            direction.z = direction.z > 0 ? 1 : (direction.z < 0 ? -1 : 0);
+        }
+        else
+        {
+            // Default perpendicular direction if path is straight
+            direction = new Vector3Int(1, 0, 0);
+        }
+        
+        return direction;
+    }
+
+    /// <summary>
+    /// Creates a placement area prefab at the specified position
+    /// </summary>
+    private DefenderPlacementArea CreatePlacementArea(Vector3Int gridPos, DefenderPlacementType spotType, int laneIndex)
+    {
+        // Choose the appropriate prefab based on spot type
+        GameObject prefabToUse = spotType == DefenderPlacementType.Advanced ? 
+            advancedPlacementAreaPrefab : basicPlacementAreaPrefab;
+            
+        if (prefabToUse == null)
+        {
+            Debug.LogWarning($"No placement area prefab assigned for {spotType} spots! Creating simple plane.");
+            // Create a simple plane as fallback
+            prefabToUse = CreateSimplePlacementAreaPrefab(spotType);
+        }
+        
+        // Get world position
+        Vector3 worldPos = GetSurfaceWorldPosition(gridPos);
+        worldPos.y += 0.01f; // Slightly above surface
+        
+        // Create the placement area
+        GameObject placementArea = Instantiate(prefabToUse, worldPos, Quaternion.identity);
+        
+        // Get the DefenderPlacementArea component
+        DefenderPlacementArea areaComponent = placementArea.GetComponent<DefenderPlacementArea>();
+        if (areaComponent == null)
+        {
+            Debug.LogError($"Placement area prefab {prefabToUse.name} doesn't have DefenderPlacementArea component!");
+            Destroy(placementArea);
+            return null;
+        }
+        
+        // Configure the placement area
+        areaComponent.gridPosition = gridPos;
+        areaComponent.placementType = spotType;
+        areaComponent.isOccupied = false;
+        areaComponent.laneIndex = laneIndex;
+        
+        // Add to tracking lists
+        placementAreas.Add(areaComponent);
+        
+        Debug.Log($"Created {spotType} placement area at {worldPos} (grid: {gridPos}) for lane {laneIndex}");
+        
+        return areaComponent;
+    }
+
+    /// <summary>
+    /// Creates a simple placement area prefab as fallback
+    /// </summary>
+    private GameObject CreateSimplePlacementAreaPrefab(DefenderPlacementType spotType)
+    {
+        // Create a simple plane
+        GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        plane.name = $"SimplePlacementArea_{spotType}";
+        
+        // Add the DefenderPlacementArea component
+        DefenderPlacementArea areaComponent = plane.AddComponent<DefenderPlacementArea>();
+        
+        // Set up materials based on type
+        Renderer renderer = plane.GetComponent<Renderer>();
+        Material mat = new Material(Shader.Find("Standard"));
+        
+        if (spotType == DefenderPlacementType.Advanced)
+        {
+            mat.color = new Color(0, 0, 1, 0.3f); // Light blue for advanced
+        }
+        else
+        {
+            mat.color = new Color(0, 1, 0, 0.3f); // Light green for basic
+        }
+        
+        mat.SetFloat("_Mode", 3); // Transparent
+        renderer.material = mat;
+        
+        // Make it a trigger
+        Collider collider = plane.GetComponent<Collider>();
+        if (collider != null)
+        {
+            collider.isTrigger = true;
+        }
+        
+        // Scale it appropriately
+        plane.transform.localScale = new Vector3(0.5f, 1f, 0.5f); // Smaller than default plane
+        
+        Debug.Log($"Created simple placement area prefab for {spotType}");
+        return plane;
+    }
+
+    // ===== DYNAMIC PATH SYSTEM =====
+    
+    /// <summary>
+    /// Adds a new dynamic path based on player performance
+    /// </summary>
+    public bool TryAddDynamicPath()
+    {
+        // Check if we can add more paths
+        if (currentDynamicPaths >= maxDynamicPaths)
+        {
+            Debug.Log($"Maximum dynamic paths reached ({maxDynamicPaths})");
+            return false;
+        }
+        
+        // Check if we have performance tracker
+        if (performanceTracker == null)
+        {
+            performanceTracker = FindFirstObjectByType<PlayerPerformanceTracker>();
+            if (performanceTracker == null)
+            {
+                Debug.Log("No performance tracker found - cannot add dynamic paths");
+                return false;
+            }
+        }
+        
+        // Check performance threshold
+        if (performanceTracker.performanceScore < minPerformanceForNewPath)
+        {
+            Debug.Log($"Performance too low for new path: {performanceTracker.performanceScore:F1} < {minPerformanceForNewPath}");
+            return false;
+        }
+        
+        // Generate new path
+        Vector3Int entrance = GetRandomEdgePosition();
+        List<Vector3Int> newPath = GeneratePath(entrance, center);
+        
+        // Check if path is valid (long enough, minimal overlap)
+        if (newPath.Count > 10 && !PathsIntersect(newPath))
+        {
+            // Add to dynamic paths
+            dynamicPaths.Add(newPath);
+            paths.Add(newPath); // Add to main paths list
+            currentDynamicPaths++;
+            
+            // Mark path positions
+            foreach (var pos in newPath)
+            {
+                for (int dx = -pathWidth / 2; dx <= pathWidth / 2; dx++)
+                {
+                    for (int dz = -pathWidth / 2; dz <= pathWidth / 2; dz++)
+                    {
+                        int px = pos.x + dx;
+                        int pz = pos.z + dz;
+                        if (px >= 0 && px < width && pz >= 0 && pz < depth)
+                        {
+                            pathPositions.Add(new Vector2Int(px, pz));
+                        }
+                    }
+                }
+            }
+            
+            // Generate new defender spots for this path
+            GenerateDefenderSpotsForPath(newPath);
+            
+            Debug.Log($"DYNAMIC PATH ADDED! Total paths: {paths.Count}, Dynamic paths: {currentDynamicPaths}");
+            return true;
+        }
+        
+        Debug.Log("Failed to generate valid dynamic path");
+        return false;
+    }
+
+    /// <summary>
+    /// Generates defender spots for a specific path
+    /// </summary>
+    private void GenerateDefenderSpotsForPath(List<Vector3Int> path)
+    {
+        foreach (var pos in path)
+        {
+            int surfaceY = GetSurfaceY(pos.x, pos.z);
+            // Check a 5x5 grid around each path position for valid defender spots
+            for (int x = -2; x <= 2; x++)
+            {
+                for (int z = -2; z <= 2; z++)
+                {
+                    Vector3Int testPosition = new Vector3Int(pos.x + x, surfaceY - 1, pos.z + z);
+                    testPosition.x = Mathf.Clamp(testPosition.x, 0, width - 1);
+                    testPosition.z = Mathf.Clamp(testPosition.z, 0, depth - 1);
+                    
+                    if (IsValidDefenderPlacement(testPosition) && !defenderLocations.Contains(testPosition))
+                    {
+                        defenderLocations.Add(testPosition);
+                        preSelectedDefenderSpots.Add(testPosition);
+                        defenderSpotsOccupied[testPosition] = false;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks if a new path should be added based on wave and performance
+    /// </summary>
+    public bool ShouldAddDynamicPath(int currentWave, float performanceScore)
+    {
+        // Must be past the first dynamic path wave
+        if (currentWave < firstDynamicPathWave)
+            return false;
+        
+        // Must have high performance
+        if (performanceScore < performanceThresholdForNewPath)
+            return false;
+        
+        // Must not have reached max dynamic paths
+        if (currentDynamicPaths >= maxDynamicPaths)
+            return false;
+        
+        // Add path every 2-3 waves for high performers
+        int wavesSinceLastPath = currentWave - firstDynamicPathWave;
+        return (wavesSinceLastPath % 2 == 0) && (performanceScore > performanceThresholdForNewPath);
+    }
+
+    /// <summary>
+    /// Gets the total number of paths (original + dynamic)
+    /// </summary>
+    public int GetTotalPathCount()
+    {
+        return paths.Count;
+    }
+
+    /// <summary>
+    /// Gets the number of dynamic paths added
+    /// </summary>
+    public int GetDynamicPathCount()
+    {
+        return currentDynamicPaths;
+    }
+
+    /// <summary>
+    /// Highlights all paths including dynamic ones
+    /// </summary>
+    public void HighlightAllPaths()
+    {
+        // Clear existing highlights
+        ClearPathHighlights();
+        
+        // Highlight original paths in blue
+        foreach (var path in paths)
+        {
+            if (!dynamicPaths.Contains(path)) // Original path
+            {
+                HighlightPath(path, Color.blue);
+            }
+        }
+        
+        // Highlight dynamic paths in red
+        foreach (var path in dynamicPaths)
+        {
+            HighlightPath(path, Color.red);
+        }
+    }
+
+    /// <summary>
+    /// Highlights a specific path with a given color
+    /// </summary>
+    private void HighlightPath(List<Vector3Int> path, Color color)
+    {
+        foreach (var pos in path)
+        {
+            Vector3 worldPos = GetSurfaceWorldPosition(pos);
+            worldPos.y += 0.1f;
+            
+            GameObject highlight = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            highlight.transform.position = worldPos;
+            highlight.transform.localScale = Vector3.one * 0.8f;
+            highlight.name = "PathHighlight";
+            
+            Renderer renderer = highlight.GetComponent<Renderer>();
+            Material mat = new Material(Shader.Find("Standard"));
+            mat.color = color;
+            renderer.material = mat;
+            
+            Destroy(highlight.GetComponent<Collider>());
+        }
+    }
+
+    /// <summary>
+    /// Clears path highlights
+    /// </summary>
+    public void ClearPathHighlights()
+    {
+        GameObject[] highlights = GameObject.FindGameObjectsWithTag("PathHighlight");
+        foreach (var highlight in highlights)
+        {
+            if (highlight != null)
+                Destroy(highlight);
+        }
     }
 }

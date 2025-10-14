@@ -458,8 +458,26 @@ public class GameManager : MonoBehaviour
 
         if (defenderPrefabToUse == null) return false;
 
-        // Only allow placement on valid non-path tiles.
-        if (!terrainGenerator.IsValidDefenderPlacement(gridPosition)) return false;
+        // NEW: Check if defender limit is reached
+        if (terrainGenerator.IsDefenderLimitReached())
+        {
+            Debug.Log($"Defender limit reached! Maximum {terrainGenerator.maxTotalDefenders} defenders allowed.");
+            return false;
+        }
+        
+        // NEW: Check if position is a pre-selected spot and defender type is allowed
+        if (!terrainGenerator.CanPlaceDefenderAt(gridPosition, defenderType))
+        {
+            if (!terrainGenerator.CanPlaceDefenderAt(gridPosition))
+            {
+                Debug.Log("Defenders can only be placed on pre-selected spots near paths!");
+            }
+            else
+            {
+                Debug.Log($"Defender type {defenderType} cannot be placed on this spot type!");
+            }
+            return false;
+        }
 
         // Check if the player has enough resources.
         if (!SpendResources(cost)) return false;
@@ -474,7 +492,43 @@ public class GameManager : MonoBehaviour
 
         // Instantiate the defender prefab at the calculated position.
         Instantiate(defenderPrefabToUse, worldPos, Quaternion.identity);
+        
+        // NEW: Mark the spot as occupied after successful placement
+        terrainGenerator.MarkDefenderSpotOccupied(gridPosition);
+        
+        // NEW: Track defender per lane
+        var placementAreas = terrainGenerator.GetPlacementAreas();
+        foreach (var area in placementAreas)
+        {
+            if (area.gridPosition == gridPosition)
+            {
+                int laneIndex = area.laneIndex;
+                if (laneIndex >= 0)
+                {
+                    // Increment defender count for this lane
+                    terrainGenerator.IncrementDefendersInLane(laneIndex);
+                    
+                    // Mark area as occupied
+                    area.MarkOccupied();
+                    
+                    Debug.Log($"Defender placed in lane {laneIndex}. Defenders in lane: {terrainGenerator.GetDefendersInLane(laneIndex)}/{terrainGenerator.maxDefendersPerLane}");
+                }
+                break;
+            }
+        }
+        
         return true;
+    }
+
+    /// <summary>
+    /// Called when a defender is destroyed
+    /// </summary>
+    public void OnDefenderDestroyed(Vector3Int gridPosition)
+    {
+        if (terrainGenerator != null)
+        {
+            terrainGenerator.MarkDefenderSpotUnoccupied(gridPosition);
+        }
     }
 
     /// <summary>
