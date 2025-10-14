@@ -79,6 +79,22 @@ public class VoxelTerrainGenerator : MonoBehaviour
     // Percentage of grass tiles that will spawn trees (0 to 1).
     [Range(0, 1)] public float treeDensity = 0.05f;
 
+    [Header("Placement Prefabs")]
+    [Tooltip("Prefab for placement points (planes)")]
+    public GameObject placementPointPrefab;
+    
+    [Tooltip("Number of placement points per path")]
+    public int placementPointsPerPath = 10;
+    
+    [Tooltip("Minimum distance from path for placement points")]
+    public float minDistanceFromPath = 2f;
+    
+    [Tooltip("Maximum distance from path for placement points")]
+    public float maxDistanceFromPath = 8f;
+    
+    [Tooltip("Height offset above terrain for placement points")]
+    public float placementHeightOffset = 0.1f;
+
     [Header("Path Settings")]
     // Number of paths to carve from edges to the terrain center.
     public int numPaths = 3;
@@ -135,6 +151,8 @@ public class VoxelTerrainGenerator : MonoBehaviour
         CreateChunks();
         // Spawn trees on grass tiles.
         SpawnTrees();
+        // Spawn placement prefabs near paths.
+        SpawnPlacementPrefabs();
 
         // Mark generation as complete.
         isGenerated = true;
@@ -197,6 +215,155 @@ public class VoxelTerrainGenerator : MonoBehaviour
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Spawns placement prefabs near paths for defender placement
+    /// </summary>
+    public void SpawnPlacementPrefabs()
+    {
+        if (placementPointPrefab == null)
+        {
+            Debug.LogWarning("No placement point prefab assigned - skipping placement prefab generation");
+            return;
+        }
+
+        Debug.Log($"Spawning placement prefabs for {paths.Count} paths");
+        
+        // Generate placement prefabs for each path
+        for (int pathIndex = 0; pathIndex < paths.Count; pathIndex++)
+        {
+            List<Vector3Int> path = paths[pathIndex];
+            int pointsCreated = 0;
+            
+            // Try to create placement points along this path
+            for (int i = 0; i < path.Count && pointsCreated < placementPointsPerPath; i += path.Count / placementPointsPerPath)
+            {
+                Vector3Int pathPos = path[i];
+                Vector3 worldPos = GetSurfaceWorldPosition(pathPos);
+                
+                // Try to find a valid placement position near this path point
+                Vector3 placementPos = FindValidPlacementPosition(worldPos, path);
+                
+                if (placementPos != Vector3.zero)
+                {
+                    // Create placement prefab
+                    GameObject placementPoint = Instantiate(placementPointPrefab, placementPos, Quaternion.identity);
+                    placementPoint.transform.SetParent(transform);
+                    placementPoint.name = $"PlacementPoint_Path{pathIndex}_{pointsCreated}";
+                    
+                    // Add a simple collider if none exists
+                    if (placementPoint.GetComponent<Collider>() == null)
+                    {
+                        BoxCollider collider = placementPoint.AddComponent<BoxCollider>();
+                        collider.isTrigger = true;
+                    }
+                    
+                    // Set tag for easy detection
+                    placementPoint.tag = "PlacementPoint";
+                    
+                    // Add a component to store the valid grid position for this placement point
+                    PlacementPointData pointData = placementPoint.AddComponent<PlacementPointData>();
+                    pointData.validGridPosition = new Vector3Int(
+                        Mathf.RoundToInt(placementPos.x),
+                        GetSurfaceY(Mathf.RoundToInt(placementPos.x), Mathf.RoundToInt(placementPos.z)) - 1,
+                        Mathf.RoundToInt(placementPos.z)
+                    );
+                    
+                    pointsCreated++;
+                    Debug.Log($"Created placement point at {placementPos} with grid position {pointData.validGridPosition} for path {pathIndex}");
+                }
+            }
+            
+            Debug.Log($"Path {pathIndex}: Created {pointsCreated} placement points");
+        }
+    }
+
+    /// <summary>
+    /// Finds a valid placement position near the given path position
+    /// </summary>
+    Vector3 FindValidPlacementPosition(Vector3 pathWorldPos, List<Vector3Int> path)
+    {
+        int attempts = 0;
+        int maxAttempts = 20;
+        
+        while (attempts < maxAttempts)
+        {
+            // Generate random position around the path point
+            Vector2 randomOffset = Random.insideUnitCircle * maxDistanceFromPath;
+            Vector3 candidatePos = pathWorldPos + new Vector3(randomOffset.x, 0, randomOffset.y);
+            
+            // Clamp to terrain bounds to prevent array out of bounds
+            candidatePos.x = Mathf.Clamp(candidatePos.x, 0, width - 1);
+            candidatePos.z = Mathf.Clamp(candidatePos.z, 0, depth - 1);
+            
+            // Check if position is valid
+            if (IsValidPlacementPosition(candidatePos, path))
+            {
+                // Adjust height to terrain surface
+                Vector3Int gridPos = new Vector3Int(
+                    Mathf.RoundToInt(candidatePos.x), 
+                    0, 
+                    Mathf.RoundToInt(candidatePos.z)
+                );
+                
+                // Double-check bounds before calling GetSurfaceWorldPosition
+                if (gridPos.x >= 0 && gridPos.x < width && gridPos.z >= 0 && gridPos.z < depth)
+                {
+                    candidatePos.y = GetSurfaceWorldPosition(gridPos).y + placementHeightOffset;
+                    return candidatePos;
+                }
+            }
+            
+            attempts++;
+        }
+        
+        return Vector3.zero;
+    }
+
+    /// <summary>
+    /// Checks if a position is valid for placement
+    /// </summary>
+    bool IsValidPlacementPosition(Vector3 position, List<Vector3Int> path)
+    {
+        // Check if position is within terrain bounds
+        if (position.x < 0 || position.x >= width || 
+            position.z < 0 || position.z >= depth)
+        {
+            return false;
+        }
+        
+        // Check distance from path
+        float minDistance = float.MaxValue;
+        foreach (var pathPos in path)
+        {
+            Vector3 pathWorldPos = GetSurfaceWorldPosition(pathPos);
+            float distance = Vector3.Distance(position, pathWorldPos);
+            minDistance = Mathf.Min(minDistance, distance);
+        }
+        
+        // Must be within valid distance range
+        if (minDistance < minDistanceFromPath || minDistance > maxDistanceFromPath)
+        {
+            return false;
+        }
+        
+        // Check if position is not on the path itself
+        Vector3Int gridPos = new Vector3Int(
+            Mathf.RoundToInt(position.x),
+            0,
+            Mathf.RoundToInt(position.z)
+        );
+        
+        foreach (var pathPos in path)
+        {
+            if (pathPos == gridPos)
+            {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     // Divides the terrain into chunks and generates them.
@@ -420,7 +587,16 @@ public class VoxelTerrainGenerator : MonoBehaviour
     public Vector3Int GetCenterGrid() => center;
 
     // Returns the surface height at grid position (x, z).
-    public int GetSurfaceY(int x, int z) => columnHeights[x, z];
+    public int GetSurfaceY(int x, int z) 
+    {
+        // Add bounds checking to prevent array out of bounds
+        if (x < 0 || x >= width || z < 0 || z >= depth)
+        {
+            Debug.LogWarning($"GetSurfaceY: Position ({x}, {z}) is outside terrain bounds ({width}x{depth})");
+            return 0; // Return 0 for out of bounds positions
+        }
+        return columnHeights[x, z];
+    }
 
     // Converts a grid position to a world position at the surface.
     public Vector3 GetSurfaceWorldPosition(Vector3Int grid)

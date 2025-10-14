@@ -111,25 +111,55 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         
         if (Physics.Raycast(ray, out hit))
         {
-            Vector3 worldPos = hit.point;
-            previewObject.transform.position = worldPos;
-            
-            // Convert to grid position
-            currentGridPosition = terrainGenerator.WorldToGridPosition(worldPos);
-            
-            // Check if placement is valid
-            isValidPlacement = terrainGenerator.IsValidDefenderPlacement(currentGridPosition);
-            
-            // Update visual feedback
-            Renderer renderer = previewObject.GetComponent<Renderer>();
-            if (renderer != null)
+            // Check if we hit a placement point
+            if (hit.collider.CompareTag("PlacementPoint"))
             {
-                renderer.material = isValidPlacement ? validPlacementMaterial : invalidPlacementMaterial;
+                // Get the placement point data
+                PlacementPointData pointData = hit.collider.GetComponent<PlacementPointData>();
+                
+                if (pointData != null && pointData.IsAvailable())
+                {
+                    // This is a valid placement point - show preview
+                    Vector3 snappedWorldPos = hit.collider.transform.position;
+                    snappedWorldPos.y += 0.1f; // Slightly above the plane
+                    previewObject.transform.position = snappedWorldPos;
+                    previewObject.SetActive(true);
+                    
+                    // Use the valid grid position from the placement point
+                    currentGridPosition = pointData.GetValidGridPosition();
+                    isValidPlacement = true;
+                    
+                    // Update visual feedback
+                    Renderer renderer = previewObject.GetComponent<Renderer>();
+                    if (renderer != null)
+                    {
+                        renderer.material = validPlacementMaterial;
+                    }
+                    
+                    Debug.Log($"Hovering over placement point at {snappedWorldPos}, valid grid position: {currentGridPosition}");
+                }
+                else
+                {
+                    // Placement point is occupied or invalid
+                    previewObject.SetActive(false);
+                    currentGridPosition = Vector3Int.zero;
+                    isValidPlacement = false;
+                }
             }
             else
             {
-                Debug.LogWarning("Preview object has no Renderer component for visual feedback!");
+                // Not over a placement point - hide preview
+                previewObject.SetActive(false);
+                currentGridPosition = Vector3Int.zero;
+                isValidPlacement = false;
             }
+        }
+        else
+        {
+            // No hit - hide preview
+            previewObject.SetActive(false);
+            currentGridPosition = Vector3Int.zero;
+            isValidPlacement = false;
         }
     }
     
@@ -139,22 +169,37 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         
         if (isValidPlacement)
         {
+            Debug.Log($"Attempting to place {defenderType} at {currentGridPosition}");
+            
             // Place the defender
             if (gameManager.TryPlaceDefender(currentGridPosition, defenderType))
             {
                 Debug.Log($"Successfully placed {defenderType} defender at {currentGridPosition}!");
+                
+                // Mark the placement point as occupied
+                Ray ray = cam.ScreenPointToRay(eventData.position);
+                RaycastHit hit;
+                if (Physics.Raycast(ray, out hit) && hit.collider.CompareTag("PlacementPoint"))
+                {
+                    PlacementPointData pointData = hit.collider.GetComponent<PlacementPointData>();
+                    if (pointData != null)
+                    {
+                        pointData.MarkAsOccupied();
+                        Debug.Log($"Placement point {hit.collider.name} is now occupied");
+                    }
+                }
                 
                 // Play placement effect
                 PlayPlacementEffect(currentGridPosition);
             }
             else
             {
-                Debug.Log("Failed to place defender - not enough resources or invalid position!");
+                Debug.Log("Failed to place defender - check resources and limits!");
             }
         }
         else
         {
-            Debug.Log("Invalid placement location!");
+            Debug.Log("Invalid placement location - must be on a valid placement point!");
         }
         
         // Clean up

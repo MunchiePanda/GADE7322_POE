@@ -1010,7 +1010,6 @@ GameObject:
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
-  - component: {fileID: 330585549}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1154,35 +1153,6 @@ MonoBehaviour:
   useSphericalCulling: 1
   shadowDistance: 75
   applyShadowDistance: 0
---- !u!114 &330585549
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe89fe88b4d014d488c88108e619c02f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cameraHeight: 20
-  cameraAngle: 60
-  cameraOffset: {x: 0, y: 0, z: -10}
-  panSpeed: 10
-  zoomSpeed: 5
-  minZoom: 10
-  maxZoom: 30
-  movementResponsiveness: 8
-  boundaryMargin: 5
-  enableMouseEdgePanning: 1
-  edgePanDistance: 20
-  mousePanSpeedMultiplier: 1.5
-  mousePanSmoothness: 5
-  enableMouseDragPanning: 1
-  mouseDragSpeedMultiplier: 2
-  terrainGenerator: {fileID: 1975398409}
-  inputActions: {fileID: 0}
 --- !u!1 &402756658
 GameObject:
   m_ObjectHideFlags: 0
@@ -1781,7 +1751,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30.55
+  m_fontSize: 47.95
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2174,6 +2144,8 @@ MonoBehaviour:
   frostTowerDragDrop: {fileID: 1189634348}
   lightningTowerDragDrop: {fileID: 1039556532}
   gameManager: {fileID: 1117801836}
+  frostTowerUnlockWave: 3
+  lightningTowerUnlockWave: 6
 --- !u!4 &824818026
 Transform:
   m_ObjectHideFlags: 0
@@ -2745,6 +2717,7 @@ MonoBehaviour:
   pauseMenuUI: {fileID: 1676361400}
   waveCountdownUI: {fileID: 1951697462}
   criticalHitSystem: {fileID: 0}
+  performanceTracker: {fileID: 0}
   currentWave: 1
 --- !u!4 &1117801837
 Transform:
@@ -3323,7 +3296,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 44.4
+  m_fontSize: 43.25
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3906,6 +3879,11 @@ MonoBehaviour:
   invalidPlacementMaterial: {fileID: 2100000, guid: b5aa66c28f25f7a4bba6dbc4289c4353, type: 2}
   treePrefab: {fileID: 4032642331417584291, guid: e133dac167ef59c40b7678ba58107c6a, type: 3}
   treeDensity: 0.007
+  placementPointPrefab: {fileID: 3268727406298683723, guid: 944f9986885b8d54f9911345df1d6a79, type: 3}
+  placementPointsPerPath: 10
+  minDistanceFromPath: 2
+  maxDistanceFromPath: 8
+  placementHeightOffset: 0.1
   numPaths: 5
   pathWidth: 2
   terrainLayer: 6
