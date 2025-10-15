@@ -1167,17 +1167,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 10
-  rotationSpeed: 100
-  zoomSpeed: 5
-  minX: -50
-  maxX: 50
-  minZ: -50
-  maxZ: 50
-  minY: 10
-  maxY: 100
-  setInitialPosition: 1
-  initialPosition: {x: 77, y: 55, z: 71}
-  initialRotation: {x: 81.979, y: 0, z: 0}
+  mouseSensitivity: 2
+  verticalSpeed: 5
 --- !u!1 &402756658
 GameObject:
   m_ObjectHideFlags: 0
@@ -1776,7 +1767,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 46.55
+  m_fontSize: 51.75
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3211,7 +3202,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 49.4
+  m_fontSize: 59.45
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
