@@ -48,6 +48,12 @@ public class GameManager : MonoBehaviour
     public int lightningTowerCost = 35;
     [Tooltip("Initial amount of resources the player starts with.")]
     public int startingResources = 100;
+    
+    [Header("Defender Limits")]
+    [Tooltip("Maximum number of defenders allowed at once")]
+    public int maxDefenderCount = 10;
+    [Tooltip("Current number of active defenders")]
+    public int currentDefenderCount = 0;
 
     [Header("Placement Offsets")]
     [Tooltip("Vertical offset for placing the tower (adjust based on tower model pivot).")]
@@ -119,6 +125,9 @@ public class GameManager : MonoBehaviour
             resourceCounterUI.SetResource(resources);
         if (defenderCostUI != null)
             defenderCostUI.SetCost(defenderCost);
+            
+        // Initialize defender count
+        CountCurrentDefenders();
 
         // Ensure the terrain is generated before placing the tower.
         if (!terrainGenerator.IsReady)
@@ -414,6 +423,25 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Attempts to place a specific type of defender at the specified world position.
+    /// </summary>
+    /// <param name="worldPosition">Exact world position where the defender should be placed.</param>
+    /// <param name="defenderType">Type of defender to place.</param>
+    /// <returns>True if the defender was placed successfully, false otherwise.</returns>
+    public bool TryPlaceDefenderAtWorldPosition(Vector3 worldPosition, DefenderType defenderType)
+    {
+        // Convert world position to grid position for validation
+        Vector3Int gridPos = new Vector3Int(
+            Mathf.RoundToInt(worldPosition.x),
+            0,
+            Mathf.RoundToInt(worldPosition.z)
+        );
+        
+        // Use the existing grid-based validation but place at exact world position
+        return TryPlaceDefenderAtExactPosition(worldPosition, gridPos, defenderType);
+    }
+    
+    /// <summary>
     /// Attempts to place a specific type of defender at the specified grid position.
     /// </summary>
     /// <param name="gridPosition">Grid position where the defender should be placed.</param>
@@ -463,6 +491,13 @@ public class GameManager : MonoBehaviour
 
         // Check if the player has enough resources.
         if (!SpendResources(cost)) return false;
+        
+        // Check defender count limit
+        if (currentDefenderCount >= maxDefenderCount)
+        {
+            Debug.Log($"❌ Defender limit reached! ({currentDefenderCount}/{maxDefenderCount}) - Remove a defender first!");
+            return false;
+        }
 
         // Clamp the grid position to ensure it's within terrain bounds.
         int gx = Mathf.Clamp(gridPosition.x, 0, terrainGenerator.width - 1);
@@ -473,8 +508,112 @@ public class GameManager : MonoBehaviour
         worldPos.y += defenderYOffset;
 
         // Instantiate the defender prefab at the calculated position.
-        Instantiate(defenderPrefabToUse, worldPos, Quaternion.identity);
+        GameObject newDefender = Instantiate(defenderPrefabToUse, worldPos, Quaternion.identity);
+        
+        // Increment defender count
+        currentDefenderCount++;
+        Debug.Log($"✅ Defender placed! Count: {currentDefenderCount}/{maxDefenderCount}");
+        
         return true;
+    }
+    
+    /// <summary>
+    /// Places a defender at an exact world position with grid-based validation
+    /// </summary>
+    /// <param name="worldPosition">Exact world position for placement</param>
+    /// <param name="gridPosition">Grid position for validation</param>
+    /// <param name="defenderType">Type of defender to place</param>
+    /// <returns>True if placement was successful</returns>
+    bool TryPlaceDefenderAtExactPosition(Vector3 worldPosition, Vector3Int gridPosition, DefenderType defenderType)
+    {
+        // Exit if the game is over, paused, or required references are missing.
+        if (isGameOver || isPaused) return false;
+        if (terrainGenerator == null) return false;
+        
+        // Check progressive unlocking system
+        if (!IsDefenderTypeUnlocked(defenderType))
+        {
+            Debug.Log($"Defender type {defenderType} is not yet unlocked! Current wave: {currentWave}");
+            return false;
+        }
+
+        // Get the appropriate prefab and cost based on defender type
+        GameObject defenderPrefabToUse;
+        int cost;
+        
+        switch (defenderType)
+        {
+            case DefenderType.Basic:
+                defenderPrefabToUse = defenderPrefab;
+                cost = defenderCost;
+                break;
+            case DefenderType.FrostTower:
+                defenderPrefabToUse = frostTowerPrefab;
+                cost = frostTowerCost;
+                break;
+            case DefenderType.LightningTower:
+                defenderPrefabToUse = lightningTowerPrefab;
+                cost = lightningTowerCost;
+                break;
+            default:
+                defenderPrefabToUse = defenderPrefab;
+                cost = defenderCost;
+                break;
+        }
+
+        if (defenderPrefabToUse == null) return false;
+
+        // Only allow placement on valid non-path tiles (using grid position for validation)
+        if (!terrainGenerator.IsValidDefenderPlacement(gridPosition)) return false;
+        
+        // Check defender count limit BEFORE spending resources
+        if (currentDefenderCount >= maxDefenderCount)
+        {
+            Debug.Log($"❌ Defender limit reached! ({currentDefenderCount}/{maxDefenderCount}) - Remove a defender first!");
+            return false;
+        }
+
+        // Check if the player has enough resources.
+        if (!SpendResources(cost)) return false;
+
+        // Use the exact world position for placement
+        Vector3 finalPosition = worldPosition;
+        finalPosition.y += defenderYOffset;
+
+        Debug.Log($"🎯 PLACEMENT DEBUG: World position: {worldPosition}, Final position: {finalPosition}");
+
+        // Instantiate the defender prefab at the exact position
+        GameObject newDefender = Instantiate(defenderPrefabToUse, finalPosition, Quaternion.identity);
+        
+        Debug.Log($"🎯 DEFENDER PLACED: {newDefender.name} at {newDefender.transform.position}");
+        
+        // Increment defender count
+        currentDefenderCount++;
+        Debug.Log($"✅ Defender placed at exact position! Count: {currentDefenderCount}/{maxDefenderCount}");
+        
+        return true;
+    }
+    
+    /// <summary>
+    /// Called when a defender dies to update the count
+    /// </summary>
+    public void OnDefenderDestroyed()
+    {
+        if (currentDefenderCount > 0)
+        {
+            currentDefenderCount--;
+            Debug.Log($"💀 Defender destroyed! Count: {currentDefenderCount}/{maxDefenderCount}");
+        }
+    }
+    
+    /// <summary>
+    /// Counts current defenders in the scene
+    /// </summary>
+    void CountCurrentDefenders()
+    {
+        Defender[] defenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
+        currentDefenderCount = defenders.Length;
+        Debug.Log($"🏰 Initial defender count: {currentDefenderCount}/{maxDefenderCount}");
     }
 
     /// <summary>

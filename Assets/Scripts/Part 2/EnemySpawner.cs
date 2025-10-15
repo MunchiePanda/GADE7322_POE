@@ -47,6 +47,10 @@ public class EnemySpawner : MonoBehaviour
 
     [Tooltip("Reference to the wave progression system")]
     public WaveProgressionSystem waveProgressionSystem;
+    
+    [Header("Path Selection")]
+    [Tooltip("Currently selected path for spawning (0-based index)")]
+    public int selectedPathIndex = 0;
 
     [Tooltip("How much player performance affects enemy count (0.5 = 50% influence)")]
     public float performanceCountMultiplier = 0.5f;
@@ -67,7 +71,7 @@ public class EnemySpawner : MonoBehaviour
     public float minStatMultiplier = 0.4f;
 
 
-    private int currentWave = 0; // Start at 0 so first wave is 1
+    public int currentWave = 0; // Start at 0 so first wave is 1
     private int enemiesRemainingInWave;
     private bool isSpawning = false;
     private List<GameObject> activeEnemies = new List<GameObject>();
@@ -155,6 +159,19 @@ public class EnemySpawner : MonoBehaviour
 
         currentWave++;
         
+        // Check for path unlocks
+        if (gameManager != null && gameManager.terrainGenerator != null)
+        {
+            gameManager.terrainGenerator.CheckPathUnlocks();
+        }
+        
+        // Update path availability after potential unlocks
+        PathSelector pathSelector = FindFirstObjectByType<PathSelector>();
+        if (pathSelector != null)
+        {
+            pathSelector.UpdatePathAvailability();
+        }
+        
         // Notify performance tracker of wave start
         if (performanceTracker != null)
         {
@@ -220,7 +237,7 @@ public class EnemySpawner : MonoBehaviour
         // Choose enemy type using wave progression system
         GameObject enemyPrefab = SelectEnemyTypeWithWaveProgression();
 
-        // Get a random path and spawn point
+        // Get the selected path and spawn point
         List<List<Vector3Int>> paths = gameManager.terrainGenerator.GetPaths();
         if (paths.Count == 0)
         {
@@ -228,8 +245,10 @@ public class EnemySpawner : MonoBehaviour
             return;
         }
 
-        List<Vector3Int> randomPath = paths[Random.Range(0, paths.Count)];
-        Vector3 spawnPosition = new Vector3(randomPath[0].x, gameManager.terrainGenerator.height, randomPath[0].z);
+        // Use random path for spawning (not the selected path for targeting)
+        List<Vector3Int> spawnPath = paths[Random.Range(0, paths.Count)];
+        Debug.Log($"🎯 SPAWN: Using random path {paths.IndexOf(spawnPath) + 1} of {paths.Count} available paths");
+        Vector3 spawnPosition = new Vector3(spawnPath[0].x, gameManager.terrainGenerator.height, spawnPath[0].z);
         
         // Special spawn height for tank enemies (more important, spawn higher)
         if (enemyPrefab == tankEnemyPrefab)
@@ -262,7 +281,7 @@ public class EnemySpawner : MonoBehaviour
             Debug.LogError("Tower instance or Tower component is not available!");
         }
 
-        enemy.Initialize(randomPath, gameManager.terrainGenerator.height, towerComponent, gameManager);
+        enemy.Initialize(spawnPath, gameManager.terrainGenerator.height, towerComponent, gameManager);
         
         // Apply adaptive scaling to enemy stats AFTER initialization
         if (waveProgressionSystem != null)
@@ -557,5 +576,15 @@ public class EnemySpawner : MonoBehaviour
     {
         if (performanceTracker == null) return "No Tracker";
         return performanceTracker.GetPerformanceLevel();
+    }
+    
+    /// <summary>
+    /// Sets the selected path for enemy spawning
+    /// </summary>
+    /// <param name="pathIndex">Path index to select (0-based)</param>
+    public void SetSelectedPath(int pathIndex)
+    {
+        selectedPathIndex = pathIndex;
+        Debug.Log($"🎯 EnemySpawner: Selected path {pathIndex + 1}");
     }
 }

@@ -1776,7 +1776,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 35.2
+  m_fontSize: 38.3
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2163,8 +2163,8 @@ MonoBehaviour:
   frostTowerCostText: {fileID: 306754998}
   lightningTowerCostText: {fileID: 134014787}
   basicDefenderCost: 25
-  frostTowerCost: 40
-  lightningTowerCost: 35
+  frostTowerCost: 100
+  lightningTowerCost: 120
   basicDefenderDragDrop: {fileID: 967242894}
   frostTowerDragDrop: {fileID: 1189634348}
   lightningTowerDragDrop: {fileID: 1039556532}
@@ -2733,6 +2733,8 @@ MonoBehaviour:
   frostTowerCost: 40
   lightningTowerCost: 35
   startingResources: 100
+  maxDefenderCount: 10
+  currentDefenderCount: 0
   towerYOffset: 1
   enemyYOffset: 1
   defenderYOffset: 1
@@ -3360,7 +3362,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 45.6
+  m_fontSize: 46.05
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3943,13 +3945,13 @@ MonoBehaviour:
   invalidPlacementMaterial: {fileID: 2100000, guid: b5aa66c28f25f7a4bba6dbc4289c4353, type: 2}
   treePrefab: {fileID: 4032642331417584291, guid: e133dac167ef59c40b7678ba58107c6a, type: 3}
   treeDensity: 0.007
-  placementPointPrefab: {fileID: 3268727406298683723, guid: 944f9986885b8d54f9911345df1d6a79, type: 3}
-  placementPointsPerPath: 10
-  minDistanceFromPath: 2
-  maxDistanceFromPath: 8
-  placementHeightOffset: 0.1
   numPaths: 5
+  maxPaths: 5
   pathWidth: 2
+  path4UnlockWave: 10
+  path5UnlockWave: 15
+  path4PerformanceRequirement: 70
+  path5PerformanceRequirement: 80
   terrainLayer: 6
 --- !u!4 &1975398410
 Transform:

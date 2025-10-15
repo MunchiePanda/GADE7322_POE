@@ -68,7 +68,7 @@ MonoBehaviour:
   lightningEffectPrefab: {fileID: 2705533495200665743, guid: e84c40719cee66744925cce01bef28fc, type: 3}
   lightningLine: {fileID: 0}
   lightningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  lightningProjectilePrefab: {fileID: 0}
+  lightningProjectilePrefab: {fileID: 3042168292579264235, guid: e6de26e523231414188260ac7b42ce19, type: 3}
 --- !u!114 &1866280684419928503
 MonoBehaviour:
   m_ObjectHideFlags: 0

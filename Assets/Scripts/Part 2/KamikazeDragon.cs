@@ -8,19 +8,26 @@ public class KamikazeDragon : Enemy
 {
     [Header("Kamikaze Settings")]
     [Tooltip("Speed multiplier when charging at target")]
-    public float chargeSpeedMultiplier = 3f;
+    public float chargeSpeedMultiplier = 4f;
     
-    [Tooltip("Explosion damage radius")]
-    public float explosionRadius = 4f;
+    [Tooltip("Explosion damage radius (AOE)")]
+    public float explosionRadius = 10f;
     
     [Tooltip("Explosion damage amount")]
-    public float explosionDamage = 25f;
+    public float explosionDamage = 50f;
     
     [Tooltip("Visual effect for explosion")]
     public GameObject explosionEffectPrefab;
     
     [Tooltip("Particle system for charge effect")]
     public ParticleSystem chargeParticles;
+    
+    [Header("Scaling Explosion")]
+    [Tooltip("Explosion radius scales with wave")]
+    public float explosionRadiusScaling = 1.1f;
+    
+    [Tooltip("Explosion damage scales with wave")]
+    public float explosionDamageScaling = 1.2f;
     
     private bool isCharging = false;
     private Transform chargeTarget = null;
@@ -30,11 +37,11 @@ public class KamikazeDragon : Enemy
     {
         base.Start();
         // Kamikaze characteristics
-        moveSpeed = 6f;           // Very fast base speed
-        maxHealth = 8f;          // Low health
+        moveSpeed = 8f;           // Very fast base speed (increased)
+        maxHealth = 6f;          // Lower health for faster gameplay
         currentHealth = maxHealth;
         attackDamage = 0f;       // No regular attack damage (explodes instead)
-        detectionRange = 15f;    // Long detection range
+        detectionRange = 30f;    // Very long detection range to find any defender
         originalSpeed = moveSpeed;
         
         // Visual setup
@@ -78,41 +85,85 @@ public class KamikazeDragon : Enemy
 
     void AcquireChargeTarget()
     {
-        // Look for defenders first
-        Collider[] hits = Physics.OverlapSphere(transform.position, detectionRange);
-        Debug.Log($"Bomber looking for targets in range {detectionRange}, found {hits.Length} colliders");
+        // Look for ANY defender in range - much more flexible targeting
+        float searchRange = detectionRange * 2f; // Even larger detection range
+        Collider[] hits = Physics.OverlapSphere(transform.position, searchRange);
+        Debug.Log($"🎯 BOMBER SEARCH: Looking for ANY defender in range {searchRange}, found {hits.Length} colliders");
+        
         float nearestDistance = float.MaxValue;
         Transform nearestTarget = null;
 
+        // First pass: Look for any defender in range
         foreach (var hit in hits)
         {
-            Defender defender = hit.GetComponentInParent<Defender>();
+            // Check for Defender component in the hit object or its children
+            Defender defender = hit.GetComponent<Defender>();
+            if (defender == null)
+            {
+                defender = hit.GetComponentInParent<Defender>();
+            }
+            if (defender == null)
+            {
+                defender = hit.GetComponentInChildren<Defender>();
+            }
+            
             if (defender != null && defender.IsAlive())
             {
                 float distance = Vector3.Distance(transform.position, defender.transform.position);
-                Debug.Log($"Bomber found defender {defender.name} at distance {distance}");
+                Debug.Log($"🎯 BOMBER FOUND: Defender {defender.name} at {defender.transform.position}, distance {distance:F2}");
                 if (distance < nearestDistance)
                 {
                     nearestDistance = distance;
                     nearestTarget = defender.transform;
+                    Debug.Log($"🎯 BOMBER SELECTED: {defender.name} as target (distance: {distance:F2})");
                 }
             }
         }
 
-        // If no defender found, check for tower
+        // If no defender found in physics overlap, try finding all defenders in scene
+        if (nearestTarget == null)
+        {
+            Debug.Log("🎯 BOMBER: No defenders found via physics, searching all defenders in scene...");
+            Defender[] allDefenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
+            Debug.Log($"🎯 BOMBER: Found {allDefenders.Length} total defenders in scene");
+            
+            foreach (Defender defender in allDefenders)
+            {
+                if (defender != null && defender.IsAlive())
+                {
+                    float distance = Vector3.Distance(transform.position, defender.transform.position);
+                    Debug.Log($"🎯 BOMBER SCENE: Defender {defender.name} at {defender.transform.position}, distance {distance:F2}");
+                    
+                    if (distance <= searchRange && distance < nearestDistance)
+                    {
+                        nearestDistance = distance;
+                        nearestTarget = defender.transform;
+                        Debug.Log($"🎯 BOMBER SCENE SELECTED: {defender.name} as target (distance: {distance:F2})");
+                    }
+                }
+            }
+        }
+
+        // If still no defender found, check for tower
         if (nearestTarget == null && targetTower != null)
         {
             float towerDistance = Vector3.Distance(transform.position, targetTower.transform.position);
             if (towerDistance <= detectionRange)
             {
                 nearestTarget = targetTower.transform;
+                Debug.Log($"🎯 BOMBER TOWER: Targeting tower at distance {towerDistance:F2}");
             }
         }
 
-        // Start charging if we found a target
+        // Start charging if we found any target
         if (nearestTarget != null)
         {
+            Debug.Log($"🎯 BOMBER CHARGE: Starting charge at {nearestTarget.name}!");
             StartCharge(nearestTarget);
+        }
+        else
+        {
+            Debug.Log("🎯 BOMBER: No targets found, continuing on path");
         }
     }
 
@@ -160,45 +211,72 @@ public class KamikazeDragon : Enemy
 
     void Explode()
     {
-        Debug.Log("Kamikaze Dragon exploding!");
+        Debug.Log("💥 Kamikaze Dragon exploding with AOE damage!");
         
-        // Deal explosion damage to nearby targets
-        Collider[] explosionHits = Physics.OverlapSphere(transform.position, explosionRadius);
-        Debug.Log($"Explosion hit {explosionHits.Length} objects in radius {explosionRadius}");
+        // Calculate scaled explosion values based on current wave
+        float scaledRadius = explosionRadius;
+        float scaledDamage = explosionDamage;
         
-        foreach (Collider hit in explosionHits)
+        // Get current wave for scaling
+        EnemySpawner spawner = FindFirstObjectByType<EnemySpawner>();
+        if (spawner != null)
         {
-            Debug.Log($"Explosion hit: {hit.name}");
-            
-            // Touch of Death - Instantly destroy defenders
-            Defender defender = hit.GetComponent<Defender>();
-            if (defender != null)
+            int currentWave = spawner.currentWave;
+            if (currentWave > 1)
             {
-                Debug.Log($"BOMBER TOUCH OF DEATH: Instantly destroying defender {defender.name}!");
-                // Instantly kill the defender regardless of health
-                defender.TakeDamage(9999f); // Massive damage to ensure instant death
-            }
-            
-            // Damage tower
-            Tower tower = hit.GetComponent<Tower>();
-            if (tower != null)
-            {
-                tower.TakeDamage(explosionDamage);
-            }
-            
-            // Damage other enemies (friendly fire)
-            Enemy enemy = hit.GetComponent<Enemy>();
-            if (enemy != null && enemy != this)
-            {
-                enemy.TakeDamage(explosionDamage * 0.5f); // Half damage to other enemies
+                scaledRadius = explosionRadius * Mathf.Pow(explosionRadiusScaling, currentWave - 1);
+                scaledDamage = explosionDamage * Mathf.Pow(explosionDamageScaling, currentWave - 1);
+                Debug.Log($"💥 SCALED EXPLOSION: Wave {currentWave} - Radius: {scaledRadius:F1}, Damage: {scaledDamage:F1}");
             }
         }
         
-        // Play explosion effect
+        // Deal AOE explosion damage to nearby targets
+        Collider[] explosionHits = Physics.OverlapSphere(transform.position, scaledRadius);
+        Debug.Log($"💥 AOE EXPLOSION: Hit {explosionHits.Length} objects in radius {scaledRadius:F1}");
+        
+        foreach (Collider hit in explosionHits)
+        {
+            Debug.Log($"💥 Explosion hit: {hit.name}");
+            
+            // Calculate distance-based damage falloff
+            float distance = Vector3.Distance(transform.position, hit.transform.position);
+            float damageMultiplier = 1f - (distance / scaledRadius); // 1.0 at center, 0.0 at edge
+            damageMultiplier = Mathf.Clamp01(damageMultiplier);
+            float finalDamage = scaledDamage * damageMultiplier;
+            
+            // AOE damage to defenders (not instant kill, but high damage)
+            Defender defender = hit.GetComponent<Defender>();
+            if (defender != null)
+            {
+                Debug.Log($"💥 AOE DAMAGE: {finalDamage:F1} damage to defender {defender.name} (distance: {distance:F1})");
+                defender.TakeDamage(finalDamage);
+            }
+            
+            // AOE damage to tower
+            Tower tower = hit.GetComponent<Tower>();
+            if (tower != null)
+            {
+                Debug.Log($"💥 AOE DAMAGE: {finalDamage:F1} damage to tower (distance: {distance:F1})");
+                tower.TakeDamage(finalDamage);
+            }
+            
+            // AOE damage to other enemies (friendly fire)
+            Enemy enemy = hit.GetComponent<Enemy>();
+            if (enemy != null && enemy != this)
+            {
+                float friendlyDamage = finalDamage * 0.3f; // Reduced friendly fire
+                Debug.Log($"💥 AOE DAMAGE: {friendlyDamage:F1} friendly fire to {enemy.name}");
+                enemy.TakeDamage(friendlyDamage);
+            }
+        }
+        
+        // Play scaled explosion effect
         if (explosionEffectPrefab != null)
         {
             GameObject explosion = Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
-            Destroy(explosion, 3f);
+            // Scale the explosion effect with the radius
+            explosion.transform.localScale = Vector3.one * (scaledRadius / explosionRadius);
+            Destroy(explosion, 5f); // Longer duration for larger explosions
         }
         
         // Destroy self

@@ -83,8 +83,22 @@ public class VoxelTerrainGenerator : MonoBehaviour
     [Header("Path Settings")]
     // Number of paths to carve from edges to the terrain center.
     public int numPaths = 3;
+    // Maximum number of paths allowed (predetermined progression)
+    public int maxPaths = 5;
     // Width of paths in voxels.
     public int pathWidth = 2;
+    
+    [Header("Path Unlock Progression")]
+    [Tooltip("Wave when path 4 is unlocked")]
+    public int path4UnlockWave = 10;
+    [Tooltip("Wave when path 5 is unlocked")]
+    public int path5UnlockWave = 15;
+    
+    [Header("Performance Requirements")]
+    [Tooltip("Minimum performance score required to unlock path 4 (0-100)")]
+    public float path4PerformanceRequirement = 70f;
+    [Tooltip("Minimum performance score required to unlock path 5 (0-100)")]
+    public float path5PerformanceRequirement = 80f;
 
     [Header("Layer Settings")]
     // Unity layer for terrain objects.
@@ -412,13 +426,154 @@ public class VoxelTerrainGenerator : MonoBehaviour
         int colHeight = columnHeights[pos.x, pos.z];
         // Ensure column has height and position is on the surface.
         if (colHeight <= 0) return false;
-        if (pos.y != colHeight - 1) return false;
+        // Allow placement if y is 0 (grid position) or if it's on the surface
+        if (pos.y != 0 && pos.y != colHeight - 1) return false;
         // Prevent placement on path tiles.
         return !pathPositions.Contains(new Vector2Int(pos.x, pos.z));
     }
 
     // Returns the list of all paths.
     public List<List<Vector3Int>> GetPaths() => paths;
+    
+    /// <summary>
+    /// Checks for path unlocks based on wave progression AND performance
+    /// </summary>
+    public void CheckPathUnlocks()
+    {
+        // Get current wave
+        EnemySpawner enemySpawner = FindFirstObjectByType<EnemySpawner>();
+        if (enemySpawner == null) return;
+        
+        // Get performance tracker
+        PlayerPerformanceTracker performanceTracker = FindFirstObjectByType<PlayerPerformanceTracker>();
+        if (performanceTracker == null) return;
+        
+        int currentWave = enemySpawner.currentWave;
+        float performanceScore = performanceTracker.performanceScore;
+        
+        // Check for path 4 unlock (wave requirement AND performance requirement)
+        if (currentWave >= path4UnlockWave && 
+            performanceScore >= path4PerformanceRequirement && 
+            paths.Count < 4)
+        {
+            Debug.Log($"🚀 WAVE {currentWave}: Lane 4 Unlocked! (Performance: {performanceScore:F1}/{path4PerformanceRequirement})");
+            UnlockPath(4);
+            ShowPathUnlockNotification(4);
+        }
+        else if (currentWave >= path4UnlockWave && paths.Count < 4)
+        {
+            Debug.Log($"❌ Lane 4 locked - Performance too low! ({performanceScore:F1}/{path4PerformanceRequirement})");
+            ShowPerformanceRequirementNotification(4, performanceScore, path4PerformanceRequirement);
+        }
+        
+        // Check for path 5 unlock (wave requirement AND performance requirement)
+        if (currentWave >= path5UnlockWave && 
+            performanceScore >= path5PerformanceRequirement && 
+            paths.Count < 5)
+        {
+            Debug.Log($"🚀 WAVE {currentWave}: Lane 5 Unlocked! (Performance: {performanceScore:F1}/{path5PerformanceRequirement})");
+            UnlockPath(5);
+            ShowPathUnlockNotification(5);
+        }
+        else if (currentWave >= path5UnlockWave && paths.Count < 5)
+        {
+            Debug.Log($"❌ Lane 5 locked - Performance too low! ({performanceScore:F1}/{path5PerformanceRequirement})");
+            ShowPerformanceRequirementNotification(5, performanceScore, path5PerformanceRequirement);
+        }
+    }
+    
+    /// <summary>
+    /// Unlocks a predetermined path
+    /// </summary>
+    void UnlockPath(int pathNumber)
+    {
+        if (paths.Count >= pathNumber) return; // Already unlocked
+        
+        HashSet<Vector3Int> usedEntrances = new HashSet<Vector3Int>();
+        
+        // Get existing entrance positions
+        foreach (var path in paths)
+        {
+            if (path.Count > 0)
+            {
+                usedEntrances.Add(path[0]);
+            }
+        }
+        
+        int attempts = 0;
+        int maxAttempts = 20;
+        
+        while (attempts < maxAttempts)
+        {
+            Vector3Int entrance = GetRandomEdgePosition();
+            
+            // Skip if entrance is already used
+            if (usedEntrances.Contains(entrance))
+            {
+                attempts++;
+                continue;
+            }
+            
+            usedEntrances.Add(entrance);
+            
+            // Generate a path from entrance to center
+            List<Vector3Int> newPath = GeneratePath(entrance, center);
+            
+            // Accept path if it's long enough and has minimal overlap
+            if (newPath.Count > 10 && !PathsIntersect(newPath))
+            {
+                paths.Add(newPath);
+                
+                // Mark path positions with specified width
+                foreach (var pos in newPath)
+                {
+                    for (int dx = -pathWidth / 2; dx <= pathWidth / 2; dx++)
+                    {
+                        for (int dz = -pathWidth / 2; dz <= pathWidth / 2; dz++)
+                        {
+                            int px = pos.x + dx;
+                            int pz = pos.z + dz;
+                            if (px >= 0 && px < width && pz >= 0 && pz < depth)
+                            {
+                                pathPositions.Add(new Vector2Int(px, pz));
+                            }
+                        }
+                    }
+                }
+                
+                Debug.Log($"✅ Lane {pathNumber} unlocked! Total paths: {paths.Count}/{maxPaths}");
+                return;
+            }
+            
+            attempts++;
+        }
+        
+        Debug.LogWarning($"❌ Failed to unlock lane {pathNumber} - no valid entrance found");
+    }
+    
+    /// <summary>
+    /// Shows UI notification for path unlock
+    /// </summary>
+    void ShowPathUnlockNotification(int pathNumber)
+    {
+        PathUnlockNotification notification = FindFirstObjectByType<PathUnlockNotification>();
+        if (notification != null)
+        {
+            notification.ShowPathUnlockNotification(pathNumber);
+        }
+    }
+    
+    /// <summary>
+    /// Shows UI notification for performance requirement
+    /// </summary>
+    void ShowPerformanceRequirementNotification(int pathNumber, float currentPerformance, float requiredPerformance)
+    {
+        PathUnlockNotification notification = FindFirstObjectByType<PathUnlockNotification>();
+        if (notification != null)
+        {
+            notification.ShowPerformanceRequirementNotification(pathNumber, currentPerformance, requiredPerformance);
+        }
+    }
 
     // Returns the terrain's center grid position.
     public Vector3Int GetCenterGrid() => center;

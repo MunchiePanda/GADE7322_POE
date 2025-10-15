@@ -221,9 +221,16 @@ public class Defender : MonoBehaviour
     /// </summary>
     private void NotifyDefenderLoss()
     {
-        if (gameManager != null && gameManager.performanceTracker != null)
+        if (gameManager != null)
         {
-            gameManager.performanceTracker.OnDefenderLost();
+            // Notify performance tracker
+            if (gameManager.performanceTracker != null)
+            {
+                gameManager.performanceTracker.OnDefenderLost();
+            }
+            
+            // Notify GameManager of defender destruction for count tracking
+            gameManager.OnDefenderDestroyed();
         }
     }
     

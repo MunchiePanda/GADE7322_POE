@@ -35,6 +35,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
     private GameObject previewObject;
     private bool isValidPlacement = false;
     private Vector3Int currentGridPosition;
+    private Vector3 currentWorldPosition;
     private Camera cam;
     
     void Start()
@@ -67,6 +68,13 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         if (gameManager.GetResources() < cost)
         {
             Debug.Log($"Not enough resources! Need {cost}, have {gameManager.GetResources()}");
+            return;
+        }
+        
+        // Check defender count limit
+        if (gameManager.currentDefenderCount >= gameManager.maxDefenderCount)
+        {
+            Debug.Log($"Defender limit reached! ({gameManager.currentDefenderCount}/{gameManager.maxDefenderCount}) - Remove a defender first!");
             return;
         }
         
@@ -111,6 +119,8 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         
         if (Physics.Raycast(ray, out hit))
         {
+            Debug.Log($"🎯 Raycast hit: {hit.collider.name} at {hit.point}");
+            
             // Convert world position to grid position
             Vector3 worldPos = hit.point;
             Vector3Int gridPos = new Vector3Int(
@@ -119,18 +129,23 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                 Mathf.RoundToInt(worldPos.z)
             );
             
+            Debug.Log($"🎯 Grid position: {gridPos}");
+            
             // Check if this position is valid for placement
             if (IsValidPlacementPosition(gridPos))
             {
-                // Get the surface position for this grid position
-                Vector3 surfacePos = terrainGenerator.GetSurfaceWorldPosition(gridPos);
-                surfacePos.y += 0.1f; // Slightly above the surface
+                // Use the actual hit point for preview position to avoid offset
+                Vector3 previewPos = hit.point;
+                previewPos.y += 0.1f; // Slightly above the surface
                 
-                previewObject.transform.position = surfacePos;
+                previewObject.transform.position = previewPos;
                 previewObject.SetActive(true);
                 
                 currentGridPosition = gridPos;
+                currentWorldPosition = hit.point; // Store exact hit point
                 isValidPlacement = true;
+                
+                Debug.Log($"🎯 DRAG DEBUG: Hit point: {hit.point}, Grid pos: {gridPos}, World pos stored: {currentWorldPosition}");
                 
                 // Update visual feedback
                 Renderer renderer = previewObject.GetComponent<Renderer>();
@@ -139,7 +154,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                     renderer.material = validPlacementMaterial;
                 }
                 
-                Debug.Log($"Valid placement at grid position: {gridPos}");
+                Debug.Log($"✅ Valid placement at grid position: {gridPos}");
             }
             else
             {
@@ -147,6 +162,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                 previewObject.SetActive(false);
                 currentGridPosition = Vector3Int.zero;
                 isValidPlacement = false;
+                Debug.Log($"❌ Invalid placement at grid position: {gridPos}");
             }
         }
         else
@@ -155,6 +171,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
             previewObject.SetActive(false);
             currentGridPosition = Vector3Int.zero;
             isValidPlacement = false;
+            Debug.Log("❌ Raycast hit nothing");
         }
     }
     
@@ -164,12 +181,12 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         
         if (isValidPlacement)
         {
-            Debug.Log($"Attempting to place {defenderType} at {currentGridPosition}");
+            Debug.Log($"Attempting to place {defenderType} at exact world position {currentWorldPosition}");
             
-            // Place the defender
-            if (gameManager.TryPlaceDefender(currentGridPosition, defenderType))
+            // Place the defender at exact world position
+            if (gameManager.TryPlaceDefenderAtWorldPosition(currentWorldPosition, defenderType))
             {
-                Debug.Log($"Successfully placed {defenderType} defender at {currentGridPosition}!");
+                Debug.Log($"Successfully placed {defenderType} defender at exact position {currentWorldPosition}!");
                 
                 // Play placement effect
                 PlayPlacementEffect(currentGridPosition);
