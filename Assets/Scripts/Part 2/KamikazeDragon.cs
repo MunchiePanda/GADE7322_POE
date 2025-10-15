@@ -11,10 +11,10 @@ public class KamikazeDragon : Enemy
     public float chargeSpeedMultiplier = 4f;
     
     [Tooltip("Explosion damage radius (AOE)")]
-    public float explosionRadius = 10f;
+    public float explosionRadius = 50f;
     
     [Tooltip("Explosion damage amount")]
-    public float explosionDamage = 30f;
+    public float explosionDamage = 5f;
     
     [Tooltip("Visual effect for explosion")]
     public GameObject explosionEffectPrefab;
@@ -88,7 +88,7 @@ public class KamikazeDragon : Enemy
     {
         // Direct approach: Find all defenders in scene and pick the closest one
         Defender[] allDefenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
-        // Debug.Log($"🎯 BOMBER DIRECT SEARCH: Found {allDefenders.Length} defenders in scene");
+        // Debug.Log($"BOMBER DIRECT SEARCH: Found {allDefenders.Length} defenders in scene");
         
         float nearestDistance = float.MaxValue;
         Transform nearestTarget = null;
@@ -102,14 +102,14 @@ public class KamikazeDragon : Enemy
                 Vector3 defenderPosition = defender.transform.position;
                 float distance = Vector3.Distance(transform.position, defenderPosition);
                 
-                // Debug.Log($"🎯 BOMBER CHECKING: Defender {defender.name} at {defenderPosition}, distance {distance:F2}");
+                // Debug.Log($"BOMBER CHECKING: Defender {defender.name} at {defenderPosition}, distance {distance:F2}");
                 
                 if (distance <= detectionRange && distance < nearestDistance)
                 {
                     nearestDistance = distance;
                     nearestTarget = defender.transform;
                     nearestTargetPosition = defenderPosition;
-                    // Debug.Log($"🎯 BOMBER SELECTED: {defender.name} as target (distance: {distance:F2})");
+                    // Debug.Log($"BOMBER SELECTED: {defender.name} as target (distance: {distance:F2})");
                 }
             }
         }
@@ -122,19 +122,19 @@ public class KamikazeDragon : Enemy
             {
                 nearestTarget = targetTower.transform;
                 nearestTargetPosition = targetTower.transform.position;
-                // Debug.Log($"🎯 BOMBER TOWER: Targeting tower at distance {towerDistance:F2}");
+                // Debug.Log($"BOMBER TOWER: Targeting tower at distance {towerDistance:F2}");
             }
         }
 
         // Start charging if we found any target
         if (nearestTarget != null)
         {
-            // Debug.Log($"🎯 BOMBER CHARGE: Starting charge at {nearestTarget.name} at position {nearestTargetPosition}!");
+            // Debug.Log($"BOMBER CHARGE: Starting charge at {nearestTarget.name} at position {nearestTargetPosition}!");
             StartCharge(nearestTarget, nearestTargetPosition);
         }
         else
         {
-            // Debug.Log("🎯 BOMBER: No targets found, continuing on path");
+            // Debug.Log("BOMBER: No targets found, continuing on path");
         }
     }
 
@@ -155,9 +155,9 @@ public class KamikazeDragon : Enemy
         Vector3 direction = (targetPos - transform.position).normalized;
         transform.rotation = Quaternion.LookRotation(direction);
         
-        // Debug.Log($"🎯 BOMBER CHARGE START: Targeting {target.name} at position {targetPos}");
-        // Debug.Log($"🎯 BOMBER POSITION: {transform.position}, TARGET POSITION: {targetPos}");
-        // Debug.Log($"🎯 BOMBER DIRECTION: {direction}, DISTANCE: {Vector3.Distance(transform.position, targetPos):F2}");
+        // Debug.Log($"BOMBER CHARGE START: Targeting {target.name} at position {targetPos}");
+        // Debug.Log($"BOMBER POSITION: {transform.position}, TARGET POSITION: {targetPos}");
+        // Debug.Log($"BOMBER DIRECTION: {direction}, DISTANCE: {Vector3.Distance(transform.position, targetPos):F2}");
     }
 
     void ChargeAtTarget()
@@ -179,18 +179,18 @@ public class KamikazeDragon : Enemy
         
         // Check if we're close enough to explode using the stored position
         float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
-        // Debug.Log($"🎯 BOMBER CHARGING: Current pos {transform.position}, Target pos {targetPosition}, Distance {distanceToTarget:F2}, Threshold 1.5f");
+        // Debug.Log($"BOMBER CHARGING: Current pos {transform.position}, Target pos {targetPosition}, Distance {distanceToTarget:F2}, Threshold 1.5f");
         
         if (distanceToTarget <= 1.5f) // Close enough to explode
         {
-            // Debug.Log($"💥 BOMBER EXPLODING: Reached target at distance {distanceToTarget:F2}!");
+            // Debug.Log($"BOMBER EXPLODING: Reached target at distance {distanceToTarget:F2}!");
             Explode();
         }
     }
 
     void Explode()
     {
-        // Debug.Log("💥 Kamikaze Dragon exploding with AOE damage!");
+        // Debug.Log("Kamikaze Dragon exploding with AOE damage!");
         
         // The explosion gets bigger and more damaging as waves progress
         // This makes later waves way more dangerous
@@ -206,49 +206,47 @@ public class KamikazeDragon : Enemy
             {
                 scaledRadius = explosionRadius * Mathf.Pow(explosionRadiusScaling, currentWave - 1);
                 scaledDamage = explosionDamage * Mathf.Pow(explosionDamageScaling, currentWave - 1);
-                // Debug.Log($"💥 SCALED EXPLOSION: Wave {currentWave} - Radius: {scaledRadius:F1}, Damage: {scaledDamage:F1}");
+                // Debug.Log($"SCALED EXPLOSION: Wave {currentWave} - Radius: {scaledRadius:F1}, Damage: {scaledDamage:F1}");
             }
         }
         
         // Deal AOE explosion damage to nearby targets
         Collider[] explosionHits = Physics.OverlapSphere(transform.position, scaledRadius);
-        // Debug.Log($"💥 BOMBER EXPLOSION: Hit {explosionHits.Length} objects in radius {scaledRadius:F1}");
+        // Debug.Log($"BOMBER EXPLOSION: Hit {explosionHits.Length} objects in radius {scaledRadius:F1}");
         
         foreach (Collider hit in explosionHits)
         {
-            // Debug.Log($"💥 BOMBER HIT: {hit.name} at distance {Vector3.Distance(transform.position, hit.transform.position):F2}");
+            // Debug.Log($"BOMBER HIT: {hit.name} at distance {Vector3.Distance(transform.position, hit.transform.position):F2}");
             
-            // Damage is strongest at the center and weaker at the edges
-            // This makes positioning really important
             float distance = Vector3.Distance(transform.position, hit.transform.position);
-            float damageMultiplier = 1f - (distance / scaledRadius); // 1.0 at center, 0.0 at edge
-            damageMultiplier = Mathf.Clamp01(damageMultiplier);
-            float finalDamage = scaledDamage * damageMultiplier;
             
-            // Debug.Log($"💥 BOMBER CALCULATION: Distance {distance:F2}, Multiplier {damageMultiplier:F2}, Final Damage {finalDamage:F1}");
-            
-            // AOE damage to defenders (not instant kill, but high damage)
+            // Small damage to all defenders within 50-unit radius
             Defender defender = hit.GetComponent<Defender>();
             if (defender != null)
             {
-                // Debug.Log($"💥 BOMBER DEFENDER: {finalDamage:F1} damage to defender {defender.name} (distance: {distance:F1})");
-                defender.TakeDamage(finalDamage);
+                // Small, consistent damage to all defenders in range
+                float defenderDamage = scaledDamage; // Small damage, no distance falloff
+                // Debug.Log($"BOMBER DEFENDER: {defenderDamage:F1} damage to defender {defender.name} (distance: {distance:F1})");
+                defender.TakeDamage(defenderDamage);
             }
             
-            // AOE damage to tower
+            // AOE damage to tower (with distance falloff)
             Tower tower = hit.GetComponent<Tower>();
             if (tower != null)
             {
-                // Debug.Log($"💥 BOMBER TOWER: {finalDamage:F1} damage to tower (distance: {distance:F1})");
-                tower.TakeDamage(finalDamage);
+                float damageMultiplier = 1f - (distance / scaledRadius); // 1.0 at center, 0.0 at edge
+                damageMultiplier = Mathf.Clamp01(damageMultiplier);
+                float towerDamage = scaledDamage * 2f * damageMultiplier; // Higher damage to tower
+                // Debug.Log($"BOMBER TOWER: {towerDamage:F1} damage to tower (distance: {distance:F1})");
+                tower.TakeDamage(towerDamage);
             }
             
             // AOE damage to other enemies (friendly fire)
             Enemy enemy = hit.GetComponent<Enemy>();
             if (enemy != null && enemy != this)
             {
-                float friendlyDamage = finalDamage * 0.3f; // Reduced friendly fire
-                // Debug.Log($"💥 BOMBER FRIENDLY: {friendlyDamage:F1} friendly fire to {enemy.name}");
+                float friendlyDamage = scaledDamage * 0.2f; // Very small friendly fire
+                // Debug.Log($"BOMBER FRIENDLY: {friendlyDamage:F1} friendly fire to {enemy.name}");
                 enemy.TakeDamage(friendlyDamage);
             }
         }
@@ -272,24 +270,24 @@ public class KamikazeDragon : Enemy
         // Prevent damage if already dead
         if (currentHealth <= 0f)
         {
-            // Debug.Log($"💀 BOMBER {gameObject.name} is already dead, ignoring damage");
+            // Debug.Log($"BOMBER {gameObject.name} is already dead, ignoring damage");
             return;
         }
         
-        // Debug.Log($"💥 BOMBER DAMAGE: {gameObject.name} taking {amount} damage. Health: {currentHealth} -> {currentHealth - amount}");
+        // Debug.Log($"BOMBER DAMAGE: {gameObject.name} taking {amount} damage. Health: {currentHealth} -> {currentHealth - amount}");
         currentHealth -= amount;
 
-        // Debug.Log($"💥 BOMBER HEALTH: {gameObject.name} health after damage: {currentHealth}/{maxHealth}");
+        // Debug.Log($"BOMBER HEALTH: {gameObject.name} health after damage: {currentHealth}/{maxHealth}");
 
         if (currentHealth <= 0f)
         {
-            // Debug.Log($"💀 BOMBER DEATH: {gameObject.name} health reached zero. Calling Die().");
+            // Debug.Log($"BOMBER DEATH: {gameObject.name} health reached zero. Calling Die().");
             currentHealth = 0f; // Ensure health doesn't go negative
             Die();
         }
         else
         {
-            // Debug.Log($"💥 BOMBER ALIVE: {gameObject.name} still alive with {currentHealth} health");
+            // Debug.Log($"BOMBER ALIVE: {gameObject.name} still alive with {currentHealth} health");
         }
     }
 

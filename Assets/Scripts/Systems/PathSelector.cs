@@ -84,7 +84,7 @@ public class PathSelector : MonoBehaviour
         }
         
         selectedPathIndex = pathIndex;
-        Debug.Log($"🎯 Selected Path {pathIndex + 1}");
+        Debug.Log($" Selected Path {pathIndex + 1}");
         
         // Update visual feedback
         UpdatePathVisuals();
@@ -118,7 +118,7 @@ public class PathSelector : MonoBehaviour
             selectedPathIndex = Mathf.Max(0, availablePaths - 1);
         }
         
-        Debug.Log($"🛤️ Available paths: {availablePaths}/{maxPaths}");
+        Debug.Log($" Available paths: {availablePaths}/{maxPaths}");
     }
     
     /// <summary>
@@ -128,7 +128,7 @@ public class PathSelector : MonoBehaviour
     {
         // This would be implemented based on your visual system
         // For now, just log the selection
-        Debug.Log($"🎨 Visual feedback: Path {selectedPathIndex + 1} selected");
+        Debug.Log($" Visual feedback: Path {selectedPathIndex + 1} selected");
     }
     
     /// <summary>
@@ -182,11 +182,11 @@ public class PathSelector : MonoBehaviour
         if (performanceTracker != null)
         {
             float currentPerformance = performanceTracker.performanceScore;
-            Debug.Log($"❌ Lane {pathNumber} locked! Performance: {currentPerformance:F1}/{requiredPerformance}");
+            Debug.Log($" Lane {pathNumber} locked! Performance: {currentPerformance:F1}/{requiredPerformance}");
         }
         else
         {
-            Debug.Log($"❌ Lane {pathNumber} locked! Performance tracking not available.");
+            Debug.Log($" Lane {pathNumber} locked! Performance tracking not available.");
         }
     }
 }

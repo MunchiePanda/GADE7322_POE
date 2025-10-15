@@ -9,7 +9,7 @@ public class ArmoredDragon : Enemy
     [Header("Armor Settings")]
     [Tooltip("Damage reduction from armor (0.5 = 50% damage reduction)")]
     [Range(0f, 0.8f)]
-    public float armorReduction = 0.6f;
+    public float armorReduction = 0.3f;
     
     [Tooltip("Visual effect when armor is hit")]
     public GameObject armorHitEffectPrefab;
@@ -63,15 +63,15 @@ public class ArmoredDragon : Enemy
         // Prevent damage if already dead
         if (currentHealth <= 0f)
         {
-            // Debug.Log($"💀 ARMORED {gameObject.name} is already dead, ignoring damage");
+            // Debug.Log($" ARMORED {gameObject.name} is already dead, ignoring damage");
             return;
         }
         
         // Apply armor reduction
         float actualDamage = amount * (1f - armorReduction);
         
-        // Debug.Log($"💥 ARMORED DAMAGE: {gameObject.name} taking {amount} damage, reduced to {actualDamage} by {armorReduction * 100}% armor");
-        // Debug.Log($"💥 ARMORED HEALTH: {gameObject.name} health: {currentHealth} -> {currentHealth - actualDamage}");
+        // Debug.Log($" ARMORED DAMAGE: {gameObject.name} taking {amount} damage, reduced to {actualDamage} by {armorReduction * 100}% armor");
+        // Debug.Log($" ARMORED HEALTH: {gameObject.name} health: {currentHealth} -> {currentHealth - actualDamage}");
         
         // Play armor hit effect
         PlayArmorHitEffect();
@@ -81,13 +81,13 @@ public class ArmoredDragon : Enemy
         
         if (currentHealth <= 0f)
         {
-            // Debug.Log($"💀 ARMORED DEATH: {gameObject.name} health reached zero!");
+            // Debug.Log($" ARMORED DEATH: {gameObject.name} health reached zero!");
             currentHealth = 0f;
             Die();
         }
         else
         {
-            // Debug.Log($"💥 ARMORED ALIVE: {gameObject.name} still alive with {currentHealth} health");
+            // Debug.Log($" ARMORED ALIVE: {gameObject.name} still alive with {currentHealth} health");
         }
     }
 
@@ -130,7 +130,7 @@ public class ArmoredDragon : Enemy
             float armorPercentage = (currentHealth / maxHealth) * 100f;
             if (armorPercentage < 50f)
             {
-                // Debug.Log($"🛡️ ARMORED STATUS: {gameObject.name} armor at {armorPercentage:F1}%");
+                // Debug.Log($" ARMORED STATUS: {gameObject.name} armor at {armorPercentage:F1}%");
             }
         }
 
@@ -141,7 +141,7 @@ public class ArmoredDragon : Enemy
         AcquireDefenderIfAny();
         if (currentDefenderTarget != null)
         {
-            // Debug.Log($"🛡️ ARMORED ATTACK: {gameObject.name} attacking defender {currentDefenderTarget.name}");
+            // Debug.Log($" ARMORED ATTACK: {gameObject.name} attacking defender {currentDefenderTarget.name}");
             TryAttackDefender();
             return;
         }

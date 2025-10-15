@@ -46,7 +46,7 @@ public class PathUnlockNotification : MonoBehaviour
         }
         
         // Set the notification text
-        notificationText.text = $"🚀 LANE {pathNumber} UNLOCKED!\nPress {pathNumber} to select this lane";
+        notificationText.text = $" LANE {pathNumber} UNLOCKED!\nPress {pathNumber} to select this lane";
         
         // Start the notification coroutine
         currentNotification = StartCoroutine(ShowNotificationCoroutine());
@@ -69,7 +69,7 @@ public class PathUnlockNotification : MonoBehaviour
         }
         
         // Set the notification text
-        notificationText.text = $"❌ LANE {pathNumber} LOCKED\nPerformance: {currentPerformance:F1}/{requiredPerformance}\nPlay better to unlock!";
+        notificationText.text = $" LANE {pathNumber} LOCKED\nPerformance: {currentPerformance:F1}/{requiredPerformance}\nPlay better to unlock!";
         
         // Start the notification coroutine
         currentNotification = StartCoroutine(ShowNotificationCoroutine());

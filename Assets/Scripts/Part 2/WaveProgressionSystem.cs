@@ -13,8 +13,8 @@ public class WaveProgressionSystem : MonoBehaviour
     [Tooltip("Wave when bombers are introduced")]
     public int bomberIntroductionWave = 4;
     
-    [Tooltip("Wave when armored enemies are introduced")]
-    public int armoredIntroductionWave = 6;
+    [Tooltip("Wave when armored enemies are introduced (8 as per planning document)")]
+    public int armoredIntroductionWave = 8;
     
     [Header("Enemy Type Probabilities")]
     [Tooltip("Probability distribution for waves 1-3 (learning phase)")]
@@ -26,22 +26,22 @@ public class WaveProgressionSystem : MonoBehaviour
         armored = 0.0f
     };
     
-    [Tooltip("Probability distribution for waves 4-5 (bomber introduction)")]
+    [Tooltip("Probability distribution for waves 4-7 (bomber introduction) - matches planning document")]
     public EnemyTypeDistribution bomberPhase = new EnemyTypeDistribution
     {
-        regular = 0.6f,
-        fast = 0.2f,
-        bomber = 0.2f,
-        armored = 0.0f
+        regular = 0.4f,  // 40% as per planning document
+        fast = 0.3f,     // 30% as per planning document
+        bomber = 0.3f,   // 30% as per planning document
+        armored = 0.0f   // 0% as per planning document
     };
     
-    [Tooltip("Probability distribution for waves 6+ (full complexity)")]
+    [Tooltip("Probability distribution for waves 8+ (full complexity) - matches planning document")]
     public EnemyTypeDistribution fullComplexity = new EnemyTypeDistribution
     {
-        regular = 0.4f,
-        fast = 0.2f,
-        bomber = 0.2f,
-        armored = 0.2f
+        regular = 0.2f,  // 20% as per planning document
+        fast = 0.2f,     // 20% as per planning document
+        bomber = 0.3f,   // 30% as per planning document
+        armored = 0.3f   // 30% as per planning document
     };
     
     [Header("Adaptive Scaling Parameters")]
@@ -58,10 +58,10 @@ public class WaveProgressionSystem : MonoBehaviour
     public float statInfluence = 0.3f;
     
     [Header("Scaling Factors")]
-    [Tooltip("Base enemy count scaling per wave")]
-    public float countScalingFactor = 1.2f;
+    [Tooltip("Base enemy count scaling per wave (1.3 as per planning document)")]
+    public float countScalingFactor = 1.3f;
     
-    [Tooltip("Enemy health scaling per wave")]
+    [Tooltip("Enemy health scaling per wave (1.15 as per planning document)")]
     public float healthScalingFactor = 1.15f;
     
     [Tooltip("Enemy speed scaling per wave")]
@@ -111,20 +111,23 @@ public class WaveProgressionSystem : MonoBehaviour
     }
     
     /// <summary>
-    /// Gets the base probability distribution for a given wave
+    /// Gets the base probability distribution for a given wave according to planning document
     /// </summary>
     EnemyTypeDistribution GetBaseDistribution(int wave)
     {
-        if (wave <= learningPhaseWaves)
+        if (wave <= 3)
         {
+            // Waves 1-3: 100% basic enemies
             return learningPhase;
         }
-        else if (wave < armoredIntroductionWave)
+        else if (wave <= 7)
         {
+            // Waves 4-7: 40% basic, 30% fast, 30% bomber, 0% armored
             return bomberPhase;
         }
         else
         {
+            // Waves 8+: 20% basic, 20% fast, 30% bomber, 30% armored
             return fullComplexity;
         }
     }
@@ -156,7 +159,7 @@ public class WaveProgressionSystem : MonoBehaviour
             adaptiveDist.bomber = Mathf.Min(0.8f, adaptiveDist.bomber + difficultyBonus);
             if (wave >= armoredIntroductionWave)
             {
-                adaptiveDist.armored = Mathf.Min(0.6f, adaptiveDist.armored + difficultyBonus);
+                adaptiveDist.armored = Mathf.Min(0.15f, adaptiveDist.armored + difficultyBonus * 0.5f);
             }
             
             // Decrease easy enemies
@@ -224,40 +227,43 @@ public class WaveProgressionSystem : MonoBehaviour
     }
     
     /// <summary>
-    /// Calculates adaptive enemy count for a wave
+    /// Calculates adaptive enemy count using planning document formula:
+    /// EnemyCount = BaseCount × (ScalingFactor^(Wave-1)) × PerformanceMultiplier
     /// </summary>
     public int GetAdaptiveEnemyCount(int baseEnemyCount, int currentWave)
     {
-        // Base wave scaling
+        // Base wave scaling: BaseCount × (ScalingFactor^(Wave-1))
         int baseCount = Mathf.RoundToInt(baseEnemyCount * Mathf.Pow(countScalingFactor, currentWave - 1));
         
         if (performanceTracker == null) return baseCount;
         
         float performanceScore = performanceTracker.performanceScore;
         
-        // Calculate performance multiplier
-        float countMultiplier = 1.0f;
-        if (performanceScore > 50f)
+        // Performance multiplier as per planning document
+        float performanceMultiplier = 1.0f;
+        
+        if (performanceScore > 70f)
         {
-            // High performance: more enemies
-            countMultiplier = 1.0f + (performanceScore - 50f) / 50f * countInfluence;
+            // High performance: enemyCountMultiplier = 1.0 + ((performanceScore - 70) / 30) × 0.4
+            performanceMultiplier = 1.0f + ((performanceScore - 70f) / 30f) * 0.4f;
         }
-        else
+        else if (performanceScore < 30f)
         {
-            // Low performance: fewer enemies
-            countMultiplier = 1.0f - (50f - performanceScore) / 50f * (countInfluence * 0.75f);
+            // Low performance: enemyCountMultiplier = 1.0 - ((30 - performanceScore) / 30) × 0.4
+            performanceMultiplier = 1.0f - ((30f - performanceScore) / 30f) * 0.4f;
         }
         
-        int adaptiveCount = Mathf.RoundToInt(baseCount * countMultiplier);
+        int adaptiveCount = Mathf.RoundToInt(baseCount * performanceMultiplier);
         return Mathf.Max(1, adaptiveCount); // Ensure at least 1 enemy
     }
     
     /// <summary>
-    /// Gets adaptive stat multipliers for enemies
+    /// Gets adaptive stat multipliers using planning document formula:
+    /// EnemyHealth = BaseHealth × (HealthScaling^(Wave-1)) × DifficultyMultiplier
     /// </summary>
     public Vector3 GetAdaptiveStatMultipliers(int currentWave)
     {
-        // Base wave scaling
+        // Base wave scaling: BaseHealth × (HealthScaling^(Wave-1))
         float baseHealthMultiplier = Mathf.Pow(healthScalingFactor, currentWave - 1);
         float baseSpeedMultiplier = Mathf.Pow(speedScalingFactor, currentWave - 1);
         float baseDamageMultiplier = Mathf.Pow(damageScalingFactor, currentWave - 1);
@@ -269,23 +275,24 @@ public class WaveProgressionSystem : MonoBehaviour
         
         float performanceScore = performanceTracker.performanceScore;
         
-        // Apply performance-based scaling
-        float statMultiplier = 1.0f;
-        if (performanceScore > 50f)
+        // Difficulty multiplier as per planning document
+        float difficultyMultiplier = 1.0f;
+        
+        if (performanceScore > 70f)
         {
-            // High performance: stronger enemies
-            statMultiplier = 1.0f + (performanceScore - 50f) / 50f * statInfluence;
+            // High performance: difficultyMultiplier = 1.0 + ((performanceScore - 70) / 30) × 0.2
+            difficultyMultiplier = 1.0f + ((performanceScore - 70f) / 30f) * 0.2f;
         }
-        else
+        else if (performanceScore < 30f)
         {
-            // Low performance: weaker enemies
-            statMultiplier = 1.0f - (50f - performanceScore) / 50f * (statInfluence * 0.67f);
+            // Low performance: difficultyMultiplier = 1.0 - ((30 - performanceScore) / 30) × 0.2
+            difficultyMultiplier = 1.0f - ((30f - performanceScore) / 30f) * 0.2f;
         }
         
         return new Vector3(
-            baseHealthMultiplier * statMultiplier,
-            baseSpeedMultiplier * statMultiplier,
-            baseDamageMultiplier * statMultiplier
+            baseHealthMultiplier * difficultyMultiplier,
+            baseSpeedMultiplier * difficultyMultiplier,
+            baseDamageMultiplier * difficultyMultiplier
         );
     }
     

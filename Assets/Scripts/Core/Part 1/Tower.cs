@@ -18,9 +18,9 @@ public class Tower : MonoBehaviour
 
     [Header("Combat")]
     [Tooltip("The base attack range of the tower.")]
-    [SerializeField] private float baseAttackRange = 15f;
+    [SerializeField] private float baseAttackRange = 8f;
     [Tooltip("The extended attack range of the tower (used when upgraded).")]
-    [SerializeField] private float extendedAttackRange = 35f;
+    [SerializeField] private float extendedAttackRange = 12f;
     [Tooltip("The current attack range of the tower.")]
     private float currentAttackRange;
     [Tooltip("The amount of damage the tower deals per attack.")]

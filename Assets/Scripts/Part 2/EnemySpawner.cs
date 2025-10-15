@@ -48,7 +48,7 @@ public class EnemySpawner : MonoBehaviour
     [Tooltip("Reference to the wave progression system")]
     public WaveProgressionSystem waveProgressionSystem;
     
-    // This is where the magic happens - the system adapts to how well the player is doing
+    // These settings control how the system adapts to how well the player is doing
     
     [Header("Path Selection")]
     [Tooltip("Currently selected path for spawning (0-based index)")]
@@ -250,7 +250,7 @@ public class EnemySpawner : MonoBehaviour
 
         // Use random path for spawning (not the selected path for targeting)
         List<Vector3Int> spawnPath = paths[Random.Range(0, paths.Count)];
-        // Debug.Log($"🎯 SPAWN: Using random path {paths.IndexOf(spawnPath) + 1} of {paths.Count} available paths");
+        // Debug.Log($"SPAWN: Using random path {paths.IndexOf(spawnPath) + 1} of {paths.Count} available paths");
         Vector3 spawnPosition = new Vector3(spawnPath[0].x, gameManager.terrainGenerator.height, spawnPath[0].z);
         
         // Special spawn height for tank enemies (more important, spawn higher)
@@ -589,6 +589,6 @@ public class EnemySpawner : MonoBehaviour
     public void SetSelectedPath(int pathIndex)
     {
         selectedPathIndex = pathIndex;
-        // Debug.Log($"🎯 EnemySpawner: Selected path {pathIndex + 1}");
+        // Debug.Log($"EnemySpawner: Selected path {pathIndex + 1}");
     }
 }

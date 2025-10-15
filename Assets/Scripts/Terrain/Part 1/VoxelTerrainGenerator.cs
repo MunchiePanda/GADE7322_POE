@@ -456,13 +456,13 @@ public class VoxelTerrainGenerator : MonoBehaviour
             performanceScore >= path4PerformanceRequirement && 
             paths.Count < 4)
         {
-            Debug.Log($"🚀 WAVE {currentWave}: Lane 4 Unlocked! (Performance: {performanceScore:F1}/{path4PerformanceRequirement})");
+            Debug.Log($" WAVE {currentWave}: Lane 4 Unlocked! (Performance: {performanceScore:F1}/{path4PerformanceRequirement})");
             UnlockPath(4);
             ShowPathUnlockNotification(4);
         }
         else if (currentWave >= path4UnlockWave && paths.Count < 4)
         {
-            Debug.Log($"❌ Lane 4 locked - Performance too low! ({performanceScore:F1}/{path4PerformanceRequirement})");
+            Debug.Log($" Lane 4 locked - Performance too low! ({performanceScore:F1}/{path4PerformanceRequirement})");
             ShowPerformanceRequirementNotification(4, performanceScore, path4PerformanceRequirement);
         }
         
@@ -471,13 +471,13 @@ public class VoxelTerrainGenerator : MonoBehaviour
             performanceScore >= path5PerformanceRequirement && 
             paths.Count < 5)
         {
-            Debug.Log($"🚀 WAVE {currentWave}: Lane 5 Unlocked! (Performance: {performanceScore:F1}/{path5PerformanceRequirement})");
+            Debug.Log($" WAVE {currentWave}: Lane 5 Unlocked! (Performance: {performanceScore:F1}/{path5PerformanceRequirement})");
             UnlockPath(5);
             ShowPathUnlockNotification(5);
         }
         else if (currentWave >= path5UnlockWave && paths.Count < 5)
         {
-            Debug.Log($"❌ Lane 5 locked - Performance too low! ({performanceScore:F1}/{path5PerformanceRequirement})");
+            Debug.Log($" Lane 5 locked - Performance too low! ({performanceScore:F1}/{path5PerformanceRequirement})");
             ShowPerformanceRequirementNotification(5, performanceScore, path5PerformanceRequirement);
         }
     }
@@ -541,14 +541,14 @@ public class VoxelTerrainGenerator : MonoBehaviour
                     }
                 }
                 
-                Debug.Log($"✅ Lane {pathNumber} unlocked! Total paths: {paths.Count}/{maxPaths}");
+                Debug.Log($" Lane {pathNumber} unlocked! Total paths: {paths.Count}/{maxPaths}");
                 return;
             }
             
             attempts++;
         }
         
-        Debug.LogWarning($"❌ Failed to unlock lane {pathNumber} - no valid entrance found");
+        Debug.LogWarning($" Failed to unlock lane {pathNumber} - no valid entrance found");
     }
     
     /// <summary>

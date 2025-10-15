@@ -44,26 +44,17 @@ public class PlayerPerformanceTracker : MonoBehaviour
     
     // This is basically how I judge if you're good at the game or not
     
-    [Tooltip("How much tower health affects performance score")]
-    public float towerHealthWeight = 30f;
+    [Tooltip("How much enemy kills affects performance score (30% as per planning document)")]
+    public float killEfficiencyWeight = 30f;
     
-    [Tooltip("How much kill efficiency affects performance score")]
-    public float killEfficiencyWeight = 25f;
+    [Tooltip("How much defender survival affects performance score (20% as per planning document)")]
+    public float defenderSurvivalWeight = 20f;
     
-    [Tooltip("How much wave speed affects performance score")]
-    public float waveSpeedWeight = 20f;
+    [Tooltip("How much resource efficiency affects performance score (20% as per planning document)")]
+    public float resourceEfficiencyWeight = 20f;
     
-    [Tooltip("How much resource efficiency affects performance score")]
-    public float resourceEfficiencyWeight = 15f;
-    
-    [Tooltip("How much defender losses affect performance score")]
-    public float defenderLossWeight = 10f;
-    
-    [Tooltip("How much path progression affects performance score")]
-    public float pathProgressionWeight = 15f;
-    
-    [Tooltip("How much strategic placement affects performance score")]
-    public float strategicPlacementWeight = 10f;
+    [Tooltip("How much wave completion affects performance score (30% as per planning document)")]
+    public float waveCompletionWeight = 30f;
     
     [Header("Debug")]
     [Tooltip("Show performance calculations in console")]
@@ -243,136 +234,71 @@ public class PlayerPerformanceTracker : MonoBehaviour
     }
     
     /// <summary>
-    /// Updates the overall performance score based on all metrics
+    /// Updates the overall performance score based on planning document formula:
+    /// PerformanceScore = (EnemyKills × 0.3) + (DefenderSurvival × 0.2) + (ResourceEfficiency × 0.2) + (WaveCompletion × 0.3)
     /// </summary>
     private void UpdatePerformanceScore()
     {
-        // This is where I calculate how well you're doing - it's pretty complex
-        float towerHealthScore = CalculateTowerHealthScore();
-        float killEfficiencyScore = CalculateKillEfficiencyScore();
-        float waveSpeedScore = CalculateWaveSpeedScore();
+        // Calculate each component according to planning document
+        float enemyKillsScore = CalculateEnemyKillsScore();
+        float defenderSurvivalScore = CalculateDefenderSurvivalScore();
         float resourceEfficiencyScore = CalculateResourceEfficiencyScore();
-        float defenderLossScore = CalculateDefenderLossScore();
-        float pathProgressionScore = CalculatePathProgressionScore();
-        float strategicPlacementScore = CalculateStrategicPlacementScore();
+        float waveCompletionScore = CalculateWaveCompletionScore();
         
-        performanceScore = towerHealthScore + killEfficiencyScore + waveSpeedScore + 
-                          resourceEfficiencyScore + defenderLossScore + pathProgressionScore + strategicPlacementScore;
+        // Apply exact formula from planning document
+        performanceScore = (enemyKillsScore * 0.3f) + (defenderSurvivalScore * 0.2f) + 
+                          (resourceEfficiencyScore * 0.2f) + (waveCompletionScore * 0.3f);
         
         performanceScore = Mathf.Clamp(performanceScore, 0f, 100f);
+    }
+    
+    /// <summary>
+    /// Calculates enemy kills score (0-100)
+    /// </summary>
+    private float CalculateEnemyKillsScore()
+    {
+        if (totalEnemiesSpawned == 0) return 50f; // Neutral if no enemies yet
         
-        // Removed detailed performance logging
+        float killRatio = (float)totalEnemiesKilled / totalEnemiesSpawned;
+        return killRatio * 100f; // 0-100 scale
     }
     
     /// <summary>
-    /// Calculates score based on tower health
+    /// Calculates defender survival score (0-100)
     /// </summary>
-    private float CalculateTowerHealthScore()
+    private float CalculateDefenderSurvivalScore()
     {
-        return (towerHealthPercentage / 100f) * towerHealthWeight;
-    }
-    
-    /// <summary>
-    /// Calculates score based on kill efficiency
-    /// </summary>
-    private float CalculateKillEfficiencyScore()
-    {
-        int totalEnemies = enemiesKilledThisWave + enemiesReachedTowerThisWave;
-        if (totalEnemies == 0) return killEfficiencyWeight * 0.5f; // Neutral if no enemies yet
+        if (initialDefenderCount == 0) return 50f; // Neutral if no defenders
         
-        float efficiency = (float)enemiesKilledThisWave / totalEnemies;
-        return efficiency * killEfficiencyWeight;
+        int currentDefenders = initialDefenderCount - defendersLostThisWave;
+        float survivalRatio = (float)currentDefenders / initialDefenderCount;
+        return survivalRatio * 100f; // 0-100 scale
     }
     
     /// <summary>
-    /// Calculates score based on wave completion speed
+    /// Calculates resource efficiency score (0-100)
     /// </summary>
-    private float CalculateWaveSpeedScore()
+    private float CalculateResourceEfficiencyScore()
     {
-        if (waveCompletionTime == 0) return waveSpeedWeight * 0.5f; // Neutral if wave not complete
+        if (resourcesSpentThisWave == 0) return 50f; // Neutral if no spending
+        
+        float efficiency = (float)resourcesGainedThisWave / resourcesSpentThisWave;
+        return Mathf.Clamp(efficiency * 50f, 0f, 100f); // Scale to 0-100
+    }
+    
+    /// <summary>
+    /// Calculates wave completion score (0-100)
+    /// </summary>
+    private float CalculateWaveCompletionScore()
+    {
+        if (waveCompletionTime == 0) return 50f; // Neutral if wave not complete
         
         // Faster completion = higher score
         float expectedTime = 30f; // Expected 30 seconds per wave
         float speedRatio = Mathf.Clamp(expectedTime / waveCompletionTime, 0f, 2f);
-        return speedRatio * waveSpeedWeight;
+        return Mathf.Clamp(speedRatio * 50f, 0f, 100f); // Scale to 0-100
     }
     
-    /// <summary>
-    /// Calculates score based on resource efficiency
-    /// </summary>
-    private float CalculateResourceEfficiencyScore()
-    {
-        if (resourcesSpentThisWave == 0) return resourceEfficiencyWeight * 0.5f; // Neutral if no spending
-        
-        float efficiency = Mathf.Clamp((float)resourcesGainedThisWave / resourcesSpentThisWave, 0f, 2f);
-        return efficiency * resourceEfficiencyWeight;
-    }
-    
-    /// <summary>
-    /// Calculates score based on defender losses
-    /// </summary>
-    private float CalculateDefenderLossScore()
-    {
-        // Fewer losses = higher score
-        float lossRatio = Mathf.Clamp(1f - (defendersLostThisWave * 0.1f), 0f, 1f);
-        return lossRatio * defenderLossWeight;
-    }
-    
-    /// <summary>
-    /// Calculates score based on enemy path progression
-    /// </summary>
-    private float CalculatePathProgressionScore()
-    {
-        if (totalEnemiesSpawned == 0) return pathProgressionWeight * 0.5f; // Neutral if no enemies
-        
-        // Lower average progression = higher score (enemies not getting far)
-        float progressionPenalty = averageEnemyPathProgression / 100f;
-        float score = (1f - progressionPenalty) * pathProgressionWeight;
-        
-        // Bonus for preventing enemies from reaching the tower
-        if (enemiesReachedTowerThisWave == 0 && totalEnemiesSpawned > 0)
-        {
-            score += pathProgressionWeight * 0.2f; // 20% bonus for perfect defense
-        }
-        
-        return Mathf.Clamp(score, 0f, pathProgressionWeight);
-    }
-    
-    /// <summary>
-    /// Calculates score based on strategic placement and behavior
-    /// </summary>
-    private float CalculateStrategicPlacementScore()
-    {
-        // Analyze strategic behavior
-        float strategicScore = 50f; // Base neutral score
-        
-        // Bonus for efficient resource usage
-        if (resourcesSpentThisWave > 0)
-        {
-            float resourceEfficiency = (float)resourcesGainedThisWave / resourcesSpentThisWave;
-            if (resourceEfficiency > 1.5f) strategicScore += 20f; // Good resource management
-            else if (resourceEfficiency < 0.5f) strategicScore -= 15f; // Poor resource management
-        }
-        
-        // Bonus for quick wave completion (shows good strategy)
-        if (waveCompletionTime > 0)
-        {
-            if (waveCompletionTime < 20f) strategicScore += 15f; // Very fast completion
-            else if (waveCompletionTime > 60f) strategicScore -= 10f; // Slow completion
-        }
-        
-        // Bonus for low defender losses (shows good placement)
-        if (defendersLostThisWave == 0) strategicScore += 10f;
-        else if (defendersLostThisWave > 3) strategicScore -= 15f;
-        
-        // Penalty for enemies reaching tower (shows poor defense strategy)
-        if (enemiesReachedTowerThisWave > 0)
-        {
-            strategicScore -= enemiesReachedTowerThisWave * 5f;
-        }
-        
-        return Mathf.Clamp(strategicScore / 100f * strategicPlacementWeight, 0f, strategicPlacementWeight);
-    }
     
     /// <summary>
     /// Counts initial defenders in the scene
@@ -471,22 +397,16 @@ public class PlayerPerformanceTracker : MonoBehaviour
     /// </summary>
     private void LogPerformanceBreakdown()
     {
-        float towerHealthScore = CalculateTowerHealthScore();
-        float killEfficiencyScore = CalculateKillEfficiencyScore();
-        float waveSpeedScore = CalculateWaveSpeedScore();
+        float enemyKillsScore = CalculateEnemyKillsScore();
+        float defenderSurvivalScore = CalculateDefenderSurvivalScore();
         float resourceEfficiencyScore = CalculateResourceEfficiencyScore();
-        float defenderLossScore = CalculateDefenderLossScore();
-        float pathProgressionScore = CalculatePathProgressionScore();
-        float strategicPlacementScore = CalculateStrategicPlacementScore();
+        float waveCompletionScore = CalculateWaveCompletionScore();
         
         // Debug.Log($"PERFORMANCE BREAKDOWN:");
-        // Debug.Log($"   Tower Health Score: {towerHealthScore:F1}/{towerHealthWeight} - {(towerHealthScore/towerHealthWeight*100):F1}%");
-        // Debug.Log($"   Kill Efficiency Score: {killEfficiencyScore:F1}/{killEfficiencyWeight} - {(killEfficiencyScore/killEfficiencyWeight*100):F1}%");
-        // Debug.Log($"   Wave Speed Score: {waveSpeedScore:F1}/{waveSpeedWeight} - {(waveSpeedScore/waveSpeedWeight*100):F1}%");
-        // Debug.Log($"   Resource Efficiency Score: {resourceEfficiencyScore:F1}/{resourceEfficiencyWeight} - {(resourceEfficiencyScore/resourceEfficiencyWeight*100):F1}%");
-        // Debug.Log($"   Defender Loss Score: {defenderLossScore:F1}/{defenderLossWeight} - {(defenderLossScore/defenderLossWeight*100):F1}%");
-        // Debug.Log($"   Path Progression Score: {pathProgressionScore:F1}/{pathProgressionWeight} - {(pathProgressionScore/pathProgressionWeight*100):F1}%");
-        // Debug.Log($"   Strategic Placement Score: {strategicPlacementScore:F1}/{strategicPlacementWeight} - {(strategicPlacementScore/strategicPlacementWeight*100):F1}%");
+        // Debug.Log($"   Enemy Kills Score: {enemyKillsScore:F1} - {(enemyKillsScore/100*100):F1}%");
+        // Debug.Log($"   Defender Survival Score: {defenderSurvivalScore:F1} - {(defenderSurvivalScore/100*100):F1}%");
+        // Debug.Log($"   Resource Efficiency Score: {resourceEfficiencyScore:F1} - {(resourceEfficiencyScore/100*100):F1}%");
+        // Debug.Log($"   Wave Completion Score: {waveCompletionScore:F1} - {(waveCompletionScore/100*100):F1}%");
         // Debug.Log($"   TOTAL PERFORMANCE SCORE: {performanceScore:F1}/100");
     }
     

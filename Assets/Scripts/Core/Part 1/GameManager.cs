@@ -51,7 +51,7 @@ public class GameManager : MonoBehaviour
     
     [Header("Defender Limits")]
     [Tooltip("Maximum number of defenders allowed at once")]
-    public int maxDefenderCount = 20;
+    public int maxDefenderCount = 25;
     [Tooltip("Current number of active defenders")]
     public int currentDefenderCount = 0;
 
@@ -495,7 +495,7 @@ public class GameManager : MonoBehaviour
         // Check defender count limit
         if (currentDefenderCount >= maxDefenderCount)
         {
-            // Debug.Log($"❌ Defender limit reached! ({currentDefenderCount}/{maxDefenderCount}) - Remove a defender first!");
+            // Debug.Log($" Defender limit reached! ({currentDefenderCount}/{maxDefenderCount}) - Remove a defender first!");
             return false;
         }
 
@@ -512,7 +512,7 @@ public class GameManager : MonoBehaviour
         
         // Increment defender count
         currentDefenderCount++;
-        // Debug.Log($"✅ Defender placed! Count: {currentDefenderCount}/{maxDefenderCount}");
+        // Debug.Log($" Defender placed! Count: {currentDefenderCount}/{maxDefenderCount}");
         
         return true;
     }
@@ -569,7 +569,7 @@ public class GameManager : MonoBehaviour
         // Check defender count limit BEFORE spending resources
         if (currentDefenderCount >= maxDefenderCount)
         {
-            // Debug.Log($"❌ Defender limit reached! ({currentDefenderCount}/{maxDefenderCount}) - Remove a defender first!");
+            // Debug.Log($" Defender limit reached! ({currentDefenderCount}/{maxDefenderCount}) - Remove a defender first!");
             return false;
         }
 
@@ -580,16 +580,16 @@ public class GameManager : MonoBehaviour
         Vector3 finalPosition = worldPosition;
         finalPosition.y += defenderYOffset;
 
-        // Debug.Log($"🎯 PLACEMENT DEBUG: World position: {worldPosition}, Final position: {finalPosition}");
+        // Debug.Log($" PLACEMENT DEBUG: World position: {worldPosition}, Final position: {finalPosition}");
 
         // Instantiate the defender prefab at the exact position
         GameObject newDefender = Instantiate(defenderPrefabToUse, finalPosition, Quaternion.identity);
         
-        // Debug.Log($"🎯 DEFENDER PLACED: {newDefender.name} at {newDefender.transform.position}");
+        // Debug.Log($" DEFENDER PLACED: {newDefender.name} at {newDefender.transform.position}");
         
         // Increment defender count
         currentDefenderCount++;
-        // Debug.Log($"✅ Defender placed at exact position! Count: {currentDefenderCount}/{maxDefenderCount}");
+        // Debug.Log($" Defender placed at exact position! Count: {currentDefenderCount}/{maxDefenderCount}");
         
         return true;
     }
@@ -602,7 +602,7 @@ public class GameManager : MonoBehaviour
         if (currentDefenderCount > 0)
         {
             currentDefenderCount--;
-            // Debug.Log($"💀 Defender destroyed! Count: {currentDefenderCount}/{maxDefenderCount}");
+            // Debug.Log($" Defender destroyed! Count: {currentDefenderCount}/{maxDefenderCount}");
         }
     }
     
@@ -613,7 +613,7 @@ public class GameManager : MonoBehaviour
     {
         Defender[] defenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
         currentDefenderCount = defenders.Length;
-        // Debug.Log($"🏰 Initial defender count: {currentDefenderCount}/{maxDefenderCount}");
+        // Debug.Log($" Initial defender count: {currentDefenderCount}/{maxDefenderCount}");
     }
 
     /// <summary>

@@ -119,7 +119,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         
         if (Physics.Raycast(ray, out hit))
         {
-            // Debug.Log($"🎯 Raycast hit: {hit.collider.name} at {hit.point}");
+            // Debug.Log($" Raycast hit: {hit.collider.name} at {hit.point}");
             
             // Convert world position to grid position
             Vector3 worldPos = hit.point;
@@ -129,7 +129,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                 Mathf.RoundToInt(worldPos.z)
             );
             
-            // Debug.Log($"🎯 Grid position: {gridPos}");
+            // Debug.Log($" Grid position: {gridPos}");
             
             // Check if this position is valid for placement
             if (IsValidPlacementPosition(gridPos))
@@ -145,7 +145,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                 currentWorldPosition = hit.point; // Store exact hit point
                 isValidPlacement = true;
                 
-                // Debug.Log($"🎯 DRAG DEBUG: Hit point: {hit.point}, Grid pos: {gridPos}, World pos stored: {currentWorldPosition}");
+                // Debug.Log($" DRAG DEBUG: Hit point: {hit.point}, Grid pos: {gridPos}, World pos stored: {currentWorldPosition}");
                 
                 // Update visual feedback
                 Renderer renderer = previewObject.GetComponent<Renderer>();
@@ -154,7 +154,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                     renderer.material = validPlacementMaterial;
                 }
                 
-                // Debug.Log($"✅ Valid placement at grid position: {gridPos}");
+                // Debug.Log($" Valid placement at grid position: {gridPos}");
             }
             else
             {
@@ -162,7 +162,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                 previewObject.SetActive(false);
                 currentGridPosition = Vector3Int.zero;
                 isValidPlacement = false;
-                // Debug.Log($"❌ Invalid placement at grid position: {gridPos}");
+                // Debug.Log($" Invalid placement at grid position: {gridPos}");
             }
         }
         else
@@ -171,7 +171,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
             previewObject.SetActive(false);
             currentGridPosition = Vector3Int.zero;
             isValidPlacement = false;
-            // Debug.Log("❌ Raycast hit nothing");
+            // Debug.Log(" Raycast hit nothing");
         }
     }
     
