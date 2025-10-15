@@ -48,6 +48,8 @@ public class EnemySpawner : MonoBehaviour
     [Tooltip("Reference to the wave progression system")]
     public WaveProgressionSystem waveProgressionSystem;
     
+    // This is where the magic happens - the system adapts to how well the player is doing
+    
     [Header("Path Selection")]
     [Tooltip("Currently selected path for spawning (0-based index)")]
     public int selectedPathIndex = 0;
@@ -87,7 +89,7 @@ public class EnemySpawner : MonoBehaviour
             performanceTracker = FindFirstObjectByType<PlayerPerformanceTracker>();
             if (performanceTracker == null)
             {
-                Debug.LogWarning("EnemySpawner: No PlayerPerformanceTracker found! Adaptive scaling will be disabled.");
+                // // // Debug.LogWarning("EnemySpawner: No PlayerPerformanceTracker found! Adaptive scaling will be disabled.");
             }
         }
         
@@ -97,18 +99,18 @@ public class EnemySpawner : MonoBehaviour
             waveProgressionSystem = FindFirstObjectByType<WaveProgressionSystem>();
             if (waveProgressionSystem != null)
             {
-                Debug.Log($"EnemySpawner: Auto-found WaveProgressionSystem on {waveProgressionSystem.gameObject.name}");
+                // Debug.Log($"EnemySpawner: Auto-found WaveProgressionSystem on {waveProgressionSystem.gameObject.name}");
             }
             else
             {
-                Debug.LogWarning("EnemySpawner: No WaveProgressionSystem found in scene! Please add one to GameManager.");
+                // // Debug.LogWarning("EnemySpawner: No WaveProgressionSystem found in scene! Please add one to GameManager.");
             }
         }
 
         // Check if enemy prefabs are assigned
         if (defaultEnemyPrefab == null)
         {
-            Debug.LogError("EnemySpawner: No enemy prefabs assigned! Please assign at least defaultEnemyPrefab in the Inspector.");
+            // // Debug.LogError("EnemySpawner: No enemy prefabs assigned! Please assign at least defaultEnemyPrefab in the Inspector.");
             enabled = false;
             return;
         }
@@ -130,7 +132,7 @@ public class EnemySpawner : MonoBehaviour
     /// </summary>
     IEnumerator StartNextWaveWithDelay()
     {
-        Debug.Log($"Wave {currentWave} complete! Next wave starting in {waveDelay} seconds...");
+        // Debug.Log($"Wave {currentWave} complete! Next wave starting in {waveDelay} seconds...");
         
         // Start the countdown UI
         if (waveCountdownUI != null)
@@ -197,7 +199,7 @@ public class EnemySpawner : MonoBehaviour
             }
         }
 
-        Debug.Log($"Starting Wave {currentWave} with {enemiesRemainingInWave} enemies (Adaptive scaling: {GetPerformanceLevel()}).");
+        // Debug.Log($"Starting Wave {currentWave} with {enemiesRemainingInWave} enemies (Adaptive scaling: {GetPerformanceLevel()}).");
         
         // Log wave progression info
         if (waveProgressionSystem != null)
@@ -214,18 +216,18 @@ public class EnemySpawner : MonoBehaviour
     IEnumerator SpawnWave()
     {
         int enemiesSpawned = 0;
-        Debug.Log($"Starting to spawn {enemiesRemainingInWave} enemies for Wave {currentWave}");
+        // Debug.Log($"Starting to spawn {enemiesRemainingInWave} enemies for Wave {currentWave}");
         
         while (enemiesSpawned < enemiesRemainingInWave)
         {
             SpawnRandomEnemy();
             enemiesSpawned++;
-            Debug.Log($"Spawned enemy {enemiesSpawned}/{enemiesRemainingInWave} for Wave {currentWave}");
+            // Debug.Log($"Spawned enemy {enemiesSpawned}/{enemiesRemainingInWave} for Wave {currentWave}");
             yield return new WaitForSeconds(spawnInterval);
         }
 
         isSpawning = false;
-        Debug.Log($"Wave {currentWave} spawning complete. Waiting for all enemies to die... Active enemies: {activeEnemies.Count}");
+        // Debug.Log($"Wave {currentWave} spawning complete. Waiting for all enemies to die... Active enemies: {activeEnemies.Count}");
     }
 
     /// <summary>
@@ -235,32 +237,33 @@ public class EnemySpawner : MonoBehaviour
     void SpawnRandomEnemy()
     {
         // Choose enemy type using wave progression system
+        // This is where I decide what enemy to spawn based on the wave and player skill
         GameObject enemyPrefab = SelectEnemyTypeWithWaveProgression();
 
         // Get the selected path and spawn point
         List<List<Vector3Int>> paths = gameManager.terrainGenerator.GetPaths();
         if (paths.Count == 0)
         {
-            Debug.LogError("No paths available for spawning enemies!");
+            // // Debug.LogError("No paths available for spawning enemies!");
             return;
         }
 
         // Use random path for spawning (not the selected path for targeting)
         List<Vector3Int> spawnPath = paths[Random.Range(0, paths.Count)];
-        Debug.Log($"🎯 SPAWN: Using random path {paths.IndexOf(spawnPath) + 1} of {paths.Count} available paths");
+        // Debug.Log($"🎯 SPAWN: Using random path {paths.IndexOf(spawnPath) + 1} of {paths.Count} available paths");
         Vector3 spawnPosition = new Vector3(spawnPath[0].x, gameManager.terrainGenerator.height, spawnPath[0].z);
         
         // Special spawn height for tank enemies (more important, spawn higher)
         if (enemyPrefab == tankEnemyPrefab)
         {
             spawnPosition.y += 2f; // Spawn 2 units higher for more importance
-            Debug.Log("Tank Enemy spawning with elevated importance!");
+            // Debug.Log("Tank Enemy spawning with elevated importance!");
         }
 
         // Instantiate the enemy
         if (enemyPrefab == null)
         {
-            Debug.LogError("Enemy prefab is not assigned!");
+            // // Debug.LogError("Enemy prefab is not assigned!");
             return;
         }
 
@@ -269,7 +272,7 @@ public class EnemySpawner : MonoBehaviour
 
         if (enemy == null)
         {
-            Debug.LogError("Instantiated object does not have an Enemy component!");
+            // // Debug.LogError("Instantiated object does not have an Enemy component!");
             Destroy(enemyObject);
             return;
         }
@@ -278,7 +281,7 @@ public class EnemySpawner : MonoBehaviour
         Tower towerComponent = gameManager.TowerInstance != null ? gameManager.TowerInstance.GetComponent<Tower>() : null;
         if (towerComponent == null)
         {
-            Debug.LogError("Tower instance or Tower component is not available!");
+            // // Debug.LogError("Tower instance or Tower component is not available!");
         }
 
         enemy.Initialize(spawnPath, gameManager.terrainGenerator.height, towerComponent, gameManager);
@@ -309,7 +312,7 @@ public class EnemySpawner : MonoBehaviour
     {
         if (waveProgressionSystem == null)
         {
-            Debug.LogWarning("No WaveProgressionSystem found - using fallback selection");
+            // // Debug.LogWarning("No WaveProgressionSystem found - using fallback selection");
             return SelectEnemyTypeBasedOnWave();
         }
         
@@ -349,7 +352,7 @@ public class EnemySpawner : MonoBehaviour
         enemy.SetMoveSpeed(finalSpeed);
         enemy.SetAttackDamage(finalDamage);
         
-        Debug.Log($"WAVE PROGRESSION SCALING: Wave {currentWave} - Health: {finalHealth:F1}, Speed: {finalSpeed:F1}, Damage: {finalDamage:F1}");
+        // Debug.Log($"WAVE PROGRESSION SCALING: Wave {currentWave} - Health: {finalHealth:F1}, Speed: {finalSpeed:F1}, Damage: {finalDamage:F1}");
     }
     
     /// <summary>
@@ -401,7 +404,7 @@ public class EnemySpawner : MonoBehaviour
         // Check if wave is complete and no enemies are left
         if (!isSpawning && activeEnemies.Count == 0)
         {
-            Debug.Log($"All enemies in Wave {currentWave} defeated! Active enemies: {activeEnemies.Count}");
+            // Debug.Log($"All enemies in Wave {currentWave} defeated! Active enemies: {activeEnemies.Count}");
             
             // Notify performance tracker of wave completion
             if (performanceTracker != null)
@@ -418,18 +421,19 @@ public class EnemySpawner : MonoBehaviour
     /// </summary>
     int CalculateAdaptiveEnemyCount()
     {
+        // Start with the base wave scaling - each wave gets harder
         float baseCount = initialWaveEnemyCount * Mathf.Pow(waveScalingFactor, currentWave - 1);
         
         if (performanceTracker == null)
         {
-            Debug.Log($"ENEMY COUNT: No performance tracker - using base count: {baseCount:F1}");
+            // Debug.Log($"ENEMY COUNT: No performance tracker - using base count: {baseCount:F1}");
             return Mathf.RoundToInt(baseCount);
         }
         
         float performanceScore = performanceTracker.performanceScore;
         
-        // If player doing well (high score), spawn MORE enemies
-        // If player struggling (low score), spawn FEWER enemies
+        // This is the cool part - if you're doing well, I spawn MORE enemies to challenge you
+        // If you're struggling, I go easier on you
         float performanceMultiplier = 1.0f + (performanceScore - 50f) / 100f * performanceCountMultiplier;
         
         // Clamp the multiplier
@@ -440,19 +444,19 @@ public class EnemySpawner : MonoBehaviour
         // Clear, player-friendly adaptive scaling messages
         if (performanceScore >= 70f)
         {
-            Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (more than usual) because you're doing GREAT!");
+            // Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (more than usual) because you're doing GREAT!");
         }
         else if (performanceScore >= 50f)
         {
-            Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (slightly more) because you're doing well!");
+            // Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (slightly more) because you're doing well!");
         }
         else if (performanceScore >= 30f)
         {
-            Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (standard amount) for balanced challenge");
+            // Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (standard amount) for balanced challenge");
         }
         else
         {
-            Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (fewer than usual) to help you succeed!");
+            // Debug.Log($"ADAPTIVE SCALING: Spawning {adaptiveCount} enemies (fewer than usual) to help you succeed!");
         }
         
         return adaptiveCount;
@@ -465,7 +469,7 @@ public class EnemySpawner : MonoBehaviour
     {
         if (performanceTracker == null)
         {
-            Debug.Log($"ENEMY TYPE: No performance tracker - using wave-based selection");
+            // Debug.Log($"ENEMY TYPE: No performance tracker - using wave-based selection");
             return SelectEnemyTypeBasedOnWave();
         }
         
@@ -477,7 +481,7 @@ public class EnemySpawner : MonoBehaviour
             // 30% chance to spawn tank enemy for high-performing players
             if (Random.Range(0f, 1f) < 0.3f)
             {
-                Debug.Log($"ADAPTIVE SCALING: Spawning TANK ENEMY because you're doing GREAT and need a real challenge!");
+                // Debug.Log($"ADAPTIVE SCALING: Spawning TANK ENEMY because you're doing GREAT and need a real challenge!");
                 return tankEnemyPrefab;
             }
         }
@@ -488,7 +492,7 @@ public class EnemySpawner : MonoBehaviour
             float bomberChance = 0.2f + (performanceScore - 60f) / 40f * 0.3f; // 20% to 50% chance
             if (Random.Range(0f, 1f) < bomberChance)
             {
-                Debug.Log($"ADAPTIVE SCALING: Spawning BOMBER because you're doing well and can handle the challenge!");
+                // Debug.Log($"ADAPTIVE SCALING: Spawning BOMBER because you're doing well and can handle the challenge!");
                 return bomberEnemyPrefab;
             }
         }
@@ -496,7 +500,7 @@ public class EnemySpawner : MonoBehaviour
         // If player struggling, spawn easier enemies
         if (performanceScore < 30f)
         {
-            Debug.Log($"ADAPTIVE SCALING: Spawning basic enemy only because you're struggling - let's help you learn!");
+            // Debug.Log($"ADAPTIVE SCALING: Spawning basic enemy only because you're struggling - let's help you learn!");
             return defaultEnemyPrefab; // Only basic enemies
         }
         
@@ -506,7 +510,7 @@ public class EnemySpawner : MonoBehaviour
             float fastEnemyChance = 0.3f + (performanceScore - 60f) / 40f * 0.4f; // 30% to 70% chance
             if (Random.Range(0f, 1f) < fastEnemyChance)
             {
-                Debug.Log($"ADAPTIVE SCALING: Spawning FAST ENEMY because you're doing well and can handle speed!");
+                // Debug.Log($"ADAPTIVE SCALING: Spawning FAST ENEMY because you're doing well and can handle speed!");
                 return fastEnemyPrefab;
             }
         }
@@ -559,11 +563,11 @@ public class EnemySpawner : MonoBehaviour
         // Clear, player-friendly stat scaling messages
         if (performanceScore >= 70f)
         {
-            Debug.Log($"ADAPTIVE SCALING: Making enemies STRONGER because you're doing GREAT!");
+            // Debug.Log($"ADAPTIVE SCALING: Making enemies STRONGER because you're doing GREAT!");
         }
         else if (performanceScore < 30f)
         {
-            Debug.Log($"ADAPTIVE SCALING: Making enemies WEAKER to help you succeed!");
+            // Debug.Log($"ADAPTIVE SCALING: Making enemies WEAKER to help you succeed!");
         }
     }
 
@@ -585,6 +589,6 @@ public class EnemySpawner : MonoBehaviour
     public void SetSelectedPath(int pathIndex)
     {
         selectedPathIndex = pathIndex;
-        Debug.Log($"🎯 EnemySpawner: Selected path {pathIndex + 1}");
+        // Debug.Log($"🎯 EnemySpawner: Selected path {pathIndex + 1}");
     }
 }

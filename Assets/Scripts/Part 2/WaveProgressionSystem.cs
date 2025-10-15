@@ -313,21 +313,21 @@ public class WaveProgressionSystem : MonoBehaviour
     /// </summary>
     public void LogWaveProgression(int currentWave)
     {
-        Debug.Log($"=== WAVE PROGRESSION INFO ===");
-        Debug.Log($"Current Wave: {currentWave}");
-        Debug.Log($"Description: {GetWaveDescription(currentWave)}");
+        // Debug.Log($"=== WAVE PROGRESSION INFO ===");
+        // Debug.Log($"Current Wave: {currentWave}");
+        // Debug.Log($"Description: {GetWaveDescription(currentWave)}");
         
         EnemyTypeDistribution baseDist = GetBaseDistribution(currentWave);
-        Debug.Log($"Base Enemy Probabilities:");
-        Debug.Log($"  Regular: {baseDist.regular:P0}");
-        Debug.Log($"  Fast: {baseDist.fast:P0}");
-        Debug.Log($"  Bomber: {baseDist.bomber:P0}");
-        Debug.Log($"  Armored: {baseDist.armored:P0}");
+        // Debug.Log($"Base Enemy Probabilities:");
+        // Debug.Log($"  Regular: {baseDist.regular:P0}");
+        // Debug.Log($"  Fast: {baseDist.fast:P0}");
+        // Debug.Log($"  Bomber: {baseDist.bomber:P0}");
+        // Debug.Log($"  Armored: {baseDist.armored:P0}");
         
         if (performanceTracker != null)
         {
-            Debug.Log($"Performance Score: {performanceTracker.performanceScore:F1}");
-            Debug.Log($"Performance Level: {performanceTracker.GetPerformanceLevel()}");
+            // Debug.Log($"Performance Score: {performanceTracker.performanceScore:F1}");
+            // Debug.Log($"Performance Level: {performanceTracker.GetPerformanceLevel()}");
         }
     }
 }

@@ -65,7 +65,7 @@ public class LightningTowerDefender : Defender
         // Debug current state
         if (currentEnemyTarget != null)
         {
-            Debug.Log($"Lightning Tower: Aiming at {currentEnemyTarget.name} (Distance: {Vector3.Distance(transform.position, currentEnemyTarget.transform.position):F1})");
+            // Debug.Log($"Lightning Tower: Aiming at {currentEnemyTarget.name} (Distance: {Vector3.Distance(transform.position, currentEnemyTarget.transform.position):F1})");
         }
     }
 
@@ -73,7 +73,7 @@ public class LightningTowerDefender : Defender
     {
         if (currentEnemyTarget == null) 
         {
-            Debug.Log("Lightning Tower: No target in range");
+            // Debug.Log("Lightning Tower: No target in range");
             return;
         }
         
@@ -82,65 +82,69 @@ public class LightningTowerDefender : Defender
         
         if (timeSinceLastAttack >= attackIntervalSeconds)
         {
-            Debug.Log($"Lightning Tower: ATTACKING! Target: {currentEnemyTarget.name}, Cooldown: {timeSinceLastAttack:F1}s");
+            // Debug.Log($"Lightning Tower: ATTACKING! Target: {currentEnemyTarget.name}, Cooldown: {timeSinceLastAttack:F1}s");
             lastAttackTime = time;
             PerformChainLightning();
         }
         else
         {
-            Debug.Log($"Lightning Tower: On cooldown ({timeSinceLastAttack:F1}s / {attackIntervalSeconds}s)");
+            // Debug.Log($"Lightning Tower: On cooldown ({timeSinceLastAttack:F1}s / {attackIntervalSeconds}s)");
         }
     }
 
-    void PerformChainLightning()
-    {
-        Debug.Log($"Lightning Tower: Starting chain lightning attack (Max targets: {maxChainTargets})");
-        
-        List<Enemy> chainedEnemies = new List<Enemy>();
-        List<Vector3> lightningPoints = new List<Vector3>();
-        
-        // Start with the primary target
-        Enemy currentTarget = currentEnemyTarget;
-        float currentDamage = attackDamage;
-        
-        for (int i = 0; i < maxChainTargets && currentTarget != null; i++)
-        {
-            float distance = Vector3.Distance(transform.position, currentTarget.transform.position);
-            Debug.Log($"Lightning Tower: Chain {i + 1} - HIT {currentTarget.name} at distance {distance:F1} for {currentDamage:F1} damage");
-            
-            // Deal damage to current target
-            currentTarget.TakeDamage(currentDamage);
-            chainedEnemies.Add(currentTarget);
-            lightningPoints.Add(currentTarget.transform.position);
-            
-            // Find next target for chain
-            Enemy nextTarget = FindNextChainTarget(currentTarget, chainedEnemies);
-            if (nextTarget != null)
-            {
-                float chainDistance = Vector3.Distance(currentTarget.transform.position, nextTarget.transform.position);
-                Debug.Log($"Lightning Tower: Chain {i + 1} -> {i + 2}: Jumping to {nextTarget.name} at distance {chainDistance:F1}");
-            }
-            else
-            {
-                Debug.Log($"Lightning Tower: Chain {i + 1} -> No more targets in range");
-            }
-            
-            currentTarget = nextTarget;
-            
-            // Reduce damage for next chain
-            currentDamage *= chainDamageReduction;
-        }
-        
-        Debug.Log($"Lightning Tower: Chain attack complete! Hit {chainedEnemies.Count} enemies");
-        
-        // Play visual effects
-        PlayLightningEffects(lightningPoints);
-    }
+     void PerformChainLightning()
+     {
+         // Debug.Log($"Lightning Tower: Starting chain lightning attack (Max targets: {maxChainTargets})");
+         
+         // This is the cool chain lightning system - it jumps between enemies
+         List<Enemy> chainedEnemies = new List<Enemy>();
+         List<Vector3> lightningPoints = new List<Vector3>();
+         
+         // Start with the primary target
+         Enemy currentTarget = currentEnemyTarget;
+         float currentDamage = attackDamage;
+         
+         for (int i = 0; i < maxChainTargets && currentTarget != null; i++)
+         {
+             float distance = Vector3.Distance(transform.position, currentTarget.transform.position);
+             // Debug.Log($"Lightning Tower: Chain {i + 1} - HIT {currentTarget.name} at distance {distance:F1} for {currentDamage:F1} damage");
+             
+             // Deal damage to current target
+             currentTarget.TakeDamage(currentDamage);
+             chainedEnemies.Add(currentTarget);
+             lightningPoints.Add(currentTarget.transform.position);
+             
+             // Apply lightning visual effect to the hit enemy
+             ApplyLightningVisualEffect(currentTarget);
+             
+             // Find next target for chain - this is where the magic happens
+             Enemy nextTarget = FindNextChainTarget(currentTarget, chainedEnemies);
+             if (nextTarget != null)
+             {
+                 float chainDistance = Vector3.Distance(currentTarget.transform.position, nextTarget.transform.position);
+                 // Debug.Log($"Lightning Tower: Chain {i + 1} -> {i + 2}: Jumping to {nextTarget.name} at distance {chainDistance:F1}");
+             }
+             else
+             {
+                 // Debug.Log($"Lightning Tower: Chain {i + 1} -> No more targets in range");
+             }
+             
+             currentTarget = nextTarget;
+             
+             // Reduce damage for next chain
+             currentDamage *= chainDamageReduction;
+         }
+         
+         // Debug.Log($"Lightning Tower: Chain attack complete! Hit {chainedEnemies.Count} enemies");
+         
+         // Play visual effects
+         PlayLightningEffects(lightningPoints);
+     }
 
     Enemy FindNextChainTarget(Enemy fromEnemy, List<Enemy> alreadyHit)
     {
         Collider[] nearbyEnemies = Physics.OverlapSphere(fromEnemy.transform.position, chainRange);
-        Debug.Log($"Lightning Tower: Searching for chain targets around {fromEnemy.name} (Range: {chainRange}, Found: {nearbyEnemies.Length} colliders)");
+        // Debug.Log($"Lightning Tower: Searching for chain targets around {fromEnemy.name} (Range: {chainRange}, Found: {nearbyEnemies.Length} colliders)");
         
         float closestDistance = float.MaxValue;
         Enemy closestEnemy = null;
@@ -151,7 +155,7 @@ public class LightningTowerDefender : Defender
             if (enemy != null && !alreadyHit.Contains(enemy))
             {
                 float distance = Vector3.Distance(fromEnemy.transform.position, enemy.transform.position);
-                Debug.Log($"Lightning Tower: Found potential target {enemy.name} at distance {distance:F1}");
+                // Debug.Log($"Lightning Tower: Found potential target {enemy.name} at distance {distance:F1}");
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
@@ -162,11 +166,11 @@ public class LightningTowerDefender : Defender
         
         if (closestEnemy != null)
         {
-            Debug.Log($"Lightning Tower: Selected next target: {closestEnemy.name} at distance {closestDistance:F1}");
+            // Debug.Log($"Lightning Tower: Selected next target: {closestEnemy.name} at distance {closestDistance:F1}");
         }
         else
         {
-            Debug.Log("Lightning Tower: No valid chain targets found");
+            // Debug.Log("Lightning Tower: No valid chain targets found");
         }
         
         return closestEnemy;
@@ -195,7 +199,7 @@ public class LightningTowerDefender : Defender
         CreateSimpleLightningEffect();
         
         // Debug visual feedback
-        Debug.Log($"Lightning Tower attacking! Chain targets: {lightningPoints.Count}, Target: {currentEnemyTarget?.name}");
+        // Debug.Log($"Lightning Tower attacking! Chain targets: {lightningPoints.Count}, Target: {currentEnemyTarget?.name}");
     }
 
     System.Collections.IEnumerator AnimateLightning()
@@ -205,25 +209,67 @@ public class LightningTowerDefender : Defender
         lightningLine.enabled = false;
     }
     
-    void CreateSimpleLightningEffect()
-    {
-        // Create a simple visual effect without requiring prefabs
-        GameObject effect = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        effect.transform.position = transform.position;
-        effect.transform.localScale = Vector3.one * 0.3f;
-        effect.name = "LightningEffect";
-        
-        // Make it yellow and bright
-        Renderer renderer = effect.GetComponent<Renderer>();
-        Material mat = new Material(Shader.Find("Standard"));
-        mat.color = lightningColor;
-        mat.SetFloat("_Emission", 1f); // Make it glow
-        renderer.material = mat;
-        
-        // Remove collider
-        Destroy(effect.GetComponent<Collider>());
-        
-        // Destroy after short time
-        Destroy(effect, 0.3f);
-    }
+     void CreateSimpleLightningEffect()
+     {
+         // Create a simple visual effect without requiring prefabs
+         GameObject effect = GameObject.CreatePrimitive(PrimitiveType.Cube);
+         effect.transform.position = transform.position;
+         effect.transform.localScale = Vector3.one * 0.3f;
+         effect.name = "LightningEffect";
+         
+         // Make it yellow and bright
+         Renderer renderer = effect.GetComponent<Renderer>();
+         Material mat = new Material(Shader.Find("Standard"));
+         mat.color = lightningColor;
+         mat.SetFloat("_Emission", 1f); // Make it glow
+         renderer.material = mat;
+         
+         // Remove collider
+         Destroy(effect.GetComponent<Collider>());
+         
+         // Destroy after short time
+         Destroy(effect, 0.3f);
+     }
+     
+     void ApplyLightningVisualEffect(Enemy enemy)
+     {
+         // Create a flashing yellow effect on the enemy
+         StartCoroutine(FlashEnemyLightning(enemy));
+     }
+     
+     System.Collections.IEnumerator FlashEnemyLightning(Enemy enemy)
+     {
+         if (enemy == null) yield break;
+         
+         // Get the enemy's renderer
+         Renderer enemyRenderer = enemy.GetComponent<Renderer>();
+         if (enemyRenderer == null) yield break;
+         
+         // Store original material
+         Material originalMaterial = enemyRenderer.material;
+         Color originalColor = originalMaterial.color;
+         
+         // Create lightning material
+         Material lightningMaterial = new Material(Shader.Find("Standard"));
+         lightningMaterial.color = lightningColor;
+         lightningMaterial.SetFloat("_Emission", 2f); // Bright yellow glow
+         
+         // Flash the enemy 3 times
+         for (int i = 0; i < 3; i++)
+         {
+             // Flash yellow
+             enemyRenderer.material = lightningMaterial;
+             yield return new WaitForSeconds(0.1f);
+             
+             // Flash back to original
+             enemyRenderer.material = originalMaterial;
+             yield return new WaitForSeconds(0.1f);
+         }
+         
+         // Ensure we end with the original material
+         if (enemyRenderer != null)
+         {
+             enemyRenderer.material = originalMaterial;
+         }
+     }
 }

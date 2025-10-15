@@ -8,21 +8,18 @@ public class CameraSetupGuide : MonoBehaviour
     [Header("Setup Instructions")]
     [TextArea(10, 15)]
     public string setupInstructions = 
-        "CAMERA CONTROLLER SETUP:\n\n" +
+        "FREE-FLYING CAMERA CONTROLLER SETUP:\n\n" +
         "1. Select your Main Camera in the scene\n" +
         "2. Add the CameraController script to it\n" +
         "3. Configure the settings:\n" +
         "   - Move Speed: 10 (adjust as needed)\n" +
-        "   - Rotation Speed: 100 (adjust as needed)\n" +
-        "   - Zoom Speed: 5 (adjust as needed)\n" +
-        "4. Set movement constraints (min/max X, Y, Z)\n" +
-        "5. Enable 'Set Initial Position' to match the image\n\n" +
+        "   - Mouse Sensitivity: 2 (adjust as needed)\n" +
+        "   - Vertical Speed: 5 (adjust as needed)\n\n" +
         "CONTROLS:\n" +
-        "• WASD - Move camera around\n" +
-        "• Q/E - Move camera up/down\n" +
-        "• Right Mouse + Drag - Rotate camera\n" +
-        "• Mouse Scroll - Zoom in/out\n\n" +
-        "The camera will start at the position shown in the image!";
+        "• WASD - Move forward/back/left/right\n" +
+        "• Q/E - Move up/down\n" +
+        "• Right Mouse + Drag - Look around\n\n" +
+        "The camera is completely free-flying!";
 
     [Header("Quick Setup")]
     [Tooltip("Click to setup the main camera")]
@@ -70,27 +67,16 @@ public class CameraSetupGuide : MonoBehaviour
             Debug.Log("CameraController already exists on Main Camera");
         }
         
-        // Configure settings to match the image
-        controller.setInitialPosition = true;
-        controller.initialPosition = new Vector3(77f, 55f, 71f);
-        controller.initialRotation = new Vector3(81.979f, 0f, 0f);
+        // Configure settings for the free-flying camera
         controller.moveSpeed = 10f;
-        controller.rotationSpeed = 100f;
-        controller.zoomSpeed = 5f;
+        controller.mouseSensitivity = 2f;
+        controller.verticalSpeed = 5f;
         
-        // Set reasonable movement bounds
-        controller.minX = -100f;
-        controller.maxX = 100f;
-        controller.minY = 10f;
-        controller.maxY = 100f;
-        controller.minZ = -100f;
-        controller.maxZ = 100f;
-        
-        Debug.Log("Main Camera configured with CameraController!");
+        Debug.Log("Main Camera configured with Simple CameraController!");
     }
     
     /// <summary>
-    /// Resets the main camera to initial position
+    /// Resets the main camera to default position above tower
     /// </summary>
     void ResetMainCamera()
     {
@@ -104,8 +90,10 @@ public class CameraSetupGuide : MonoBehaviour
         CameraController controller = mainCamera.GetComponent<CameraController>();
         if (controller != null)
         {
-            controller.ResetCamera();
-            Debug.Log("Camera reset to initial position!");
+            // Reset camera to default position
+            mainCamera.transform.position = new Vector3(0, 10, 0);
+            mainCamera.transform.rotation = Quaternion.identity;
+            Debug.Log("Camera reset to default position!");
         }
         else
         {

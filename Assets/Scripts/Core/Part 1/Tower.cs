@@ -12,7 +12,7 @@ public class Tower : MonoBehaviour
 {
     [Header("Tower Stats")]
     [Tooltip("The maximum health of the tower.")]
-    [SerializeField] private float maxHealth = 100f;
+    [SerializeField] private float maxHealth = 200f;
     [Tooltip("The current health of the tower.")]
     [SerializeField] private float currentHealth;
 
@@ -24,7 +24,7 @@ public class Tower : MonoBehaviour
     [Tooltip("The current attack range of the tower.")]
     private float currentAttackRange;
     [Tooltip("The amount of damage the tower deals per attack.")]
-    public float attackDamage = 8f;
+    public float attackDamage = 4f;
     [Tooltip("The time interval (in seconds) between attacks.")]
     [SerializeField] private float attackIntervalSeconds = 0.7f;
     [Tooltip("The layer mask used to detect enemies.")]
@@ -82,7 +82,7 @@ public class Tower : MonoBehaviour
         UpdateHealthUI();
 
         // Log the damage taken for debugging.
-        Debug.Log($"Tower took {damage} damage! Health: {currentHealth}/{maxHealth}");
+        // Debug.Log($"Tower took {damage} damage! Health: {currentHealth}/{maxHealth}");
 
         // Check if the tower's health has reached zero.
         if (currentHealth <= 0)
@@ -105,7 +105,7 @@ public class Tower : MonoBehaviour
         UpdateHealthUI();
 
         // Log the healing for debugging.
-        Debug.Log($"Tower healed {healAmount}! Health: {currentHealth}/{maxHealth}");
+        // Debug.Log($"Tower healed {healAmount}! Health: {currentHealth}/{maxHealth}");
     }
 
     /// <summary>
@@ -126,7 +126,7 @@ public class Tower : MonoBehaviour
     private void OnTowerDestroyed()
     {
         // Log the tower's destruction.
-        Debug.Log("Tower destroyed! Game Over!");
+        // Debug.Log("Tower destroyed! Game Over!");
 
         // Notify the GameManager that the game is over.
         if (gameManager != null)
@@ -185,7 +185,7 @@ public class Tower : MonoBehaviour
         // Exit if the projectile prefab is not assigned.
         if (projectilePrefab == null)
         {
-            Debug.LogError("Projectile prefab is not assigned!");
+            // Debug.LogError("Projectile prefab is not assigned!");
             return;
         }
 
@@ -197,7 +197,7 @@ public class Tower : MonoBehaviour
         Projectile projectileComponent = projectile.GetComponent<Projectile>();
         if (projectileComponent == null)
         {
-            Debug.LogError("Projectile prefab does not have a Projectile component!");
+            // Debug.LogError("Projectile prefab does not have a Projectile component!");
             return;
         }
 
@@ -255,7 +255,7 @@ public class Tower : MonoBehaviour
             UpdateHealthUI();
 
             // Log the upgrade for debugging.
-            Debug.Log($"Tower health upgraded! New max health: {maxHealth}");
+            // Debug.Log($"Tower health upgraded! New max health: {maxHealth}");
 
             // Provide visual feedback by scaling the tower.
             transform.localScale *= 1.1f;
@@ -280,7 +280,7 @@ public class Tower : MonoBehaviour
             attackDamage += damageUpgradeAmount;
 
             // Log the upgrade for debugging.
-            Debug.Log($"Tower damage upgraded! New damage: {attackDamage}");
+            // Debug.Log($"Tower damage upgraded! New damage: {attackDamage}");
 
             // Visual feedback can be added here (e.g., change color or add particles).
             return true;
@@ -298,6 +298,6 @@ public class Tower : MonoBehaviour
         currentAttackRange = extend ? extendedAttackRange : baseAttackRange;
 
         // Log the new attack range for debugging.
-        Debug.Log($"Tower attack range set to: {currentAttackRange}");
+        // Debug.Log($"Tower attack range set to: {currentAttackRange}");
     }
 }

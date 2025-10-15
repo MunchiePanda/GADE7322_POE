@@ -42,6 +42,8 @@ public class PlayerPerformanceTracker : MonoBehaviour
     [Tooltip("Overall performance score (0-100, 50 = neutral)")]
     public float performanceScore { get; private set; } = 50f;
     
+    // This is basically how I judge if you're good at the game or not
+    
     [Tooltip("How much tower health affects performance score")]
     public float towerHealthWeight = 30f;
     
@@ -108,6 +110,7 @@ public class PlayerPerformanceTracker : MonoBehaviour
     /// </summary>
     public void OnWaveStart()
     {
+        // Reset everything for the new wave - I track each wave separately
         waveStartTime = Time.time;
         enemiesKilledThisWave = 0;
         enemiesReachedTowerThisWave = 0;
@@ -125,7 +128,7 @@ public class PlayerPerformanceTracker : MonoBehaviour
         
         if (showDebugInfo)
         {
-            Debug.Log($"ADAPTIVE SCALING: Wave starting - Performance Level: {GetPerformanceLevel()}");
+            // Debug.Log($"ADAPTIVE SCALING: Wave starting - Performance Level: {GetPerformanceLevel()}");
             LogPlayerBehaviorAnalysis();
         }
     }
@@ -140,7 +143,7 @@ public class PlayerPerformanceTracker : MonoBehaviour
         
         if (showDebugInfo)
         {
-            Debug.Log($"WAVE COMPLETED in {waveCompletionTime:F1}s - Performance: {GetPerformanceLevel()}");
+            // Debug.Log($"WAVE COMPLETED in {waveCompletionTime:F1}s - Performance: {GetPerformanceLevel()}");
             LogWaveCompletionSummary();
             LogPerformanceBreakdown();
             LogScalingRecommendations();
@@ -244,6 +247,7 @@ public class PlayerPerformanceTracker : MonoBehaviour
     /// </summary>
     private void UpdatePerformanceScore()
     {
+        // This is where I calculate how well you're doing - it's pretty complex
         float towerHealthScore = CalculateTowerHealthScore();
         float killEfficiencyScore = CalculateKillEfficiencyScore();
         float waveSpeedScore = CalculateWaveSpeedScore();
@@ -405,24 +409,24 @@ public class PlayerPerformanceTracker : MonoBehaviour
     /// </summary>
     private void LogPlayerBehaviorAnalysis()
     {
-        Debug.Log($"PLAYER BEHAVIOR ANALYSIS:");
+        // Debug.Log($"PLAYER BEHAVIOR ANALYSIS:");
         
         // Tower Health Analysis
         if (towerHealthPercentage >= 90f)
         {
-            Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Player is protecting tower well!");
+            // Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Player is protecting tower well!");
         }
         else if (towerHealthPercentage >= 70f)
         {
-            Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Some damage taken, but manageable");
+            // Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Some damage taken, but manageable");
         }
         else if (towerHealthPercentage >= 50f)
         {
-            Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Significant damage! Player needs better defense");
+            // Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Significant damage! Player needs better defense");
         }
         else
         {
-            Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Critical damage! Player is struggling");
+            // Debug.Log($"   Tower Health: {towerHealthPercentage:F1}% - Critical damage! Player is struggling");
         }
         
         // Performance Level Analysis
@@ -430,16 +434,16 @@ public class PlayerPerformanceTracker : MonoBehaviour
         switch (performanceLevel)
         {
             case "Struggling":
-                Debug.Log($"   Performance: Player is struggling - System will make enemies EASIER");
+                // Debug.Log($"   Performance: Player is struggling - System will make enemies EASIER");
                 break;
             case "Neutral":
-                Debug.Log($"   Performance: Player is balanced - System will use NORMAL scaling");
+                // Debug.Log($"   Performance: Player is balanced - System will use NORMAL scaling");
                 break;
             case "Doing Well":
-                Debug.Log($"   Performance: Player is doing well - System will make enemies HARDER");
+                // Debug.Log($"   Performance: Player is doing well - System will make enemies HARDER");
                 break;
             case "Excellent":
-                Debug.Log($"   Performance: Player is excellent - System will make enemies MUCH HARDER");
+                // Debug.Log($"   Performance: Player is excellent - System will make enemies MUCH HARDER");
                 break;
         }
     }
@@ -449,17 +453,17 @@ public class PlayerPerformanceTracker : MonoBehaviour
     /// </summary>
     private void LogWaveCompletionSummary()
     {
-        Debug.Log($"WAVE SUMMARY:");
-        Debug.Log($"   Completion Time: {waveCompletionTime:F1}s");
-        Debug.Log($"   Enemies Killed: {enemiesKilledThisWave}");
-        Debug.Log($"   Enemies Reached Tower: {enemiesReachedTowerThisWave}");
-        Debug.Log($"   Defenders Lost: {defendersLostThisWave}");
-        Debug.Log($"   Resources Spent: {resourcesSpentThisWave}");
-        Debug.Log($"   Resources Gained: {resourcesGainedThisWave}");
-        Debug.Log($"   Tower Health: {towerHealthPercentage:F1}%");
-        Debug.Log($"   Average Enemy Path Progression: {averageEnemyPathProgression:F1}%");
-        Debug.Log($"   Max Enemy Path Progression: {maxEnemyPathProgression:F1}%");
-        Debug.Log($"   Strategic Placement Score: {strategicPlacementScore:F1}");
+        // Debug.Log($"WAVE SUMMARY:");
+        // Debug.Log($"   Completion Time: {waveCompletionTime:F1}s");
+        // Debug.Log($"   Enemies Killed: {enemiesKilledThisWave}");
+        // Debug.Log($"   Enemies Reached Tower: {enemiesReachedTowerThisWave}");
+        // Debug.Log($"   Defenders Lost: {defendersLostThisWave}");
+        // Debug.Log($"   Resources Spent: {resourcesSpentThisWave}");
+        // Debug.Log($"   Resources Gained: {resourcesGainedThisWave}");
+        // Debug.Log($"   Tower Health: {towerHealthPercentage:F1}%");
+        // Debug.Log($"   Average Enemy Path Progression: {averageEnemyPathProgression:F1}%");
+        // Debug.Log($"   Max Enemy Path Progression: {maxEnemyPathProgression:F1}%");
+        // Debug.Log($"   Strategic Placement Score: {strategicPlacementScore:F1}");
     }
     
     /// <summary>
@@ -475,15 +479,15 @@ public class PlayerPerformanceTracker : MonoBehaviour
         float pathProgressionScore = CalculatePathProgressionScore();
         float strategicPlacementScore = CalculateStrategicPlacementScore();
         
-        Debug.Log($"PERFORMANCE BREAKDOWN:");
-        Debug.Log($"   Tower Health Score: {towerHealthScore:F1}/{towerHealthWeight} - {(towerHealthScore/towerHealthWeight*100):F1}%");
-        Debug.Log($"   Kill Efficiency Score: {killEfficiencyScore:F1}/{killEfficiencyWeight} - {(killEfficiencyScore/killEfficiencyWeight*100):F1}%");
-        Debug.Log($"   Wave Speed Score: {waveSpeedScore:F1}/{waveSpeedWeight} - {(waveSpeedScore/waveSpeedWeight*100):F1}%");
-        Debug.Log($"   Resource Efficiency Score: {resourceEfficiencyScore:F1}/{resourceEfficiencyWeight} - {(resourceEfficiencyScore/resourceEfficiencyWeight*100):F1}%");
-        Debug.Log($"   Defender Loss Score: {defenderLossScore:F1}/{defenderLossWeight} - {(defenderLossScore/defenderLossWeight*100):F1}%");
-        Debug.Log($"   Path Progression Score: {pathProgressionScore:F1}/{pathProgressionWeight} - {(pathProgressionScore/pathProgressionWeight*100):F1}%");
-        Debug.Log($"   Strategic Placement Score: {strategicPlacementScore:F1}/{strategicPlacementWeight} - {(strategicPlacementScore/strategicPlacementWeight*100):F1}%");
-        Debug.Log($"   TOTAL PERFORMANCE SCORE: {performanceScore:F1}/100");
+        // Debug.Log($"PERFORMANCE BREAKDOWN:");
+        // Debug.Log($"   Tower Health Score: {towerHealthScore:F1}/{towerHealthWeight} - {(towerHealthScore/towerHealthWeight*100):F1}%");
+        // Debug.Log($"   Kill Efficiency Score: {killEfficiencyScore:F1}/{killEfficiencyWeight} - {(killEfficiencyScore/killEfficiencyWeight*100):F1}%");
+        // Debug.Log($"   Wave Speed Score: {waveSpeedScore:F1}/{waveSpeedWeight} - {(waveSpeedScore/waveSpeedWeight*100):F1}%");
+        // Debug.Log($"   Resource Efficiency Score: {resourceEfficiencyScore:F1}/{resourceEfficiencyWeight} - {(resourceEfficiencyScore/resourceEfficiencyWeight*100):F1}%");
+        // Debug.Log($"   Defender Loss Score: {defenderLossScore:F1}/{defenderLossWeight} - {(defenderLossScore/defenderLossWeight*100):F1}%");
+        // Debug.Log($"   Path Progression Score: {pathProgressionScore:F1}/{pathProgressionWeight} - {(pathProgressionScore/pathProgressionWeight*100):F1}%");
+        // Debug.Log($"   Strategic Placement Score: {strategicPlacementScore:F1}/{strategicPlacementWeight} - {(strategicPlacementScore/strategicPlacementWeight*100):F1}%");
+        // Debug.Log($"   TOTAL PERFORMANCE SCORE: {performanceScore:F1}/100");
     }
     
     /// <summary>
@@ -491,38 +495,38 @@ public class PlayerPerformanceTracker : MonoBehaviour
     /// </summary>
     private void LogScalingRecommendations()
     {
-        Debug.Log($"SCALING RECOMMENDATIONS:");
+        // Debug.Log($"SCALING RECOMMENDATIONS:");
         
         if (performanceScore >= 70f)
         {
-            Debug.Log($"   Player is EXCELLENT - Increasing difficulty:");
-            Debug.Log($"      - More enemies (1.5x - 3x more)");
-            Debug.Log($"      - Stronger enemies (1.2x - 2.5x stats)");
-            Debug.Log($"      - More fast enemies (up to 4x frequency)");
-            Debug.Log($"      - Faster enemies (up to 1.5x speed)");
-            Debug.Log($"      - Tank enemies first (30% chance)");
+            // Debug.Log($"   Player is EXCELLENT - Increasing difficulty:");
+            // Debug.Log($"      - More enemies (1.5x - 3x more)");
+            // Debug.Log($"      - Stronger enemies (1.2x - 2.5x stats)");
+            // Debug.Log($"      - More fast enemies (up to 4x frequency)");
+            // Debug.Log($"      - Faster enemies (up to 1.5x speed)");
+            // Debug.Log($"      - Tank enemies first (30% chance)");
         }
         else if (performanceScore >= 50f)
         {
-            Debug.Log($"   Player is DOING WELL - Moderate difficulty increase:");
-            Debug.Log($"      - Slightly more enemies");
-            Debug.Log($"      - Slightly stronger enemies");
-            Debug.Log($"      - Some fast enemy frequency increase");
+            // Debug.Log($"   Player is DOING WELL - Moderate difficulty increase:");
+            // Debug.Log($"      - Slightly more enemies");
+            // Debug.Log($"      - Slightly stronger enemies");
+            // Debug.Log($"      - Some fast enemy frequency increase");
         }
         else if (performanceScore >= 30f)
         {
-            Debug.Log($"   Player is NEUTRAL - Normal scaling:");
-            Debug.Log($"      - Standard enemy count");
-            Debug.Log($"      - Standard enemy stats");
-            Debug.Log($"      - Normal enemy frequency");
+            // Debug.Log($"   Player is NEUTRAL - Normal scaling:");
+            // Debug.Log($"      - Standard enemy count");
+            // Debug.Log($"      - Standard enemy stats");
+            // Debug.Log($"      - Normal enemy frequency");
         }
         else
         {
-            Debug.Log($"   Player is STRUGGLING - Decreasing difficulty:");
-            Debug.Log($"      - Fewer enemies (0.3x - 0.7x)");
-            Debug.Log($"      - Weaker enemies (0.4x - 0.8x stats)");
-            Debug.Log($"      - Base enemy frequency only");
-            Debug.Log($"      - Only basic enemies (no tank enemies)");
+            // Debug.Log($"   Player is STRUGGLING - Decreasing difficulty:");
+            // Debug.Log($"      - Fewer enemies (0.3x - 0.7x)");
+            // Debug.Log($"      - Weaker enemies (0.4x - 0.8x stats)");
+            // Debug.Log($"      - Base enemy frequency only");
+            // Debug.Log($"      - Only basic enemies (no tank enemies)");
         }
     }
 }

@@ -67,7 +67,7 @@ public class FrostTowerDefender : Defender
         // Debug current state
         if (currentEnemyTarget != null)
         {
-            Debug.Log($"Frost Tower: Aiming at {currentEnemyTarget.name} (Distance: {Vector3.Distance(transform.position, currentEnemyTarget.transform.position):F1})");
+            // Debug.Log($"Frost Tower: Aiming at {currentEnemyTarget.name} (Distance: {Vector3.Distance(transform.position, currentEnemyTarget.transform.position):F1})");
         }
     }
 
@@ -75,7 +75,7 @@ public class FrostTowerDefender : Defender
     {
         if (currentEnemyTarget == null) 
         {
-            Debug.Log("Frost Tower: No target in range");
+            // Debug.Log("Frost Tower: No target in range");
             return;
         }
         
@@ -84,63 +84,71 @@ public class FrostTowerDefender : Defender
         
         if (timeSinceLastAttack >= attackIntervalSeconds)
         {
-            Debug.Log($"Frost Tower: ATTACKING! Target: {currentEnemyTarget.name}, Cooldown: {timeSinceLastAttack:F1}s");
+            // Debug.Log($"Frost Tower: ATTACKING! Target: {currentEnemyTarget.name}, Cooldown: {timeSinceLastAttack:F1}s");
             lastAttackTime = time;
             PerformFrostAttack();
         }
         else
         {
-            Debug.Log($"Frost Tower: On cooldown ({timeSinceLastAttack:F1}s / {attackIntervalSeconds}s)");
+            // Debug.Log($"Frost Tower: On cooldown ({timeSinceLastAttack:F1}s / {attackIntervalSeconds}s)");
         }
     }
 
-    void PerformFrostAttack()
-    {
-        Debug.Log($"Frost Tower: Performing AoE attack with radius {frostRadius}");
-        
-        // Find all enemies in the frost radius
-        Collider[] enemiesInRange = Physics.OverlapSphere(transform.position, frostRadius);
-        int enemiesHit = 0;
-        
-        Debug.Log($"Frost Tower: Found {enemiesInRange.Length} colliders in range");
-        
-        foreach (Collider enemyCollider in enemiesInRange)
-        {
-            Enemy enemy = enemyCollider.GetComponent<Enemy>();
-            if (enemy != null)
-            {
-                enemiesHit++;
-                float distance = Vector3.Distance(transform.position, enemy.transform.position);
-                Debug.Log($"Frost Tower: HIT {enemy.name} at distance {distance:F1} for {attackDamage} damage");
-                
-                // Deal damage
-                enemy.TakeDamage(attackDamage);
-                
-                // Apply slow effect
-                ApplySlowEffect(enemy);
-            }
-        }
-        
-        Debug.Log($"Frost Tower: Attack complete! Hit {enemiesHit} enemies");
-        
-        // Play visual effects
-        PlayFrostEffects();
-    }
+     void PerformFrostAttack()
+     {
+         // Debug.Log($"Frost Tower: Performing AoE attack with radius {frostRadius}");
+         
+         // This is the AoE slow system - it hits multiple enemies at once
+         Collider[] enemiesInRange = Physics.OverlapSphere(transform.position, frostRadius);
+         int enemiesHit = 0;
+         
+         // Debug.Log($"Frost Tower: Found {enemiesInRange.Length} colliders in range");
+         
+         foreach (Collider enemyCollider in enemiesInRange)
+         {
+             Enemy enemy = enemyCollider.GetComponent<Enemy>();
+             if (enemy != null)
+             {
+                 enemiesHit++;
+                 float distance = Vector3.Distance(transform.position, enemy.transform.position);
+                 // Debug.Log($"Frost Tower: HIT {enemy.name} at distance {distance:F1} for {attackDamage} damage");
+                 
+                 // Deal damage
+                 enemy.TakeDamage(attackDamage);
+                 
+                 // Apply slow effect - this makes enemies move slower
+                 ApplySlowEffect(enemy);
+                 
+                 // Apply frost visual effect - players can see which enemies are slowed
+                 ApplyFrostVisualEffect(enemy);
+             }
+         }
+         
+         // Debug.Log($"Frost Tower: Attack complete! Hit {enemiesHit} enemies");
+         
+         // Play visual effects
+         PlayFrostEffects();
+     }
 
-    void ApplySlowEffect(Enemy enemy)
-    {
-        Debug.Log($"Frost Tower: Applying slow effect to {enemy.name} for {slowDuration}s");
-        // Add a slow effect component or use a coroutine
-        StartCoroutine(SlowEnemyCoroutine(enemy));
-    }
+     void ApplySlowEffect(Enemy enemy)
+     {
+         // Debug.Log($"Frost Tower: Applying slow effect to {enemy.name} for {slowDuration}s");
+         // Add a slow effect component or use a coroutine
+         StartCoroutine(SlowEnemyCoroutine(enemy));
+         
+         // Apply visual indicator for slowed enemy
+         ApplySlowVisualEffect(enemy);
+     }
 
     System.Collections.IEnumerator SlowEnemyCoroutine(Enemy enemy)
     {
+        if (enemy == null) yield break;
+        
         // Store original speed
         float originalSpeed = enemy.GetMoveSpeed();
         float slowedSpeed = originalSpeed * slowMultiplier;
         
-        Debug.Log($"Frost Tower: Slowing {enemy.name} from {originalSpeed:F1} to {slowedSpeed:F1} speed");
+        // Debug.Log($"Frost Tower: Slowing {enemy.name} from {originalSpeed:F1} to {slowedSpeed:F1} speed");
         
         // Apply slow
         enemy.SetMoveSpeed(slowedSpeed);
@@ -148,9 +156,12 @@ public class FrostTowerDefender : Defender
         // Wait for slow duration
         yield return new WaitForSeconds(slowDuration);
         
-        // Restore original speed
-        enemy.SetMoveSpeed(originalSpeed);
-        Debug.Log($"Frost Tower: Restored {enemy.name} speed to {originalSpeed:F1}");
+        // Restore original speed (only if enemy still exists)
+        if (enemy != null)
+        {
+            enemy.SetMoveSpeed(originalSpeed);
+            // Debug.Log($"Frost Tower: Restored {enemy.name} speed to {originalSpeed:F1}");
+        }
     }
 
     void PlayFrostEffects()
@@ -185,7 +196,7 @@ public class FrostTowerDefender : Defender
         CreateSimpleFrostEffect();
         
         // Debug visual feedback
-        Debug.Log($"Frost Tower attacking! Radius: {frostRadius}, Target: {currentEnemyTarget?.name}");
+        // Debug.Log($"Frost Tower attacking! Radius: {frostRadius}, Target: {currentEnemyTarget?.name}");
     }
     
     void ShowFrostBeam(Vector3 targetPosition)
@@ -234,10 +245,88 @@ public class FrostTowerDefender : Defender
         Destroy(effect, 0.5f);
     }
 
-    // Visual debugging
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, frostRadius);
-    }
+     void ApplyFrostVisualEffect(Enemy enemy)
+     {
+         // Create a blue/cyan effect on the enemy
+         StartCoroutine(FlashEnemyFrost(enemy));
+     }
+     
+     System.Collections.IEnumerator FlashEnemyFrost(Enemy enemy)
+     {
+         if (enemy == null) yield break;
+         
+         // Get the enemy's renderer
+         Renderer enemyRenderer = enemy.GetComponent<Renderer>();
+         if (enemyRenderer == null) yield break;
+         
+         // Store original material
+         Material originalMaterial = enemyRenderer.material;
+         Color originalColor = originalMaterial.color;
+         
+         // Create frost material
+         Material frostMaterial = new Material(Shader.Find("Standard"));
+         frostMaterial.color = frostColor;
+         frostMaterial.SetFloat("_Emission", 1.5f); // Bright cyan glow
+         
+         // Flash the enemy 2 times
+         for (int i = 0; i < 2; i++)
+         {
+             // Flash cyan
+             enemyRenderer.material = frostMaterial;
+             yield return new WaitForSeconds(0.15f);
+             
+             // Flash back to original
+             enemyRenderer.material = originalMaterial;
+             yield return new WaitForSeconds(0.15f);
+         }
+         
+         // Ensure we end with the original material
+         if (enemyRenderer != null)
+         {
+             enemyRenderer.material = originalMaterial;
+         }
+     }
+     
+     void ApplySlowVisualEffect(Enemy enemy)
+     {
+         // Create a persistent blue tint to show the enemy is slowed
+         StartCoroutine(ShowSlowedEnemy(enemy));
+     }
+     
+     System.Collections.IEnumerator ShowSlowedEnemy(Enemy enemy)
+     {
+         if (enemy == null) yield break;
+         
+         // Get the enemy's renderer
+         Renderer enemyRenderer = enemy.GetComponent<Renderer>();
+         if (enemyRenderer == null) yield break;
+         
+         // Store original material
+         Material originalMaterial = enemyRenderer.material;
+         Color originalColor = originalMaterial.color;
+         
+         // Create slowed material (blue tint)
+         Material slowedMaterial = new Material(Shader.Find("Standard"));
+         slowedMaterial.color = new Color(0.3f, 0.6f, 1f, 1f); // Light blue tint
+         slowedMaterial.SetFloat("_Emission", 0.3f); // Subtle glow
+         
+         // Apply slowed visual for the duration
+         enemyRenderer.material = slowedMaterial;
+         
+         // Wait for slow duration
+         yield return new WaitForSeconds(slowDuration);
+         
+         // Restore original material
+         if (enemyRenderer != null)
+         {
+             enemyRenderer.material = originalMaterial;
+         }
+     }
+
+     // Visual debugging
+     void OnDrawGizmosSelected()
+     {
+         Gizmos.color = Color.cyan;
+         Gizmos.DrawWireSphere(transform.position, frostRadius);
+     }
 }

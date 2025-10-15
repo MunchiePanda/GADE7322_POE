@@ -67,14 +67,14 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         // Check if player has enough resources
         if (gameManager.GetResources() < cost)
         {
-            Debug.Log($"Not enough resources! Need {cost}, have {gameManager.GetResources()}");
+            // Debug.Log($"Not enough resources! Need {cost}, have {gameManager.GetResources()}");
             return;
         }
         
         // Check defender count limit
         if (gameManager.currentDefenderCount >= gameManager.maxDefenderCount)
         {
-            Debug.Log($"Defender limit reached! ({gameManager.currentDefenderCount}/{gameManager.maxDefenderCount}) - Remove a defender first!");
+            // Debug.Log($"Defender limit reached! ({gameManager.currentDefenderCount}/{gameManager.maxDefenderCount}) - Remove a defender first!");
             return;
         }
         
@@ -90,7 +90,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
             }
             else
             {
-                Debug.LogWarning($"Preview prefab {previewPrefab.name} has no Renderer component!");
+                // // Debug.LogWarning($"Preview prefab {previewPrefab.name} has no Renderer component!");
             }
         }
         else
@@ -119,7 +119,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         
         if (Physics.Raycast(ray, out hit))
         {
-            Debug.Log($"🎯 Raycast hit: {hit.collider.name} at {hit.point}");
+            // Debug.Log($"🎯 Raycast hit: {hit.collider.name} at {hit.point}");
             
             // Convert world position to grid position
             Vector3 worldPos = hit.point;
@@ -129,7 +129,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                 Mathf.RoundToInt(worldPos.z)
             );
             
-            Debug.Log($"🎯 Grid position: {gridPos}");
+            // Debug.Log($"🎯 Grid position: {gridPos}");
             
             // Check if this position is valid for placement
             if (IsValidPlacementPosition(gridPos))
@@ -145,7 +145,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                 currentWorldPosition = hit.point; // Store exact hit point
                 isValidPlacement = true;
                 
-                Debug.Log($"🎯 DRAG DEBUG: Hit point: {hit.point}, Grid pos: {gridPos}, World pos stored: {currentWorldPosition}");
+                // Debug.Log($"🎯 DRAG DEBUG: Hit point: {hit.point}, Grid pos: {gridPos}, World pos stored: {currentWorldPosition}");
                 
                 // Update visual feedback
                 Renderer renderer = previewObject.GetComponent<Renderer>();
@@ -154,7 +154,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                     renderer.material = validPlacementMaterial;
                 }
                 
-                Debug.Log($"✅ Valid placement at grid position: {gridPos}");
+                // Debug.Log($"✅ Valid placement at grid position: {gridPos}");
             }
             else
             {
@@ -162,7 +162,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
                 previewObject.SetActive(false);
                 currentGridPosition = Vector3Int.zero;
                 isValidPlacement = false;
-                Debug.Log($"❌ Invalid placement at grid position: {gridPos}");
+                // Debug.Log($"❌ Invalid placement at grid position: {gridPos}");
             }
         }
         else
@@ -171,7 +171,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
             previewObject.SetActive(false);
             currentGridPosition = Vector3Int.zero;
             isValidPlacement = false;
-            Debug.Log("❌ Raycast hit nothing");
+            // Debug.Log("❌ Raycast hit nothing");
         }
     }
     
@@ -181,24 +181,24 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         
         if (isValidPlacement)
         {
-            Debug.Log($"Attempting to place {defenderType} at exact world position {currentWorldPosition}");
+            // Debug.Log($"Attempting to place {defenderType} at exact world position {currentWorldPosition}");
             
             // Place the defender at exact world position
             if (gameManager.TryPlaceDefenderAtWorldPosition(currentWorldPosition, defenderType))
             {
-                Debug.Log($"Successfully placed {defenderType} defender at exact position {currentWorldPosition}!");
+                // Debug.Log($"Successfully placed {defenderType} defender at exact position {currentWorldPosition}!");
                 
                 // Play placement effect
                 PlayPlacementEffect(currentGridPosition);
             }
             else
             {
-                Debug.Log("Failed to place defender - check resources and limits!");
+                // Debug.Log("Failed to place defender - check resources and limits!");
             }
         }
         else
         {
-            Debug.Log("Invalid placement location - cannot place on paths or invalid areas!");
+            // Debug.Log("Invalid placement location - cannot place on paths or invalid areas!");
         }
         
         // Clean up
@@ -242,6 +242,6 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
         // Destroy the effect after a short time
         Destroy(effect, 1f);
         
-        Debug.Log($"Defender placed at world position: {worldPos}");
+        // Debug.Log($"Defender placed at world position: {worldPos}");
     }
 }

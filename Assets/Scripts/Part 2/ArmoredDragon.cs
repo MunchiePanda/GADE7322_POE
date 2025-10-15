@@ -60,10 +60,18 @@ public class ArmoredDragon : Enemy
 
     public override void TakeDamage(float amount)
     {
+        // Prevent damage if already dead
+        if (currentHealth <= 0f)
+        {
+            // Debug.Log($"💀 ARMORED {gameObject.name} is already dead, ignoring damage");
+            return;
+        }
+        
         // Apply armor reduction
         float actualDamage = amount * (1f - armorReduction);
         
-        Debug.Log($"Armored Dragon taking {amount} damage, reduced to {actualDamage} by armor");
+        // Debug.Log($"💥 ARMORED DAMAGE: {gameObject.name} taking {amount} damage, reduced to {actualDamage} by {armorReduction * 100}% armor");
+        // Debug.Log($"💥 ARMORED HEALTH: {gameObject.name} health: {currentHealth} -> {currentHealth - actualDamage}");
         
         // Play armor hit effect
         PlayArmorHitEffect();
@@ -73,8 +81,13 @@ public class ArmoredDragon : Enemy
         
         if (currentHealth <= 0f)
         {
+            // Debug.Log($"💀 ARMORED DEATH: {gameObject.name} health reached zero!");
             currentHealth = 0f;
             Die();
+        }
+        else
+        {
+            // Debug.Log($"💥 ARMORED ALIVE: {gameObject.name} still alive with {currentHealth} health");
         }
     }
 
@@ -106,7 +119,7 @@ public class ArmoredDragon : Enemy
         }
     }
 
-    // Override to show armor status
+    // Override to show armor status and ensure proper attack behavior
     protected void Update()
     {
         if (currentHealth <= 0f) return;
@@ -117,7 +130,7 @@ public class ArmoredDragon : Enemy
             float armorPercentage = (currentHealth / maxHealth) * 100f;
             if (armorPercentage < 50f)
             {
-                Debug.Log($"Armored Dragon armor at {armorPercentage:F1}%");
+                // Debug.Log($"🛡️ ARMORED STATUS: {gameObject.name} armor at {armorPercentage:F1}%");
             }
         }
 
@@ -128,6 +141,7 @@ public class ArmoredDragon : Enemy
         AcquireDefenderIfAny();
         if (currentDefenderTarget != null)
         {
+            // Debug.Log($"🛡️ ARMORED ATTACK: {gameObject.name} attacking defender {currentDefenderTarget.name}");
             TryAttackDefender();
             return;
         }
@@ -139,7 +153,7 @@ public class ArmoredDragon : Enemy
     // Override to give more resources when killed (harder to kill)
     protected void Die()
     {
-        Debug.Log("Armored Dragon defeated!");
+        // Debug.Log("Armored Dragon defeated!");
         
         // Play destruction effect if available
         // Note: ExplosionEffect script was removed - add particle effects here if needed
@@ -158,7 +172,7 @@ public class ArmoredDragon : Enemy
             }
         }
 
-        Debug.Log($"Destroying Armored Dragon: {gameObject.name}");
+        // Debug.Log($"Destroying Armored Dragon: {gameObject.name}");
         Destroy(gameObject);
     }
     
@@ -250,6 +264,6 @@ public class ArmoredDragon : Enemy
             renderer.material.color = finalColor;
         }
         
-        Debug.Log("Armored Dragon has fully materialized with imposing presence!");
+        // Debug.Log("Armored Dragon has fully materialized with imposing presence!");
     }
 }

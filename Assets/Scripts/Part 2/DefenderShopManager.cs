@@ -117,7 +117,7 @@ public class DefenderShopManager : MonoBehaviour
     /// </summary>
     void SelectDefender(DefenderType type)
     {
-        Debug.Log($"Selected {type} defender for drag-drop placement");
+        // Debug.Log($"Selected {type} defender for drag-drop placement");
         // The drag-drop system will handle the actual placement
     }
     

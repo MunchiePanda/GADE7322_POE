@@ -95,12 +95,12 @@ public class Projectile : MonoBehaviour
         Enemy enemy = target.GetComponent<Enemy>();
         if (enemy != null)
         {
-            Debug.Log($"🎯 PROJECTILE HIT: Applying {damage} damage to {enemy.gameObject.name} (Critical: {isCriticalHit})");
-            Debug.Log($"🎯 ENEMY HEALTH BEFORE: {enemy.GetCurrentHealth()}/{enemy.GetMaxHealth()}");
+            // Debug.Log($"🎯 PROJECTILE HIT: Applying {damage} damage to {enemy.gameObject.name} (Critical: {isCriticalHit})");
+            // Debug.Log($"🎯 ENEMY HEALTH BEFORE: {enemy.GetCurrentHealth()}/{enemy.GetMaxHealth()}");
             
             enemy.TakeDamage(damage);
             
-            Debug.Log($"🎯 ENEMY HEALTH AFTER: {enemy.GetCurrentHealth()}/{enemy.GetMaxHealth()}");
+            // Debug.Log($"🎯 ENEMY HEALTH AFTER: {enemy.GetCurrentHealth()}/{enemy.GetMaxHealth()}");
             
             // Show damage number and screen shake for critical hits
             CriticalHitSystem criticalSystem = FindFirstObjectByType<CriticalHitSystem>();
@@ -112,7 +112,7 @@ public class Projectile : MonoBehaviour
         }
         else
         {
-            Debug.Log("❌ Projectile hit target, but no Enemy component found!");
+            // Debug.Log("❌ Projectile hit target, but no Enemy component found!");
         }
 
         // Destroy the projectile after hitting the target.

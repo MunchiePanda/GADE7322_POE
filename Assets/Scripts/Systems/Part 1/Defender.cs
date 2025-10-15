@@ -4,14 +4,14 @@ using GADE7322_POE.Core;
 public class Defender : MonoBehaviour
 {
     [Header("Stats")]
-    [SerializeField] protected int hitPoints = 5;
+    [SerializeField] protected int hitPoints = 15;
     
     // Health component reference
     private Health healthComponent;
 
 
     [Header("Combat")]
-    [SerializeField] protected float attackDamage = 10f;
+    [SerializeField] protected float attackDamage = 5f;
     [SerializeField] protected float attackIntervalSeconds = 0.8f;
     [SerializeField] protected float attackRange = 5f;
     [SerializeField] protected LayerMask enemyMask = ~0;
@@ -67,7 +67,7 @@ public class Defender : MonoBehaviour
         }
         currentEnemyTarget = null;
         Collider[] hits = Physics.OverlapSphere(transform.position, attackRange, enemyMask);
-        Debug.Log($"Defender {gameObject.name} looking for enemies in range {attackRange}, found {hits.Length} colliders");
+        // Debug.Log($"Defender {gameObject.name} looking for enemies in range {attackRange}, found {hits.Length} colliders");
         float nearest = float.MaxValue;
         foreach (var hit in hits)
         {
@@ -75,7 +75,7 @@ public class Defender : MonoBehaviour
             if (enemy != null)
             {
                 float d = Vector3.Distance(transform.position, enemy.transform.position);
-                Debug.Log($"Defender found enemy {enemy.name} at distance {d:F2}");
+                // Debug.Log($"Defender found enemy {enemy.name} at distance {d:F2}");
                 if (d < nearest)
                 {
                     nearest = d;
@@ -86,7 +86,7 @@ public class Defender : MonoBehaviour
         
         if (currentEnemyTarget != null)
         {
-            Debug.Log($"Defender {gameObject.name} acquired target: {currentEnemyTarget.name}");
+            // Debug.Log($"Defender {gameObject.name} acquired target: {currentEnemyTarget.name}");
         }
     }
 
@@ -97,7 +97,7 @@ public class Defender : MonoBehaviour
         if (time - lastAttackTime >= attackIntervalSeconds)
         {
             lastAttackTime = time;
-            Debug.Log($"Defender {gameObject.name} attacking enemy {currentEnemyTarget.name}!");
+            // Debug.Log($"Defender {gameObject.name} attacking enemy {currentEnemyTarget.name}!");
             LobProjectileAtEnemy(currentEnemyTarget);
         }
     }
