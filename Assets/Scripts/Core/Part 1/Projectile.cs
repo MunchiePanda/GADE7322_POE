@@ -56,6 +56,7 @@ public class Projectile : MonoBehaviour
         // Destroy the projectile if it is not initialized or has no target.
         if (!isInitialized || target == null)
         {
+            Debug.Log("❌ Projectile not initialized or no target, destroying");
             Destroy(gameObject);
             return;
         }
@@ -66,10 +67,22 @@ public class Projectile : MonoBehaviour
 
         // Check if the projectile has reached the target.
         float distanceToTarget = Vector3.Distance(transform.position, target.position);
-        if (distanceToTarget < 0.5f)
+        
+        // Debug logging every few frames to track movement
+        if (Time.frameCount % 10 == 0) // Log every 10th frame to avoid spam
         {
-            Debug.Log($"Projectile reached target! Distance: {distanceToTarget:F2}");
+            Debug.Log($"🎯 Projectile distance to target: {distanceToTarget:F2}");
+        }
+        
+        if (distanceToTarget < 1.5f) // Increased threshold from 0.5f to 1.5f
+        {
+            Debug.Log($"🎯 Projectile reached target! Distance: {distanceToTarget:F2}");
             HitTarget();
+        }
+        else if (distanceToTarget > 50f) // If projectile is too far from target, destroy it
+        {
+            Debug.Log($"❌ Projectile too far from target ({distanceToTarget:F2}), destroying");
+            Destroy(gameObject);
         }
     }
 
@@ -82,8 +95,12 @@ public class Projectile : MonoBehaviour
         Enemy enemy = target.GetComponent<Enemy>();
         if (enemy != null)
         {
-            Debug.Log($"Projectile hit target! Applying {damage} damage to {enemy.gameObject.name} (Critical: {isCriticalHit})");
+            Debug.Log($"🎯 PROJECTILE HIT: Applying {damage} damage to {enemy.gameObject.name} (Critical: {isCriticalHit})");
+            Debug.Log($"🎯 ENEMY HEALTH BEFORE: {enemy.GetCurrentHealth()}/{enemy.GetMaxHealth()}");
+            
             enemy.TakeDamage(damage);
+            
+            Debug.Log($"🎯 ENEMY HEALTH AFTER: {enemy.GetCurrentHealth()}/{enemy.GetMaxHealth()}");
             
             // Show damage number and screen shake for critical hits
             CriticalHitSystem criticalSystem = FindFirstObjectByType<CriticalHitSystem>();
@@ -95,7 +112,7 @@ public class Projectile : MonoBehaviour
         }
         else
         {
-            Debug.Log("Projectile hit target, but no Enemy component found!");
+            Debug.Log("❌ Projectile hit target, but no Enemy component found!");
         }
 
         // Destroy the projectile after hitting the target.

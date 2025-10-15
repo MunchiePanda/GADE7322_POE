@@ -1010,6 +1010,7 @@ GameObject:
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
+  - component: {fileID: 330585549}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1153,6 +1154,30 @@ MonoBehaviour:
   useSphericalCulling: 1
   shadowDistance: 75
   applyShadowDistance: 0
+--- !u!114 &330585549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a7d47a8c3eb7b945918f83326c68c2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveSpeed: 10
+  rotationSpeed: 100
+  zoomSpeed: 5
+  minX: -50
+  maxX: 50
+  minZ: -50
+  maxZ: 50
+  minY: 10
+  maxY: 100
+  setInitialPosition: 1
+  initialPosition: {x: 77, y: 55, z: 71}
+  initialRotation: {x: 81.979, y: 0, z: 0}
 --- !u!1 &402756658
 GameObject:
   m_ObjectHideFlags: 0
@@ -1751,7 +1776,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 47.95
+  m_fontSize: 35.2
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2670,6 +2695,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1117801837}
   - component: {fileID: 1117801836}
+  - component: {fileID: 1117801838}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -2734,6 +2760,44 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1117801838
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1117801835}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 203d8489ce6754d47b9f7b3a5550c1bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  learningPhaseWaves: 3
+  bomberIntroductionWave: 4
+  armoredIntroductionWave: 6
+  learningPhase:
+    regular: 1
+    fast: 0
+    bomber: 0
+    armored: 0
+  bomberPhase:
+    regular: 0.6
+    fast: 0.2
+    bomber: 0.2
+    armored: 0
+  fullComplexity:
+    regular: 0.4
+    fast: 0.2
+    bomber: 0.2
+    armored: 0.2
+  countInfluence: 0.4
+  typeInfluence: 0.5
+  statInfluence: 0.3
+  countScalingFactor: 1.2
+  healthScalingFactor: 1.15
+  speedScalingFactor: 1.05
+  damageScalingFactor: 1.1
+  performanceTracker: {fileID: 0}
 --- !u!1 &1189634346
 GameObject:
   m_ObjectHideFlags: 0
@@ -3296,7 +3360,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 43.25
+  m_fontSize: 45.6
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1

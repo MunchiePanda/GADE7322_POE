@@ -56,6 +56,7 @@ public class Enemy : MonoBehaviour
     // Public getters and setters for fields accessed by EnemySpawner and WeatherManager
     public float GetMoveSpeed() { return moveSpeed; }
     public float GetMaxHealth() { return maxHealth; }
+    public float GetCurrentHealth() { return currentHealth; }
     public void SetMaxHealth(float value) { maxHealth = value; }
     public void SetCurrentHealth(float value) { currentHealth = value; }
     public void SetMoveSpeed(float value) { moveSpeed = value; }
@@ -203,19 +204,24 @@ public class Enemy : MonoBehaviour
         // Prevent damage if already dead
         if (currentHealth <= 0f)
         {
-            Debug.Log($"Enemy {gameObject.name} is already dead, ignoring damage");
+            Debug.Log($"💀 Enemy {gameObject.name} is already dead, ignoring damage");
             return;
         }
         
-        Debug.Log($"Enemy {gameObject.name} taking {amount} damage. Health: {currentHealth} -> {currentHealth - amount}");
+        Debug.Log($"💥 Enemy {gameObject.name} taking {amount} damage. Health: {currentHealth} -> {currentHealth - amount}");
         currentHealth -= amount;
 
+        Debug.Log($"💥 Enemy {gameObject.name} health after damage: {currentHealth}/{maxHealth}");
 
         if (currentHealth <= 0f)
         {
-            Debug.Log($"Enemy {gameObject.name} health reached zero. Calling Die().");
+            Debug.Log($"💀 Enemy {gameObject.name} health reached zero. Calling Die().");
             currentHealth = 0f; // Ensure health doesn't go negative
             Die();
+        }
+        else
+        {
+            Debug.Log($"💥 Enemy {gameObject.name} still alive with {currentHealth} health");
         }
     }
 
@@ -226,19 +232,19 @@ public class Enemy : MonoBehaviour
         // Prevent multiple death calls
         if (isDead)
         {
-            Debug.Log($"Enemy {gameObject.name} already dead, ignoring duplicate death call");
+            Debug.Log($"💀 Enemy {gameObject.name} already dead, ignoring duplicate death call");
             return;
         }
         
         isDead = true;
-        Debug.Log($"Enemy {gameObject.name} died!");
+        Debug.Log($"💀 Enemy {gameObject.name} died! Health: {currentHealth}/{maxHealth}");
 
         // Play explosion effect if available
         // Note: ExplosionEffect script was removed - add particle effects here if needed
 
         if (gameManager != null)
         {
-            Debug.Log($"Adding resources and notifying spawner for {gameObject.name}");
+            Debug.Log($"💰 Adding resources and notifying spawner for {gameObject.name}");
             // Add a random amount of resources within the specified range
             int resourceReward = Random.Range(minResourceRewardOnDeath, maxResourceRewardOnDeath + 1);
             gameManager.AddResources(resourceReward);
@@ -250,7 +256,7 @@ public class Enemy : MonoBehaviour
             }
         }
 
-        Debug.Log($"Destroying enemy object: {gameObject.name}");
+        Debug.Log($"💀 Destroying enemy object: {gameObject.name}");
         Destroy(gameObject);
     }
     

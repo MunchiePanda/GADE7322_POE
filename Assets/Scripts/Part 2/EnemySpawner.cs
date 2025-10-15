@@ -255,7 +255,16 @@ public class EnemySpawner : MonoBehaviour
             return;
         }
 
-        // Apply adaptive scaling to enemy stats using wave progression system
+        // Initialize the enemy first
+        Tower towerComponent = gameManager.TowerInstance != null ? gameManager.TowerInstance.GetComponent<Tower>() : null;
+        if (towerComponent == null)
+        {
+            Debug.LogError("Tower instance or Tower component is not available!");
+        }
+
+        enemy.Initialize(randomPath, gameManager.terrainGenerator.height, towerComponent, gameManager);
+        
+        // Apply adaptive scaling to enemy stats AFTER initialization
         if (waveProgressionSystem != null)
         {
             ApplyWaveProgressionScaling(enemy);
@@ -264,15 +273,6 @@ public class EnemySpawner : MonoBehaviour
         {
             ApplyAdaptiveScaling(enemy);
         }
-
-        // Initialize the enemy
-        Tower towerComponent = gameManager.TowerInstance != null ? gameManager.TowerInstance.GetComponent<Tower>() : null;
-        if (towerComponent == null)
-        {
-            Debug.LogError("Tower instance or Tower component is not available!");
-        }
-
-        enemy.Initialize(randomPath, gameManager.terrainGenerator.height, towerComponent, gameManager);
 
         activeEnemies.Add(enemyObject);
         
@@ -326,7 +326,7 @@ public class EnemySpawner : MonoBehaviour
         float finalDamage = enemy.GetAttackDamage() * statMultipliers.z;
         
         enemy.SetMaxHealth(Mathf.RoundToInt(finalHealth));
-        enemy.SetCurrentHealth(enemy.GetMaxHealth());
+        // Don't reset current health - let the enemy keep its current health
         enemy.SetMoveSpeed(finalSpeed);
         enemy.SetAttackDamage(finalDamage);
         
@@ -507,7 +507,7 @@ public class EnemySpawner : MonoBehaviour
             // Fallback to wave-only scaling
             float originalMaxHealth = enemy.GetMaxHealth();
             enemy.SetMaxHealth(Mathf.RoundToInt(originalMaxHealth * Mathf.Pow(healthScalingFactor, currentWave - 1)));
-            enemy.SetCurrentHealth(enemy.GetMaxHealth());
+            // Don't reset current health - let the enemy keep its current health
             enemy.SetMoveSpeed(enemy.GetMoveSpeed() * Mathf.Pow(speedScalingFactor, currentWave - 1));
             return;
         }
@@ -531,7 +531,7 @@ public class EnemySpawner : MonoBehaviour
         float finalDamage = enemy.GetAttackDamage() * damageMultiplier;
         
         enemy.SetMaxHealth(Mathf.RoundToInt(finalHealth));
-        enemy.SetCurrentHealth(enemy.GetMaxHealth());
+        // Don't reset current health - let the enemy keep its current health
         enemy.SetMoveSpeed(finalSpeed);
         enemy.SetAttackDamage(finalDamage);
         
