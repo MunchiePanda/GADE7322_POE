@@ -71,15 +71,15 @@ namespace GADE7322_POE.Core
                 }
                 else
                 {
-                    Debug.LogError("ProjectilePrefab does not have a Projectile component!");
+                    // Debug.LogError("ProjectilePrefab does not have a Projectile component!");
                 }
             }
             else
             {
-                Debug.LogError("ProjectilePrefab is not assigned!");
+                // Debug.LogError("ProjectilePrefab is not assigned!");
             }
 
-            Debug.Log($"{gameObject.name} shot a projectile at {nearestEnemy.name}!");
+            // Debug.Log($"{gameObject.name} shot a projectile at {nearestEnemy.name}!");
         }
 
         /// <summary>

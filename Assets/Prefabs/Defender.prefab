@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 166026154423719839}
   - component: {fileID: 8145807544834370341}
+  - component: {fileID: 6176613367242133702}
   m_Layer: 0
   m_Name: Defender
   m_TagString: Untagged
@@ -60,6 +61,27 @@ MonoBehaviour:
   damageUpgradeCost: 40
   healthUpgradeAmount: 15
   damageUpgradeAmount: 2
+  lastAttackTime: -999
+--- !u!114 &6176613367242133702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4414111203060204694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f32f8bd87d00a04e964ae06e217dae5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MaxHealth: 50
+  CurrentHealth: 0
+  OnTakeDamage:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDeath:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &5197257281517026576
 GameObject:
   m_ObjectHideFlags: 0

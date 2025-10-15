@@ -18,6 +18,9 @@ public class Projectile : MonoBehaviour
 
     // Speed at which the projectile moves.
     private float speed;
+    
+    // Whether this projectile is a critical hit.
+    private bool isCriticalHit;
 
     // Flag to check if the projectile has been initialized.
     private bool isInitialized = false;
@@ -28,11 +31,13 @@ public class Projectile : MonoBehaviour
     /// <param name="targetTransform">The target the projectile will track.</param>
     /// <param name="damageAmount">The amount of damage the projectile will deal.</param>
     /// <param name="projectileSpeed">The speed at which the projectile will move.</param>
-    public void Initialize(Transform targetTransform, float damageAmount, float projectileSpeed)
+    /// <param name="criticalHit">Whether this is a critical hit.</param>
+    public void Initialize(Transform targetTransform, float damageAmount, float projectileSpeed, bool criticalHit = false)
     {
         target = targetTransform;
         damage = damageAmount;
         speed = projectileSpeed;
+        isCriticalHit = criticalHit;
         isInitialized = true;
     }
 
@@ -51,6 +56,7 @@ public class Projectile : MonoBehaviour
         // Destroy the projectile if it is not initialized or has no target.
         if (!isInitialized || target == null)
         {
+            Debug.Log(" Projectile not initialized or no target, destroying");
             Destroy(gameObject);
             return;
         }
@@ -61,9 +67,22 @@ public class Projectile : MonoBehaviour
 
         // Check if the projectile has reached the target.
         float distanceToTarget = Vector3.Distance(transform.position, target.position);
-        if (distanceToTarget < 0.5f)
+        
+        // Debug logging every few frames to track movement
+        if (Time.frameCount % 10 == 0) // Log every 10th frame to avoid spam
         {
+            Debug.Log($" Projectile distance to target: {distanceToTarget:F2}");
+        }
+        
+        if (distanceToTarget < 1.5f) // Increased threshold from 0.5f to 1.5f
+        {
+            Debug.Log($" Projectile reached target! Distance: {distanceToTarget:F2}");
             HitTarget();
+        }
+        else if (distanceToTarget > 50f) // If projectile is too far from target, destroy it
+        {
+            Debug.Log($" Projectile too far from target ({distanceToTarget:F2}), destroying");
+            Destroy(gameObject);
         }
     }
 
@@ -76,12 +95,24 @@ public class Projectile : MonoBehaviour
         Enemy enemy = target.GetComponent<Enemy>();
         if (enemy != null)
         {
-            Debug.Log($"Projectile hit target! Applying {damage} damage to {enemy.gameObject.name}");
+            // Debug.Log($" PROJECTILE HIT: Applying {damage} damage to {enemy.gameObject.name} (Critical: {isCriticalHit})");
+            // Debug.Log($" ENEMY HEALTH BEFORE: {enemy.GetCurrentHealth()}/{enemy.GetMaxHealth()}");
+            
             enemy.TakeDamage(damage);
+            
+            // Debug.Log($" ENEMY HEALTH AFTER: {enemy.GetCurrentHealth()}/{enemy.GetMaxHealth()}");
+            
+            // Show damage number and screen shake for critical hits
+            CriticalHitSystem criticalSystem = FindFirstObjectByType<CriticalHitSystem>();
+            if (criticalSystem != null)
+            {
+                criticalSystem.ShowDamageNumber(damage, enemy.transform.position, isCriticalHit);
+                criticalSystem.TriggerScreenShake(isCriticalHit);
+            }
         }
         else
         {
-            Debug.Log("Projectile hit target, but no Enemy component found!");
+            // Debug.Log(" Projectile hit target, but no Enemy component found!");
         }
 
         // Destroy the projectile after hitting the target.
@@ -94,20 +125,18 @@ public class Projectile : MonoBehaviour
     /// <param name="other">The collider the projectile hit.</param>
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"Projectile collided with {other.gameObject.name}");
+        // Debug logging disabled
 
-        // Check if the collider belongs to an enemy.
-        Enemy enemy = other.GetComponent<Enemy>();
-        if (enemy != null)
+        // Only handle collision if we haven't already hit our target
+        if (target != null && other.transform == target)
         {
-            Debug.Log($"Enemy found: {enemy.gameObject.name}, applying {damage} damage");
-            enemy.TakeDamage(damage);
-            Destroy(gameObject);
+            // Debug logging disabled
+            HitTarget();
         }
         // Destroy the projectile if it hits the terrain.
         else if (other.CompareTag("Terrain"))
         {
-            Debug.Log("Projectile hit terrain, destroying");
+            // Debug logging disabled
             Destroy(gameObject);
         }
     }

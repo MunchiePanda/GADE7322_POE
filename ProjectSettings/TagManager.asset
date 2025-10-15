@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Terrain
   - Enemy
+  - PlacementPoint
   layers:
   - Default
   - TransparentFX

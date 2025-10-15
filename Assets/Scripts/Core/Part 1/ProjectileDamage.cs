@@ -21,7 +21,7 @@ namespace GADE7322_POE.Core
                 if (enemyHealth != null)
                 {
                     enemyHealth.TakeDamage(Damage);
-                    Debug.Log($"{gameObject.name} hit {other.name} for {Damage} damage!");
+                    // Debug.Log($"{gameObject.name} hit {other.name} for {Damage} damage!");
                 }
                 Destroy(gameObject); // Destroy the projectile on hit
             }

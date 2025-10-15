@@ -5,21 +5,20 @@ public class Enemy : MonoBehaviour
 {
     void OnCollisionEnter(Collision collision)
     {
-        Debug.Log($"Enemy collided with {collision.gameObject.name}");
+        // Debug logging disabled
     }
 
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"Enemy triggered with {other.gameObject.name}");
-
+        // Debug logging disabled
         Projectile projectile = other.GetComponent<Projectile>();
         if (projectile != null)
         {
-            Debug.Log($"Enemy hit by projectile!");
+            // Debug logging disabled
         }
     }
     [Header("Stats")]
-    [SerializeField] protected float maxHealth = 50f;
+    [SerializeField] protected float maxHealth = 10f;
     [SerializeField] protected float currentHealth = 0f;
     [SerializeField] protected float moveSpeed = 2.5f;
     [SerializeField] protected float attackDamage = 5f;
@@ -27,6 +26,7 @@ public class Enemy : MonoBehaviour
     [SerializeField] protected float detectionRange = 2.0f;
     [SerializeField] protected int minResourceRewardOnDeath = 5;
     [SerializeField] protected int maxResourceRewardOnDeath = 15;
+
 
     protected List<Vector3Int> path;
     protected int currentPathIndex = 0;
@@ -56,14 +56,18 @@ public class Enemy : MonoBehaviour
     // Public getters and setters for fields accessed by EnemySpawner and WeatherManager
     public float GetMoveSpeed() { return moveSpeed; }
     public float GetMaxHealth() { return maxHealth; }
+    public float GetCurrentHealth() { return currentHealth; }
     public void SetMaxHealth(float value) { maxHealth = value; }
     public void SetCurrentHealth(float value) { currentHealth = value; }
     public void SetMoveSpeed(float value) { moveSpeed = value; }
+    public float GetAttackDamage() { return attackDamage; }
+    public void SetAttackDamage(float value) { attackDamage = value; }
 
     protected virtual void Start()
     {
         currentHealth = maxHealth;
-        Debug.Log($"Enemy initialized with health: {currentHealth}");
+        // Debug.Log($"Enemy {gameObject.name} initialized with health: {currentHealth}/{maxHealth}");
+
 
         // Test: Force the enemy to die immediately
         // TakeDamage(currentHealth);
@@ -85,7 +89,7 @@ public class Enemy : MonoBehaviour
         FollowPathTowardsTower();
     }
 
-    void FollowPathTowardsTower()
+    protected void FollowPathTowardsTower()
     {
         if (path == null || path.Count == 0 || terrainGenerator == null)
             return;
@@ -104,6 +108,13 @@ public class Enemy : MonoBehaviour
             if (currentPathIndex < finalIndex)
             {
                 currentPathIndex++;
+                
+                // Report path progression to performance tracker
+                if (gameManager != null && gameManager.performanceTracker != null)
+                {
+                    float progressionPercentage = ((float)currentPathIndex / finalIndex) * 100f;
+                    gameManager.performanceTracker.OnEnemyPathProgression(progressionPercentage);
+                }
             }
             else
             {
@@ -121,7 +132,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    void AcquireDefenderIfAny()
+    protected void AcquireDefenderIfAny()
     {
         // If we already have a target that is alive and nearby, keep it
         if (currentDefenderTarget != null && currentDefenderTarget.IsAlive())
@@ -133,6 +144,8 @@ public class Enemy : MonoBehaviour
 
         currentDefenderTarget = null;
         Collider[] hits = Physics.OverlapSphere(transform.position, detectionRange);
+        // Debug logging disabled
+        
         float nearest = float.MaxValue;
         foreach (var hit in hits)
         {
@@ -140,6 +153,7 @@ public class Enemy : MonoBehaviour
             if (defender != null && defender.IsAlive())
             {
                 float d = Vector3.Distance(transform.position, defender.transform.position);
+                // Debug logging disabled
                 if (d < nearest)
                 {
                     nearest = d;
@@ -147,9 +161,14 @@ public class Enemy : MonoBehaviour
                 }
             }
         }
+        
+        if (currentDefenderTarget != null)
+        {
+            // Debug logging disabled
+        }
     }
 
-    void TryAttackDefender()
+    protected void TryAttackDefender()
     {
         if (currentDefenderTarget == null || !currentDefenderTarget.IsAlive())
         {
@@ -161,6 +180,7 @@ public class Enemy : MonoBehaviour
         if (time - lastAttackTime >= attackIntervalSeconds)
         {
             lastAttackTime = time;
+            // Debug logging disabled
             currentDefenderTarget.TakeDamage(attackDamage);
         }
     }
@@ -172,37 +192,59 @@ public class Enemy : MonoBehaviour
         {
             lastAttackTime = time;
             targetTower.TakeDamage(attackDamage);
+            
+            // Enemy dies after first attack on tower
+            // Debug logging disabled
+            Die();
         }
     }
 
     public virtual void TakeDamage(float amount)
     {
-        Debug.Log($"Enemy taking {amount} damage. Current health before damage: {currentHealth}");
+        // Prevent damage if already dead
+        if (currentHealth <= 0f)
+        {
+            // Debug.Log($"💀 Enemy {gameObject.name} is already dead, ignoring damage");
+            return;
+        }
+        
+        // Debug.Log($"💥 Enemy {gameObject.name} taking {amount} damage. Health: {currentHealth} -> {currentHealth - amount}");
         currentHealth -= amount;
-        Debug.Log($"Enemy health after damage: {currentHealth}");
+
+        // Debug.Log($"💥 Enemy {gameObject.name} health after damage: {currentHealth}/{maxHealth}");
 
         if (currentHealth <= 0f)
         {
-            Debug.Log("Enemy health reached zero. Calling Die().");
+            // Debug.Log($"💀 Enemy {gameObject.name} health reached zero. Calling Die().");
             currentHealth = 0f; // Ensure health doesn't go negative
             Die();
         }
+        else
+        {
+            // Debug.Log($"💥 Enemy {gameObject.name} still alive with {currentHealth} health");
+        }
     }
 
-    void Die()
+    private bool isDead = false;
+    
+    protected virtual void Die()
     {
-        Debug.Log("Enemy died!");
-
-        // Play explosion effect
-        ExplosionEffect explosionEffect = GetComponent<ExplosionEffect>();
-        if (explosionEffect != null)
+        // Prevent multiple death calls
+        if (isDead)
         {
-            explosionEffect.PlayExplosion();
+            // Debug.Log($"💀 Enemy {gameObject.name} already dead, ignoring duplicate death call");
+            return;
         }
+        
+        isDead = true;
+        // Debug.Log($"💀 Enemy {gameObject.name} died! Health: {currentHealth}/{maxHealth}");
+
+        // Play explosion effect if available
+        // Note: ExplosionEffect script was removed - add particle effects here if needed
 
         if (gameManager != null)
         {
-            Debug.Log("Adding resources and notifying spawner.");
+            Debug.Log($"💰 Adding resources and notifying spawner for {gameObject.name}");
             // Add a random amount of resources within the specified range
             int resourceReward = Random.Range(minResourceRewardOnDeath, maxResourceRewardOnDeath + 1);
             gameManager.AddResources(resourceReward);
@@ -214,9 +256,10 @@ public class Enemy : MonoBehaviour
             }
         }
 
-        Debug.Log("Destroying enemy object.");
+        Debug.Log($"💀 Destroying enemy object: {gameObject.name}");
         Destroy(gameObject);
     }
+    
 }
 
 
