@@ -207,6 +207,20 @@ public class Defender : MonoBehaviour
         return false;
     }
     
+    public bool UpgradeAttackSpeed()
+    {
+        if (gameManager == null) return false;
+
+        if (gameManager.SpendResources(damageUpgradeCost)) // Using damage cost for now
+        {
+            attackIntervalSeconds *= 0.8f; // 20% faster attack speed
+            attackIntervalSeconds = Mathf.Max(0.1f, attackIntervalSeconds); // Minimum attack speed
+            // Debug logging disabled
+            return true;
+        }
+        return false;
+    }
+    
     /// <summary>
     /// Called when the defender dies (via Health component)
     /// </summary>

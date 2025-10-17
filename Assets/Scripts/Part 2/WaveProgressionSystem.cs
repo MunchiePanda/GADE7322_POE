@@ -10,8 +10,8 @@ public class WaveProgressionSystem : MonoBehaviour
     [Tooltip("Waves 1-3: Only regular enemies")]
     public int learningPhaseWaves = 3;
     
-    [Tooltip("Wave when bombers are introduced")]
-    public int bomberIntroductionWave = 4;
+    [Tooltip("Wave when laser dragons are introduced")]
+    public int laserDragonIntroductionWave = 4;
     
     [Tooltip("Wave when armored enemies are introduced (8 as per planning document)")]
     public int armoredIntroductionWave = 8;
@@ -26,12 +26,12 @@ public class WaveProgressionSystem : MonoBehaviour
         armored = 0.0f
     };
     
-    [Tooltip("Probability distribution for waves 4-7 (bomber introduction) - matches planning document")]
-    public EnemyTypeDistribution bomberPhase = new EnemyTypeDistribution
+    [Tooltip("Probability distribution for waves 4-7 (laser dragon introduction) - matches planning document")]
+    public EnemyTypeDistribution laserDragonPhase = new EnemyTypeDistribution
     {
         regular = 0.4f,  // 40% as per planning document
         fast = 0.3f,     // 30% as per planning document
-        bomber = 0.3f,   // 30% as per planning document
+        bomber = 0.3f,   // 30% as per planning document (now laser dragon)
         armored = 0.0f   // 0% as per planning document
     };
     
@@ -123,7 +123,7 @@ public class WaveProgressionSystem : MonoBehaviour
         else if (wave <= 7)
         {
             // Waves 4-7: 40% basic, 30% fast, 30% bomber, 0% armored
-            return bomberPhase;
+            return laserDragonPhase;
         }
         else
         {
@@ -336,5 +336,56 @@ public class WaveProgressionSystem : MonoBehaviour
             // Debug.Log($"Performance Score: {performanceTracker.performanceScore:F1}");
             // Debug.Log($"Performance Level: {performanceTracker.GetPerformanceLevel()}");
         }
+    }
+    
+    /// <summary>
+    /// Adjusts wave difficulty based on upgrade system to maintain challenge
+    /// </summary>
+    /// <param name="baseCount">Base enemy count for the wave</param>
+    /// <param name="currentWave">Current wave number</param>
+    /// <returns>Adjusted enemy count accounting for upgrades</returns>
+    public int GetUpgradeAdjustedEnemyCount(int baseCount, int currentWave)
+    {
+        // Get base adaptive count
+        int adaptiveCount = GetAdaptiveEnemyCount(baseCount, currentWave);
+        
+        // Find upgrade system to check upgrade levels
+        UpgradeSystem upgradeSystem = FindFirstObjectByType<UpgradeSystem>();
+        if (upgradeSystem == null) return adaptiveCount;
+        
+        // Calculate upgrade bonus multiplier
+        float upgradeBonus = 1f;
+        
+        // Global upgrades increase difficulty
+        int globalHealthLevel = upgradeSystem.GetGlobalHealthLevel();
+        int globalDamageLevel = upgradeSystem.GetGlobalDamageLevel();
+        int globalAttackSpeedLevel = upgradeSystem.GetGlobalAttackSpeedLevel();
+        
+        // Each global upgrade level increases enemy count by 5%
+        upgradeBonus += (globalHealthLevel + globalDamageLevel + globalAttackSpeedLevel) * 0.05f;
+        
+        // Count individual upgrades (approximate)
+        Defender[] allDefenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
+        int individualUpgrades = 0;
+        foreach (Defender defender in allDefenders)
+        {
+            if (defender != null)
+            {
+                // Estimate upgrade level based on scale (simple approximation)
+                float scale = defender.transform.localScale.x;
+                individualUpgrades += Mathf.RoundToInt((scale - 1f) / 0.1f);
+            }
+        }
+        
+        // Individual upgrades also increase difficulty
+        upgradeBonus += individualUpgrades * 0.02f;
+        
+        // Apply upgrade bonus
+        int finalCount = Mathf.RoundToInt(adaptiveCount * upgradeBonus);
+        
+        // Ensure minimum challenge
+        finalCount = Mathf.Max(finalCount, baseCount);
+        
+        return finalCount;
     }
 }

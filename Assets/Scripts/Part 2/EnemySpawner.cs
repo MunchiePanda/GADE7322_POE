@@ -19,7 +19,7 @@ public class EnemySpawner : MonoBehaviour
     public GameObject defaultEnemyPrefab;
     public GameObject fastEnemyPrefab;
     public GameObject tankEnemyPrefab;
-    public GameObject bomberEnemyPrefab;
+    public GameObject laserEnemyPrefab;
 
     [Header("Spawning Settings")]
     [Tooltip("Time between enemy spawns in a wave (seconds).")]
@@ -326,7 +326,7 @@ public class EnemySpawner : MonoBehaviour
             case WaveProgressionSystem.EnemyType.Fast:
                 return fastEnemyPrefab;
             case WaveProgressionSystem.EnemyType.Bomber:
-                return bomberEnemyPrefab;
+                return laserEnemyPrefab;
             case WaveProgressionSystem.EnemyType.Armored:
                 return tankEnemyPrefab;
             default:
@@ -371,7 +371,7 @@ public class EnemySpawner : MonoBehaviour
             float rand = Random.Range(0f, 1f);
             if (rand < 0.4f) return defaultEnemyPrefab;
             else if (rand < 0.6f) return fastEnemyPrefab;
-            else if (rand < 0.8f) return bomberEnemyPrefab; // Bomber introduced at wave 3
+            else if (rand < 0.8f) return laserEnemyPrefab; // Laser Dragon introduced at wave 3
             else return tankEnemyPrefab;
         }
         else
@@ -380,7 +380,7 @@ public class EnemySpawner : MonoBehaviour
             float rand = Random.Range(0f, 1f);
             if (rand < 0.3f) return defaultEnemyPrefab;
             else if (rand < 0.5f) return fastEnemyPrefab;
-            else if (rand < 0.7f) return bomberEnemyPrefab;
+            else if (rand < 0.7f) return laserEnemyPrefab;
             else return tankEnemyPrefab;
         }
     }
@@ -492,8 +492,8 @@ public class EnemySpawner : MonoBehaviour
             float bomberChance = 0.2f + (performanceScore - 60f) / 40f * 0.3f; // 20% to 50% chance
             if (Random.Range(0f, 1f) < bomberChance)
             {
-                // Debug.Log($"ADAPTIVE SCALING: Spawning BOMBER because you're doing well and can handle the challenge!");
-                return bomberEnemyPrefab;
+                // Debug.Log($"ADAPTIVE SCALING: Spawning LASER DRAGON because you're doing well and can handle the challenge!");
+                return laserEnemyPrefab;
             }
         }
         

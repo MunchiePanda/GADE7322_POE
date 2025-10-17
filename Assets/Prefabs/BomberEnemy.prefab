@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 820385077123436877}
-  - component: {fileID: 8621542754266332980}
+  - component: {fileID: 5472708709174110454}
   m_Layer: 7
   m_Name: BomberEnemy
   m_TagString: Enemy
@@ -33,7 +33,7 @@ Transform:
   - {fileID: 3991138716630775707}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8621542754266332980
+--- !u!114 &5472708709174110454
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -42,24 +42,26 @@ MonoBehaviour:
   m_GameObject: {fileID: 7520726967525940784}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e47d983a735cc4b4994bf09f501e7e24, type: 3}
+  m_Script: {fileID: 11500000, guid: 80dcf017d26a44340abe2bb3323d1f44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 70
+  maxHealth: 10
   currentHealth: 0
-  moveSpeed: 5
+  moveSpeed: 2.5
   attackDamage: 5
   attackIntervalSeconds: 1
   detectionRange: 2
   minResourceRewardOnDeath: 5
   maxResourceRewardOnDeath: 15
-  chargeSpeedMultiplier: 3
-  explosionRadius: 25
-  explosionDamage: 25
-  explosionEffectPrefab: {fileID: 8464950693656172981, guid: 83ad694f134ab954580473212156b35a, type: 3}
-  chargeParticles: {fileID: 2413333106277601229, guid: 108ca465382c11742bd2c91fe4fdb13f, type: 3}
-  explosionRadiusScaling: 1.1
-  explosionDamageScaling: 1.2
+  laserChargeTime: 2
+  laserDamage: 7.5
+  laserRange: 25
+  laserCooldown: 3
+  laserBeam: {fileID: 2547642060390733842, guid: bfc7102ce75cd6e478454385abdcab5b, type: 3}
+  chargeParticles: {fileID: 6280281539998945384, guid: f78aaaec3b393e24ca74cd6de8194347, type: 3}
+  laserMaterial: {fileID: 2100000, guid: b5aa66c28f25f7a4bba6dbc4289c4353, type: 2}
+  laserWidth: 0.2
+  laserColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1001 &3524602141331722352
 PrefabInstance:
   m_ObjectHideFlags: 0

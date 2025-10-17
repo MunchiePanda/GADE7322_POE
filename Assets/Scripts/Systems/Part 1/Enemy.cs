@@ -21,6 +21,7 @@ public class Enemy : MonoBehaviour
     [SerializeField] protected float maxHealth = 10f;
     [SerializeField] protected float currentHealth = 0f;
     [SerializeField] protected float moveSpeed = 2.5f;
+    public float MoveSpeed { get { return moveSpeed; } set { moveSpeed = value; } }
     [SerializeField] protected float attackDamage = 5f;
     [SerializeField] protected float attackIntervalSeconds = 1.0f;
     [SerializeField] protected float detectionRange = 2.0f;

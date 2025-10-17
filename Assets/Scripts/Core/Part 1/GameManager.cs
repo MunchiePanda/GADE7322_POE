@@ -486,8 +486,8 @@ public class GameManager : MonoBehaviour
 
         if (defenderPrefabToUse == null) return false;
 
-        // Only allow placement on valid non-path tiles.
-        if (!terrainGenerator.IsValidDefenderPlacement(gridPosition)) return false;
+        // Only allow placement in defender zones
+        if (!IsValidZonePlacement(gridPosition)) return false;
 
         // Check if the player has enough resources.
         if (!SpendResources(cost)) return false;
@@ -512,6 +512,10 @@ public class GameManager : MonoBehaviour
         
         // Increment defender count
         currentDefenderCount++;
+        
+        // Update zone defender count
+        UpdateZoneDefenderCount(gridPosition, true);
+        
         // Debug.Log($" Defender placed! Count: {currentDefenderCount}/{maxDefenderCount}");
         
         return true;
@@ -643,5 +647,101 @@ public class GameManager : MonoBehaviour
         {
             terrainGenerator.HighlightDefenderLocations(pathIndex);
         }
+    }
+    
+    /// <summary>
+    /// Checks if a position is valid for defender placement within a zone
+    /// </summary>
+    /// <param name="gridPosition">Grid position to check</param>
+    /// <returns>True if position is in a valid zone</returns>
+    private bool IsValidZonePlacement(Vector3Int gridPosition)
+    {
+        if (terrainGenerator == null) return false;
+        
+        // Check if position is in any defender zone
+        foreach (DefenderZone zone in terrainGenerator.DefenderZones)
+        {
+            if (zone.isActive && zone.ContainsPosition(gridPosition))
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// Updates the defender count for a specific zone
+    /// </summary>
+    /// <param name="gridPosition">Position of the defender</param>
+    /// <param name="isAdding">True if adding defender, false if removing</param>
+    private void UpdateZoneDefenderCount(Vector3Int gridPosition, bool isAdding)
+    {
+        if (terrainGenerator == null) return;
+        
+        foreach (DefenderZone zone in terrainGenerator.DefenderZones)
+        {
+            if (zone.ContainsPosition(gridPosition))
+            {
+                if (isAdding)
+                {
+                    zone.AddDefender();
+                }
+                else
+                {
+                    zone.RemoveDefender();
+                }
+                break;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Gets the zone containing a specific position
+    /// </summary>
+    /// <param name="gridPosition">Position to check</param>
+    /// <returns>The zone containing the position, or null if not found</returns>
+    public DefenderZone GetZoneForPosition(Vector3Int gridPosition)
+    {
+        if (terrainGenerator == null) return null;
+        
+        foreach (DefenderZone zone in terrainGenerator.DefenderZones)
+        {
+            if (zone.isActive && zone.ContainsPosition(gridPosition))
+            {
+                return zone;
+            }
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
+    /// Gets all defenders in a specific zone
+    /// </summary>
+    /// <param name="zone">Zone to check</param>
+    /// <returns>List of defenders in the zone</returns>
+    public List<Defender> GetDefendersInZone(DefenderZone zone)
+    {
+        List<Defender> defendersInZone = new List<Defender>();
+        
+        if (zone == null) return defendersInZone;
+        
+        // Find all defenders in the scene
+        Defender[] allDefenders = FindObjectsByType<Defender>(FindObjectsSortMode.None);
+        
+        foreach (Defender defender in allDefenders)
+        {
+            if (defender != null)
+            {
+                Vector3Int defenderPos = terrainGenerator.WorldToGridPosition(defender.transform.position);
+                if (zone.ContainsPosition(defenderPos))
+                {
+                    defendersInZone.Add(defender);
+                }
+            }
+        }
+        
+        return defendersInZone;
     }
 }

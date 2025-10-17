@@ -120,6 +120,26 @@ public class VoxelTerrainGenerator : MonoBehaviour
     private List<Vector3Int> defenderLocations = new List<Vector3Int>();
     // Public property to access defender locations.
     public List<Vector3Int> DefenderLocations => defenderLocations;
+    
+    [Header("Defender Zone Settings")]
+    [Tooltip("Number of defender zones to generate")]
+    public int numDefenderZones = 10;
+    
+    [Tooltip("Size of each defender zone (radius)")]
+    public int defenderZoneSize = 3;
+    
+    [Tooltip("Minimum distance between zones")]
+    public int minZoneDistance = 8;
+    
+    [Tooltip("Minimum distance from paths")]
+    public int minDistanceFromPaths = 5;
+    
+    [Tooltip("Minimum distance from tower")]
+    public int minDistanceFromTower = 10;
+    
+    // List of defender zones (clusters of valid placement positions)
+    private List<DefenderZone> defenderZones = new List<DefenderZone>();
+    public List<DefenderZone> DefenderZones => defenderZones;
 
     // Ensures terrain is generated when the script is initialized.
     void Awake() => GenerateAllIfNeeded();
@@ -144,8 +164,8 @@ public class VoxelTerrainGenerator : MonoBehaviour
 
         // Carve paths from edges to the center.
         CarvePaths();
-        // Generate valid defender placement locations along paths.
-        GenerateDefenderLocations();
+        // Generate defender zones for placement.
+        GenerateDefenderZones();
         // Create terrain chunks for efficient rendering.
         CreateChunks();
         // Spawn trees on grass tiles.
@@ -155,33 +175,103 @@ public class VoxelTerrainGenerator : MonoBehaviour
         isGenerated = true;
     }
 
-    // Generates valid defender placement locations near paths.
-    private void GenerateDefenderLocations()
+    // Generates defender zones for strategic placement.
+    private void GenerateDefenderZones()
     {
+        defenderZones.Clear();
         defenderLocations.Clear();
-        foreach (var path in paths)
+        
+        int attempts = 0;
+        int maxAttempts = numDefenderZones * 10;
+        
+        while (defenderZones.Count < numDefenderZones && attempts < maxAttempts)
         {
-            foreach (var pos in path)
+            attempts++;
+            
+            // Generate random position
+            Vector3Int zoneCenter = new Vector3Int(
+                Random.Range(defenderZoneSize, width - defenderZoneSize),
+                0,
+                Random.Range(defenderZoneSize, depth - defenderZoneSize)
+            );
+            
+            // Check if position is valid for a zone
+            if (IsValidZonePosition(zoneCenter))
             {
-                int surfaceY = GetSurfaceY(pos.x, pos.z);
-                // Check a 5x5 grid around each path position for valid defender spots.
-                for (int x = -2; x <= 2; x++)
+                // Create zone
+                DefenderZone zone = new DefenderZone();
+                zone.center = zoneCenter;
+                zone.positions = GenerateZonePositions(zoneCenter);
+                zone.isActive = true;
+                
+                defenderZones.Add(zone);
+                
+                // Add zone positions to defender locations
+                foreach (Vector3Int pos in zone.positions)
                 {
-                    for (int z = -2; z <= 2; z++)
+                    if (!defenderLocations.Contains(pos))
                     {
-                        Vector3Int testPosition = new Vector3Int(pos.x + x, surfaceY - 1, pos.z + z);
-                        // Clamp position to terrain bounds.
-                        testPosition.x = Mathf.Clamp(testPosition.x, 0, width - 1);
-                        testPosition.z = Mathf.Clamp(testPosition.z, 0, depth - 1);
-                        // Add position if valid and not already included.
-                        if (IsValidDefenderPlacement(testPosition) && !defenderLocations.Contains(testPosition))
-                        {
-                            defenderLocations.Add(testPosition);
-                        }
+                        defenderLocations.Add(pos);
                     }
                 }
             }
         }
+    }
+    
+    // Generates positions within a defender zone
+    private List<Vector3Int> GenerateZonePositions(Vector3Int center)
+    {
+        List<Vector3Int> zonePositions = new List<Vector3Int>();
+        int surfaceY = GetSurfaceY(center.x, center.z);
+        
+        // Generate positions in a square around the center
+        for (int x = -defenderZoneSize; x <= defenderZoneSize; x++)
+        {
+            for (int z = -defenderZoneSize; z <= defenderZoneSize; z++)
+            {
+                Vector3Int testPos = new Vector3Int(center.x + x, surfaceY - 1, center.z + z);
+                
+                // Clamp to terrain bounds
+                testPos.x = Mathf.Clamp(testPos.x, 0, width - 1);
+                testPos.z = Mathf.Clamp(testPos.z, 0, depth - 1);
+                
+                // Check if position is valid for defender placement
+                if (IsValidDefenderPlacement(testPos))
+                {
+                    zonePositions.Add(testPos);
+                }
+            }
+        }
+        
+        return zonePositions;
+    }
+    
+    // Checks if a position is valid for a defender zone
+    private bool IsValidZonePosition(Vector3Int center)
+    {
+        // Check distance from tower
+        Vector3Int towerPos = new Vector3Int(width / 2, 0, depth / 2);
+        float distanceFromTower = Vector3Int.Distance(center, towerPos);
+        if (distanceFromTower < minDistanceFromTower) return false;
+        
+        // Check distance from paths
+        foreach (Vector2Int pathPos in pathPositions)
+        {
+            float distanceFromPath = Vector2Int.Distance(
+                new Vector2Int(center.x, center.z), 
+                pathPos
+            );
+            if (distanceFromPath < minDistanceFromPaths) return false;
+        }
+        
+        // Check distance from other zones
+        foreach (DefenderZone existingZone in defenderZones)
+        {
+            float distanceFromZone = Vector3Int.Distance(center, existingZone.center);
+            if (distanceFromZone < minZoneDistance) return false;
+        }
+        
+        return true;
     }
 
     // Spawns trees randomly on grass tiles based on biome and density settings.
@@ -1060,5 +1150,53 @@ public class VoxelTerrainGenerator : MonoBehaviour
         }
         
         isHighlighting = false;
+    }
+}
+
+/// <summary>
+/// Represents a defender zone containing multiple valid placement positions.
+/// </summary>
+[System.Serializable]
+public class DefenderZone
+{
+    [Tooltip("Center position of the zone")]
+    public Vector3Int center;
+    
+    [Tooltip("List of valid placement positions within the zone")]
+    public List<Vector3Int> positions = new List<Vector3Int>();
+    
+    [Tooltip("Whether the zone is currently active")]
+    public bool isActive = true;
+    
+    [Tooltip("Number of defenders currently placed in this zone")]
+    public int defendersPlaced = 0;
+    
+    /// <summary>
+    /// Gets the number of available positions in this zone
+    /// </summary>
+    public int AvailablePositions => positions.Count - defendersPlaced;
+    
+    /// <summary>
+    /// Checks if a position is within this zone
+    /// </summary>
+    public bool ContainsPosition(Vector3Int position)
+    {
+        return positions.Contains(position);
+    }
+    
+    /// <summary>
+    /// Adds a defender to this zone
+    /// </summary>
+    public void AddDefender()
+    {
+        defendersPlaced++;
+    }
+    
+    /// <summary>
+    /// Removes a defender from this zone
+    /// </summary>
+    public void RemoveDefender()
+    {
+        defendersPlaced = Mathf.Max(0, defendersPlaced - 1);
     }
 }

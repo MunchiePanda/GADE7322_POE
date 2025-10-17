@@ -300,4 +300,21 @@ public class Tower : MonoBehaviour
         // Log the new attack range for debugging.
         // Debug.Log($"Tower attack range set to: {currentAttackRange}");
     }
+    
+    /// <summary>
+    /// Upgrades the tower's attack speed by reducing attack interval.
+    /// </summary>
+    /// <returns>True if upgrade was successful, false otherwise.</returns>
+    public bool UpgradeAttackSpeed()
+    {
+        if (gameManager == null) return false;
+
+        if (gameManager.SpendResources(damageUpgradeCost)) // Using damage cost for now
+        {
+            attackIntervalSeconds *= 0.8f; // 20% faster attack speed
+            attackIntervalSeconds = Mathf.Max(0.1f, attackIntervalSeconds); // Minimum attack speed
+            return true;
+        }
+        return false;
+    }
 }

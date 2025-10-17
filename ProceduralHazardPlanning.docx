@@ -1,0 +1,112 @@
+# Procedural Environmental Hazard System Planning Document
+
+## Overview
+This document outlines the implementation of a procedurally generated environmental hazard system for the tower defense game. The system will dynamically spawn various environmental hazards that affect gameplay by modifying enemy and defender movement, dealing damage, and creating strategic challenges for players.
+
+## Hazard Types and Effects
+
+### 1. Lava Pools
+**Visual Characteristics:** Distorted, bubbling terrain with red-orange coloration using the HazardDistortion shader.
+**Gameplay Effects:**
+- Deals 2-5 damage per second to any unit standing in the pool
+- Reduces movement speed by 50% for all units
+- Affects both enemies and defenders equally
+- Creates strategic positioning challenges
+
+### 2. Ice Patches
+**Visual Characteristics:** Crystalline, rippling surface with blue-white tint using vertex displacement.
+**Gameplay Effects:**
+- Reduces movement speed by 30% for all units
+- 15% chance per second to freeze units for 1 second (stops movement)
+- Affects projectile paths by slowing them down
+- Creates tactical positioning opportunities
+
+### 3. Wind Zones
+**Visual Characteristics:** Flowing, wavy distortion patterns with gray-white coloration.
+**Gameplay Effects:**
+- Pushes units in a random direction (changes every 3 seconds)
+- Affects projectile trajectories by deflecting them
+- Creates dynamic battlefield conditions
+- Requires players to adapt positioning strategies
+
+## Procedural Generation Algorithm
+
+### Spawn Rules
+1. **Wave-based Spawning:** 2-5 hazards spawn per wave, starting from wave 3
+2. **Location Selection:** Hazards spawn in valid terrain areas, avoiding:
+   - Enemy paths (to prevent blocking)
+   - Defender placement zones (to maintain strategic options)
+   - Tower immediate vicinity (5-unit radius)
+3. **Size Variation:** Random radius between 3-8 units
+4. **Intensity Scaling:** Damage and effect strength increase with wave number
+
+### Randomization Parameters
+- **Hazard Type Selection:** Weighted random selection (40% lava, 35% ice, 25% wind)
+- **Size Distribution:** Normal distribution centered at 5.5 units radius
+- **Intensity Multiplier:** 1.0 + (wave_number * 0.1) for damage effects
+- **Duration:** Hazards persist for 2-4 waves before disappearing
+
+## Integration with Terrain System
+
+### VoxelTerrainGenerator Integration
+The hazard system will extend the existing VoxelTerrainGenerator to:
+1. **Reserve Hazard Areas:** Mark voxel positions as hazard zones during terrain generation
+2. **Visual Highlighting:** Use the HazardDistortion shader on affected terrain chunks
+3. **Collision Detection:** Ensure hazards don't overlap with paths or defender zones
+
+### Terrain Modification
+- Hazards will be placed on existing terrain surfaces
+- No terrain height modification required
+- Visual effects applied through shader materials
+- Collision detection using trigger colliders
+
+## Technical Implementation
+
+### Core Classes
+1. **ProceduralHazardSystem:** Main controller managing hazard generation and lifecycle
+2. **EnvironmentalHazard:** Base class for all hazard types with common functionality
+3. **LavaPoolHazard:** Specific implementation for lava pool effects
+4. **IcePatchHazard:** Specific implementation for ice patch effects  
+5. **WindZoneHazard:** Specific implementation for wind zone effects
+
+### Shader Integration
+- **HazardDistortion.shader:** Applied to all hazard terrain for visual feedback
+- **Vertex displacement:** Creates animated, distorted surfaces
+- **Color modification:** Different tints for each hazard type
+- **Performance optimization:** LOD system for distant hazards
+
+## Gameplay Balance Considerations
+
+### Strategic Impact
+- Hazards create additional tactical depth beyond basic tower placement
+- Players must consider hazard positioning when placing defenders
+- Environmental effects force adaptation of strategies
+
+### Difficulty Scaling
+- Early waves: Fewer, smaller hazards with mild effects
+- Mid waves: Moderate hazard density with balanced effects
+- Late waves: High hazard density with strong effects requiring careful positioning
+
+### Performance Optimization
+- Maximum 8 active hazards per wave
+- Culling system for distant hazards
+- Efficient collision detection using trigger zones
+- Shader LOD system for visual effects
+
+## Visual Design
+
+### Hazard Indicators
+- **Lava:** Pulsing red glow with particle effects
+- **Ice:** Crystalline shimmer with frost particles  
+- **Wind:** Flowing distortion patterns with wind particles
+
+### Integration with Existing Systems
+- Hazards will use existing particle system assets where possible
+- Post-processing effects will enhance hazard visual impact
+- UI indicators will show active hazard types and their effects
+
+## Conclusion
+
+This procedural hazard system will significantly enhance the strategic depth of the tower defense game by introducing dynamic environmental challenges. The system's modular design allows for easy expansion and modification while maintaining performance and gameplay balance. The integration with existing terrain and visual systems ensures a cohesive player experience.
+
+The implementation will require careful balance testing to ensure hazards enhance rather than frustrate gameplay, with particular attention to the interaction between hazard effects and the existing upgrade and wave progression systems.
