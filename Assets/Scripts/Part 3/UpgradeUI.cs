@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using TMPro;
 using GADE7322_POE.Core;
 
@@ -96,14 +97,12 @@ public class UpgradeUI : MonoBehaviour
     
     void Update()
     {
-        // Handle unit selection with mouse clicks
-        if (Input.GetMouseButtonDown(0))
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
             HandleUnitSelection();
         }
         
-        // Update UI periodically
-        if (Time.frameCount % 30 == 0) // Update every 30 frames
+        if (Time.frameCount % 30 == 0)
         {
             UpdateUI();
         }
@@ -136,14 +135,16 @@ public class UpgradeUI : MonoBehaviour
     
     private void HandleUnitSelection()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (Mouse.current == null || Camera.main == null) return;
+
+        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        Ray ray = Camera.main.ScreenPointToRay(mousePosition);
         RaycastHit hit;
         
         if (Physics.Raycast(ray, out hit))
         {
             GameObject hitObject = hit.collider.gameObject;
             
-            // Check if clicked object is a defender or tower
             if (hitObject.GetComponent<Defender>() != null || hitObject.GetComponent<Tower>() != null)
             {
                 SelectUnit(hitObject);
