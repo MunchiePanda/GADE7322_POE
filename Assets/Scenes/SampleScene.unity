@@ -2690,9 +2690,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0584cd8527f98ac4ea584bbea85d064a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  basicUpgradeButton: {fileID: 0}
-  frostUpgradeButton: {fileID: 0}
-  lightningUpgradeButton: {fileID: 0}
+  basicUpgradeButton: {fileID: 395943439}
+  frostUpgradeButton: {fileID: 1692421509}
+  lightningUpgradeButton: {fileID: 244388926}
 --- !u!1 &967242892
 GameObject:
   m_ObjectHideFlags: 0
@@ -3073,9 +3073,9 @@ MonoBehaviour:
     bomber: 0
     armored: 0
   bomberPhase:
-    regular: 0.6
-    fast: 0.2
-    bomber: 0.2
+    regular: 0.4
+    fast: 0.3
+    bomber: 0.3
     armored: 0
   fullComplexity:
     regular: 0.4
