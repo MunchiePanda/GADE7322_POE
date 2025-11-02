@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6234591235224724231}
   - component: {fileID: 4416447254279361834}
   m_Layer: 6
-  m_Name: WaterCube
+  m_Name: LavaCubeVoxel
   m_TagString: Terrain
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -65,7 +65,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 1303961c570864840aeafa3e28566821, type: 2}
+  - {fileID: 2100000, guid: db6fe29524373c24c80d698e03b08a6a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
