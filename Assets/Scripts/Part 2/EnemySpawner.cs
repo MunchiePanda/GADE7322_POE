@@ -11,6 +11,8 @@ public class EnemySpawner : MonoBehaviour
     [Header("References")]
     [Tooltip("Assign in Inspector: GameManager instance.")]
     public GameManager gameManager;
+    [Tooltip("Optional: WeatherController to toggle rain per wave")] 
+    public WeatherController weatherController;
 
     [Tooltip("Assign in Inspector: WaveCountdownUI component for displaying countdown.")]
     public WaveCountdownUI waveCountdownUI;
@@ -83,6 +85,11 @@ public class EnemySpawner : MonoBehaviour
         if (gameManager == null)
             gameManager = FindFirstObjectByType<GameManager>();
 
+        if (weatherController == null)
+        {
+            weatherController = FindFirstObjectByType<WeatherController>();
+        }
+
         // Find performance tracker if not assigned
         if (performanceTracker == null)
         {
@@ -139,6 +146,11 @@ public class EnemySpawner : MonoBehaviour
         {
             waveCountdownUI.StartCountdown(waveDelay);
         }
+        // Pre-wave weather warning
+        if (weatherController != null)
+        {
+            weatherController.OnPreWave(currentWave + 1);
+        }
         
         // Wait for the delay
         yield return new WaitForSeconds(waveDelay);
@@ -160,6 +172,11 @@ public class EnemySpawner : MonoBehaviour
         if (isSpawning) return;
 
         currentWave++;
+        // Notify weather controller of wave start
+        if (weatherController != null)
+        {
+            weatherController.OnWaveStart(currentWave);
+        }
         
         // Check for path unlocks
         if (gameManager != null && gameManager.terrainGenerator != null)
@@ -410,6 +427,11 @@ public class EnemySpawner : MonoBehaviour
             if (performanceTracker != null)
             {
                 performanceTracker.OnWaveComplete();
+            }
+            // Notify weather controller of wave end
+            if (weatherController != null)
+            {
+                weatherController.OnWaveEnd(currentWave);
             }
             
             StartCoroutine(StartNextWaveWithDelay()); // Start the next wave after delay

@@ -2208,7 +2208,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 38.65
+  m_fontSize: 38.05
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3503,6 +3503,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1322769847}
   m_CullTransparentMesh: 1
+--- !u!1 &1384222115
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1384222117}
+  - component: {fileID: 1384222116}
+  m_Layer: 0
+  m_Name: WeatherSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1384222116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1384222115}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c92cb03b2bb3a0b419e413b74ae80c0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  terrainGenerator: {fileID: 1975398409}
+  current: 1
+  rainIntensity: 0.652
+  amplitudeProperty: _Amplitude
+  frequencyProperty: _Frequency
+  speedProperty: _Speed
+  baseAmplitude: 0.05
+  baseFrequency: 1.5
+  baseSpeed: 1
+--- !u!4 &1384222117
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1384222115}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 615.7393, y: 218.68399, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1492471692
 GameObject:
   m_ObjectHideFlags: 0
@@ -3920,7 +3973,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 44.3
+  m_fontSize: 44.55
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -4493,6 +4546,15 @@ MonoBehaviour:
   biomeScale: 0.05
   biomeOffset: {x: 42, y: 73}
   voxelPrefab: {fileID: 385153727637207084, guid: c556f28b45f9ab94d8994358783bec3d, type: 3}
+  waterOverlayPrefab: {fileID: 385153727637207084, guid: 6d135210ed344574b80fe0001d63faa9, type: 3}
+  spawnWaterOverlays: 1
+  waterOverlayDensity: 0.2
+  waterFillPrefab: {fileID: 385153727637207084, guid: 6d135210ed344574b80fe0001d63faa9, type: 3}
+  enableWaterFill: 1
+  waterlineMode: 1
+  absoluteWaterlineY: 2
+  waterlinePercent: 0.5
+  maxWaterFillVoxels: 5000
   atlasTexture: {fileID: 2800000, guid: 40734af97cd996a41825f280b87345d6, type: 3}
   atlasElevationScale: 5
   pathHighlightMaterial: {fileID: 2100000, guid: 97d113f65febef54d890efeb67730e47, type: 2}
@@ -4951,3 +5013,4 @@ SceneRoots:
   - {fileID: 790079341}
   - {fileID: 22424945}
   - {fileID: 824818026}
+  - {fileID: 1384222117}

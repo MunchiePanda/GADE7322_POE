@@ -44,6 +44,25 @@ public class VoxelTerrainGenerator : MonoBehaviour
     // Prefab used for individual voxels in the terrain.
     public GameObject voxelPrefab;
 
+    [Header("Water Overlay (Optional)")]
+    public GameObject waterOverlayPrefab;
+    [Tooltip("Spawn lightweight water overlays at surface cells (disabled until raining)")]
+    public bool spawnWaterOverlays = true;
+    [Range(0f,1f)] public float waterOverlayDensity = 0.2f;
+    private readonly List<GameObject> waterOverlays = new List<GameObject>();
+
+    [Header("Water Fill (Rain) - Real Voxels")]
+    [Tooltip("Prefab for a single water voxel cube (1x1x1), used to fill low areas when raining")]
+    public GameObject waterFillPrefab;
+    [Tooltip("Enable spawning real water voxels up to a waterline during rain")]
+    public bool enableWaterFill = true;
+    public enum WaterlineMode { AbsoluteY, PercentOfMaxHeight }
+    [Tooltip("Waterline mode: Absolute grid Y or percent of max column height")] public WaterlineMode waterlineMode = WaterlineMode.PercentOfMaxHeight;
+    [Tooltip("Absolute waterline Y (grid units), used when mode = AbsoluteY")] public int absoluteWaterlineY = 2;
+    [Range(0f,1f)] [Tooltip("Percent of max column height per column, used when mode = PercentOfMaxHeight")] public float waterlinePercent = 0.5f;
+    [Tooltip("Safety cap to avoid too many water voxels")] public int maxWaterFillVoxels = 5000;
+    private readonly List<GameObject> waterFillVoxels = new List<GameObject>();
+
     [Header("Atlas Settings")]
     // Texture used as a heightmap for terrain elevation (optional).
     public Texture2D atlasTexture;
@@ -148,6 +167,9 @@ public class VoxelTerrainGenerator : MonoBehaviour
         GenerateDefenderLocations();
         // Create terrain chunks for efficient rendering.
         CreateChunks();
+        // Optionally spawn water overlays at the surface for weather visuals.
+        if (spawnWaterOverlays && waterOverlayPrefab != null)
+            SpawnWaterOverlays();
         // Spawn trees on grass tiles.
         SpawnTrees();
 
@@ -247,6 +269,103 @@ public class VoxelTerrainGenerator : MonoBehaviour
                              useBiomes, biomeScale, biomeOffset);
             }
         }
+    }
+
+    void SpawnWaterOverlays()
+    {
+        // Clear existing overlays if any
+        foreach (var go in waterOverlays)
+        {
+            if (go != null) Destroy(go);
+        }
+        waterOverlays.Clear();
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < depth; z++)
+            {
+                if (Random.value > waterOverlayDensity) continue;
+                int y = GetSurfaceY(x, z);
+                if (y <= 0) continue;
+                // Avoid path tiles to keep visuals clean if desired
+                // if (pathPositions.Contains(new Vector2Int(x, z))) continue;
+
+                Vector3 pos = transform.TransformPoint(new Vector3(x + 0.5f, y + 0.02f, z + 0.5f));
+                GameObject overlay = Instantiate(waterOverlayPrefab, pos, Quaternion.identity, transform);
+                overlay.name = $"WaterOverlay_{x}_{z}";
+                var rend = overlay.GetComponentInChildren<Renderer>();
+                if (rend != null)
+                {
+                    var mpb = new MaterialPropertyBlock();
+                    mpb.SetVector("_InstanceOffset", new Vector4(Random.value, Random.value, Random.value, Random.value));
+                    rend.SetPropertyBlock(mpb);
+                    rend.enabled = false; // disabled until raining
+                }
+                waterOverlays.Add(overlay);
+            }
+        }
+    }
+
+    public List<GameObject> GetWaterOverlays() => waterOverlays;
+
+    // ------- Water Fill (Real Voxels) -------
+    public int GetMaxVoxelCapacity() => width * depth * height;
+
+    public void GenerateWaterFill()
+    {
+        if (!enableWaterFill || waterFillPrefab == null) return;
+        ClearWaterFill();
+
+        int spawned = 0;
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < depth; z++)
+            {
+                int surfaceY = GetSurfaceY(x, z);
+                if (surfaceY <= 0) continue;
+
+                int targetY = ComputeWaterlineForColumn(x, z, surfaceY);
+                if (targetY <= surfaceY) continue; // nothing to fill
+
+                for (int y = surfaceY + 1; y <= targetY; y++)
+                {
+                    Vector3 world = transform.TransformPoint(new Vector3(x + 0.5f, y + 0.0f, z + 0.5f));
+                    GameObject w = Instantiate(waterFillPrefab, world, Quaternion.identity, transform);
+                    w.name = $"WaterFill_{x}_{y}_{z}";
+                    waterFillVoxels.Add(w);
+                    spawned++;
+                    if (spawned >= maxWaterFillVoxels) return;
+                }
+            }
+        }
+    }
+
+    public void ClearWaterFill()
+    {
+        for (int i = 0; i < waterFillVoxels.Count; i++)
+        {
+            if (waterFillVoxels[i] != null) Destroy(waterFillVoxels[i]);
+        }
+        waterFillVoxels.Clear();
+    }
+
+    int ComputeWaterlineForColumn(int x, int z, int surfaceY)
+    {
+        if (waterlineMode == WaterlineMode.AbsoluteY)
+        {
+            return Mathf.Clamp(absoluteWaterlineY, 0, height - 1);
+        }
+        // Percent of max height for this column and its neighbors (smoother basins)
+        int maxLocal = columnHeights[x, z];
+        // Sample 4-neighborhood to reduce isolated spikes
+        if (x > 0) maxLocal = Mathf.Max(maxLocal, columnHeights[x - 1, z]);
+        if (x < width - 1) maxLocal = Mathf.Max(maxLocal, columnHeights[x + 1, z]);
+        if (z > 0) maxLocal = Mathf.Max(maxLocal, columnHeights[x, z - 1]);
+        if (z < depth - 1) maxLocal = Mathf.Max(maxLocal, columnHeights[x, z + 1]);
+
+        int target = Mathf.RoundToInt(maxLocal * waterlinePercent);
+        target = Mathf.Clamp(target, 0, height - 1);
+        return target;
     }
 
     // Computes the height of a terrain column at position (x, z).

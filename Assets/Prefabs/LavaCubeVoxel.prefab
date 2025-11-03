@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8029002390550347835}
   - component: {fileID: 6234591235224724231}
   - component: {fileID: 4416447254279361834}
+  - component: {fileID: 5889681279667370556}
   m_Layer: 6
   m_Name: LavaCubeVoxel
   m_TagString: Terrain
@@ -108,3 +109,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &5889681279667370556
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 385153727637207084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 864ecc404b2276d449e02b3f4e5655b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  liquidType: 1
+  targetRenderer: {fileID: 6234591235224724231}
+  instanceOffsetProperty: _InstanceOffset
+  totalLifetimeWaves: 3
+  remainingWaves: 0
+  originalVoxelTypeId: 
