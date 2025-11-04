@@ -128,3 +128,4 @@ public class WeatherController : MonoBehaviour
 		screenFlashImage.gameObject.SetActive(false);
 	}
 }
+

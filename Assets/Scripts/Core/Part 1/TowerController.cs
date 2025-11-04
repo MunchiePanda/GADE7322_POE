@@ -54,9 +54,6 @@ public class TowerController : MonoBehaviour
     {
         // Handle player input for path selection, rotation, and shooting.
         HandleInput();
-
-        // Handle the tower's rotation towards the target direction.
-        HandleRotation();
     }
     
     /// <summary>
@@ -73,18 +70,7 @@ public class TowerController : MonoBehaviour
             }
         }
 
-        // Use arrow keys to manually rotate the tower.
-        if (Keyboard.current != null)
-        {
-            if (Keyboard.current[Key.LeftArrow].isPressed)
-            {
-                RotateTower(-rotationSpeed * Time.deltaTime);
-            }
-            if (Keyboard.current[Key.RightArrow].isPressed)
-            {
-                RotateTower(rotationSpeed * Time.deltaTime);
-            }
-        }
+        // Rotation disabled
 
         // Use the E key to shoot a projectile.
         if (Keyboard.current != null && Keyboard.current[Key.E].wasPressedThisFrame)
@@ -144,18 +130,10 @@ public class TowerController : MonoBehaviour
         // Update the current path index.
         currentPathIndex = pathIndex;
 
-        // If the selected path has an entrance, rotate the tower to face it.
+        // Rotation disabled; just ensure all paths are visible.
         if (paths[pathIndex].Count > 0)
         {
-            Vector3Int entrance = paths[pathIndex][0];
-            Vector3 entranceWorldPos = terrainGenerator.GetSurfaceWorldPosition(entrance);
-
-            // Calculate the direction to the path entrance.
-            targetDirection = (entranceWorldPos - transform.position).normalized;
-            isRotating = true;
-
-            // Highlight the selected path.
-            terrainGenerator.HighlightPath(pathIndex);
+            terrainGenerator.HighlightAllPaths();
         }
     }
     
@@ -163,22 +141,13 @@ public class TowerController : MonoBehaviour
     /// Rotates the tower by the specified angle.
     /// </summary>
     /// <param name="angle">The angle (in degrees) to rotate the tower.</param>
-    public void RotateTower(float angle)
-    {
-        // Rotate the tower around the Y-axis.
-        targetTransform.Rotate(0, angle, 0);
-    }
+    public void RotateTower(float angle) { }
     
     /// <summary>
     /// Sets the tower to face the specified direction.
     /// </summary>
     /// <param name="direction">The direction the tower should face.</param>
-    public void FaceDirection(Vector3 direction)
-    {
-        // Normalize the direction and start rotating towards it.
-        targetDirection = direction.normalized;
-        isRotating = true;
-    }
+    public void FaceDirection(Vector3 direction) { }
 
     /// <summary>
     /// Gets the index of the currently selected path.

@@ -207,6 +207,83 @@ public class GameManager : MonoBehaviour
         towerInstance = Instantiate(towerPrefab, towerPos, Quaternion.identity);
     }
 
+    /// <summary>
+    /// Replaces the current main tower instance with a new prefab, preserving position/rotation
+    /// and updating internal references and UI.
+    /// </summary>
+    /// <param name="newTowerPrefab">Prefab to instantiate as the new main tower.</param>
+    /// <returns>True if replacement succeeded.</returns>
+    public bool ReplaceTower(GameObject newTowerPrefab)
+    {
+        if (newTowerPrefab == null) return false;
+        if (terrainGenerator == null) return false;
+
+        // Determine spawn transform: use existing tower transform if present, else center
+        Vector3 spawnPos;
+        Quaternion spawnRot = Quaternion.identity;
+        if (towerInstance != null)
+        {
+            spawnPos = towerInstance.transform.position;
+            spawnRot = towerInstance.transform.rotation;
+        }
+        else
+        {
+            Vector3Int center = terrainGenerator.GetCenterGrid();
+            spawnPos = terrainGenerator.GetSurfaceWorldPosition(center);
+            spawnPos.y += towerYOffset;
+        }
+
+        // Preserve health ratio if possible
+        float preservedHealthRatio = 1f;
+        Tower oldTowerComp = towerInstance != null ? towerInstance.GetComponent<Tower>() : null;
+        if (oldTowerComp != null && oldTowerComp.GetMaxHealth() > 0.01f)
+        {
+            preservedHealthRatio = Mathf.Clamp01(oldTowerComp.GetCurrentHealth() / oldTowerComp.GetMaxHealth());
+        }
+
+        // Destroy old tower
+        if (towerInstance != null)
+        {
+            Destroy(towerInstance);
+        }
+
+        // Instantiate new tower
+        GameObject newInstance = Instantiate(newTowerPrefab, spawnPos, spawnRot);
+        towerInstance = newInstance;
+
+        // Update prefab reference so any future respawn uses the upgraded prefab
+        towerPrefab = newTowerPrefab;
+
+        // Cache tower component reference if used elsewhere
+        tower = newInstance.GetComponent<Tower>();
+
+        // Apply preserved health ratio to new tower UI
+        if (tower != null)
+        {
+            float maxH = tower.GetMaxHealth();
+            float newCurrent = Mathf.RoundToInt(maxH * preservedHealthRatio);
+            // Heal() clamps to max; we want to set directly via available API
+            // Using damage/heal combo to approximate set since Tower exposes getters only
+            // Start by fully healing via internal logic
+            // Then apply damage to reach desired ratio
+            // If methods unavailable, this step is skipped harmlessly
+            float desired = Mathf.Clamp(newCurrent, 0f, maxH);
+            float diff = maxH - desired;
+            if (diff > 0.01f)
+            {
+                tower.TakeDamage(diff);
+            }
+        }
+
+        // Refresh UI health bar
+        if (tower != null)
+        {
+            // Tower.UpdateHealthUI() is private; invoking via damage already updates UI.
+        }
+
+        return true;
+    }
+
     
 
     /// <summary>
@@ -624,7 +701,7 @@ public class GameManager : MonoBehaviour
     {
         if (terrainGenerator != null)
         {
-            terrainGenerator.HighlightPath(pathIndex);
+            terrainGenerator.HighlightAllPaths();
         }
 
         if (tower != null)

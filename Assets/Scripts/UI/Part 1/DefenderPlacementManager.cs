@@ -53,8 +53,8 @@ public class DefenderPlacementManager : MonoBehaviour
         // Update the path index
         selectedPathIndex = pathIndex;
 
-        // Highlight the selected path in pink
-        terrainGenerator.HighlightPath(selectedPathIndex);
+        // Show all paths instead of only the selected one
+        terrainGenerator.HighlightAllPaths();
 
         // Highlight defender locations in blue
         selectedDefenderLocations = terrainGenerator.GetDefenderLocationsNearPath(selectedPathIndex, numLocations, range);

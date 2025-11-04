@@ -753,6 +753,41 @@ public class VoxelTerrainGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Highlights all paths so every lane is visible at once.
+    /// </summary>
+    public void HighlightAllPaths()
+    {
+        // Remove existing path highlights.
+        foreach (Transform child in transform)
+        {
+            if (child.name.StartsWith("Highlight_"))
+                Destroy(child.gameObject);
+        }
+
+        // Create highlights for every path
+        for (int i = 0; i < paths.Count; i++)
+        {
+            var path = paths[i];
+            foreach (var pos in path)
+            {
+                GameObject highlight = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                highlight.name = "Highlight_Path_" + i;
+                highlight.transform.SetParent(transform);
+                highlight.transform.localPosition = new Vector3(pos.x + 0.5f, GetSurfaceY(pos.x, pos.z) + 0.01f, pos.z + 0.5f);
+                highlight.transform.localRotation = Quaternion.Euler(90, 0, 0);
+                highlight.transform.localScale = Vector3.one * 1.01f;
+                Renderer rend = highlight.GetComponent<Renderer>();
+                // Slightly different tint per lane for clarity
+                Color baseColor = new Color(0f, 1f, 1f, 0.45f);
+                float hueShift = (paths.Count > 1) ? (i / Mathf.Max(1f, (float)(paths.Count - 1))) * 0.25f : 0f;
+                Color final = Color.HSVToRGB(hueShift, 0.3f, 1f);
+                final.a = baseColor.a;
+                rend.material = new Material(Shader.Find("Standard")) { color = final };
+            }
+        }
+    }
+
     // Finds valid defender locations near a specific path within a given range.
     public List<Vector3Int> GetDefenderLocationsNearPath(int pathIndex, int numLocations = 3, int range = 2)
     {
