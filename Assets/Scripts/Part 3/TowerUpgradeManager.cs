@@ -63,6 +63,15 @@ public class TowerUpgradeManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Mirrors DefenderUpgradeManager.TryUpgrade(...) style: upgrades the Main Tower by one tier.
+    /// Hook your UI button to this for a single-call upgrade like defenders.
+    /// </summary>
+    public bool TryUpgrade()
+    {
+        return UpgradeNextTier();
+    }
+
+    /// <summary>
     /// Call this from a UI Button. Uses the selected 'buttonUpgrade' action.
     /// </summary>
     public void PerformUpgrade()

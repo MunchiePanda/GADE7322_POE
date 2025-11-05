@@ -45,39 +45,62 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
             terrainGenerator = FindFirstObjectByType<VoxelTerrainGenerator>();
         if (gameManager == null)
             gameManager = FindFirstObjectByType<GameManager>();
-        
+
         cam = Camera.main;
-        
+
         // Create default materials if not assigned
         if (validPlacementMaterial == null)
         {
             validPlacementMaterial = new Material(Shader.Find("Standard"));
             validPlacementMaterial.color = new Color(0, 1, 0, 0.5f); // Green
         }
-        
+
         if (invalidPlacementMaterial == null)
         {
             invalidPlacementMaterial = new Material(Shader.Find("Standard"));
             invalidPlacementMaterial.color = new Color(1, 0, 0, 0.5f); // Red
         }
+
+        // Update button interactability based on wave number
+        UpdateButtonInteractability();
+    }
+
+    /// <summary>
+    /// Updates the button's interactability based on the current wave number.
+    /// </summary>
+    private void UpdateButtonInteractability()
+    {
+        Button button = GetComponent<Button>();
+        if (button != null && gameManager != null)
+        {
+            bool isUnlocked = gameManager.IsDefenderTypeUnlocked(defenderType);
+            button.interactable = isUnlocked;
+        }
     }
     
     public void OnBeginDrag(PointerEventData eventData)
     {
+        // Check if defender type is unlocked
+        if (gameManager != null && !gameManager.IsDefenderTypeUnlocked(defenderType))
+        {
+            // Debug.Log($"Defender type {defenderType} is not yet unlocked!");
+            return;
+        }
+
         // Check if player has enough resources
         if (gameManager.GetResources() < cost)
         {
             // Debug.Log($"Not enough resources! Need {cost}, have {gameManager.GetResources()}");
             return;
         }
-        
+
         // Check defender count limit
         if (gameManager.currentDefenderCount >= gameManager.maxDefenderCount)
         {
             // Debug.Log($"Defender limit reached! ({gameManager.currentDefenderCount}/{gameManager.maxDefenderCount}) - Remove a defender first!");
             return;
         }
-        
+
         // Create preview object
         if (previewPrefab != null)
         {
@@ -101,7 +124,7 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
             previewObject.GetComponent<Renderer>().material = invalidPlacementMaterial;
             Destroy(previewObject.GetComponent<Collider>()); // Remove collider
         }
-        
+
         // Show all valid placement areas
         if (terrainGenerator != null)
         {

@@ -65,8 +65,8 @@ MonoBehaviour:
   frostRadius: 30
   slowDuration: 5
   slowMultiplier: 0.4
-  frostEffectPrefab: {fileID: 339158821923109191, guid: 108ca465382c11742bd2c91fe4fdb13f, type: 3}
-  frostParticles: {fileID: 8700035473269227422, guid: b21d155ec7ea5a349a0e36106f913148, type: 3}
+  frostEffectPrefab: {fileID: 5749441552287667129, guid: ee71d8dfb36a7b048aef24b0bc8f9764, type: 3}
+  frostParticles: {fileID: 7123853702983496459, guid: ee71d8dfb36a7b048aef24b0bc8f9764, type: 3}
   frostLine: {fileID: 0}
   frostProjectilePrefab: {fileID: 3042168292579264235, guid: 6eeb96c93cb65e743b23accd5e56fe60, type: 3}
   frostColor: {r: 0, g: 1, b: 1, a: 1}

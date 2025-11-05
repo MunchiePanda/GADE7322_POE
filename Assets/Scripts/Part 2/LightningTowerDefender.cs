@@ -10,17 +10,20 @@ public class LightningTowerDefender : Defender
     [Header("Lightning Tower Settings")]
     [Tooltip("Maximum number of enemies the lightning can chain to")]
     public int maxChainTargets = 3;
-    
+
     [Tooltip("Maximum distance for chain lightning to jump")]
     public float chainRange = 4f;
-    
+
     [Tooltip("Damage reduction per chain (0.8 = 20% damage reduction per jump)")]
     [Range(0.1f, 1f)]
     public float chainDamageReduction = 0.8f;
-    
+
     [Tooltip("Visual effect for lightning")]
     public GameObject lightningEffectPrefab;
-    
+
+    [Tooltip("Particle system for lightning visual")]
+    public ParticleSystem lightningParticles;
+
     [Tooltip("Line renderer for lightning visual")]
     public LineRenderer lightningLine;
     
@@ -176,30 +179,48 @@ public class LightningTowerDefender : Defender
         return closestEnemy;
     }
 
-    void PlayLightningEffects(List<Vector3> lightningPoints)
+    public void PlayLightningEffects(List<Vector3> lightningPoints)
     {
         if (lightningLine != null && lightningPoints.Count > 1)
         {
             lightningLine.positionCount = lightningPoints.Count;
             lightningLine.SetPositions(lightningPoints.ToArray());
             lightningLine.material.color = lightningColor;
-            
+
             // Animate the lightning
             StartCoroutine(AnimateLightning());
         }
-        
+
         // Create lightning projectile visual
         if (lightningProjectilePrefab != null)
         {
             GameObject projectile = Instantiate(lightningProjectilePrefab, transform.position, Quaternion.identity);
             Destroy(projectile, 1f);
         }
-        
+
         // Simple visual feedback without prefabs
         CreateSimpleLightningEffect();
-        
+
         // Debug visual feedback
         // Debug.Log($"Lightning Tower attacking! Chain targets: {lightningPoints.Count}, Target: {currentEnemyTarget?.name}");
+    }
+
+    public void PlayLightningParticleEffect(Vector3 targetPosition)
+    {
+        if (lightningParticles != null)
+        {
+            lightningParticles.transform.position = transform.position;
+            lightningParticles.transform.LookAt(targetPosition);
+            lightningParticles.Play();
+        }
+
+        if (lightningLine != null)
+        {
+            lightningLine.SetPosition(0, transform.position);
+            lightningLine.SetPosition(1, targetPosition);
+            lightningLine.enabled = true;
+            StartCoroutine(AnimateLightning());
+        }
     }
 
     System.Collections.IEnumerator AnimateLightning()

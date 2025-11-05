@@ -164,39 +164,60 @@ public class FrostTowerDefender : Defender
         }
     }
 
-    void PlayFrostEffects()
+    public void PlayFrostEffects()
     {
         // Play particle effect
         if (frostParticles != null)
         {
-            frostParticles.Play();
+            if (!frostParticles.isPlaying)
+            {
+                frostParticles.Play();
+            }
         }
-        
+
         // Instantiate frost effect at tower position
         if (frostEffectPrefab != null)
         {
             GameObject effect = Instantiate(frostEffectPrefab, transform.position, Quaternion.identity);
             Destroy(effect, 2f); // Clean up after 2 seconds
         }
-        
+
         // Show frost beam to target
         if (currentEnemyTarget != null)
         {
             ShowFrostBeam(currentEnemyTarget.transform.position);
         }
-        
+
         // Create frost projectile visual
         if (frostProjectilePrefab != null)
         {
             GameObject projectile = Instantiate(frostProjectilePrefab, transform.position, Quaternion.identity);
             Destroy(projectile, 1f);
         }
-        
+
         // Simple visual feedback without prefabs
         CreateSimpleFrostEffect();
-        
+
         // Debug visual feedback
         // Debug.Log($"Frost Tower attacking! Radius: {frostRadius}, Target: {currentEnemyTarget?.name}");
+    }
+
+    public void PlayFrostParticleEffect(Vector3 targetPosition)
+    {
+        if (frostParticles != null)
+        {
+            frostParticles.transform.position = transform.position;
+            frostParticles.transform.LookAt(targetPosition);
+            frostParticles.Play();
+        }
+
+        if (frostLine != null)
+        {
+            frostLine.SetPosition(0, transform.position);
+            frostLine.SetPosition(1, targetPosition);
+            frostLine.enabled = true;
+            StartCoroutine(HideFrostBeam());
+        }
     }
     
     void ShowFrostBeam(Vector3 targetPosition)
@@ -207,8 +228,15 @@ public class FrostTowerDefender : Defender
             frostLine.positionCount = 2;
             frostLine.SetPosition(0, transform.position + Vector3.up * 0.5f);
             frostLine.SetPosition(1, targetPosition);
-            frostLine.material.color = frostColor;
-            
+
+            // Set the line renderer's start and end widths
+            frostLine.startWidth = 0.2f;
+            frostLine.endWidth = 0.1f;
+
+            // Set the color of the line
+            frostLine.startColor = frostColor;
+            frostLine.endColor = frostColor;
+
             // Hide beam after short time
             StartCoroutine(HideFrostBeam());
         }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using GADE7322_POE.Core;
+using System.Collections.Generic;
 
 public class Defender : MonoBehaviour
 {
@@ -34,7 +35,7 @@ public class Defender : MonoBehaviour
     {
         gameManager = FindFirstObjectByType<GameManager>();
         criticalHitSystem = FindFirstObjectByType<CriticalHitSystem>();
-        
+
         // Get the Health component
         healthComponent = GetComponent<Health>();
         if (healthComponent == null)
@@ -46,7 +47,41 @@ public class Defender : MonoBehaviour
             // Set up the OnDeath event to notify performance tracker
             healthComponent.OnDeath.AddListener(OnDefenderDeath);
         }
-        
+
+        // Adjust collider size for better tracking
+        AdjustColliderSize(1.5f); // Default scale factor
+    }
+
+    /// <summary>
+    /// Adjusts the collider size of the defender for better tracking.
+    /// </summary>
+    /// <param name="scaleFactor">The factor by which to scale the collider.</param>
+    protected void AdjustColliderSize(float scaleFactor)
+    {
+        Collider collider = GetComponent<Collider>();
+        if (collider == null)
+        {
+            // If no collider, try to find one in children
+            collider = GetComponentInChildren<Collider>();
+        }
+
+        if (collider != null)
+        {
+            // Scale the collider size
+            if (collider is BoxCollider boxCollider)
+            {
+                boxCollider.size *= scaleFactor;
+            }
+            else if (collider is SphereCollider sphereCollider)
+            {
+                sphereCollider.radius *= scaleFactor;
+            }
+            else if (collider is CapsuleCollider capsuleCollider)
+            {
+                capsuleCollider.radius *= scaleFactor;
+                capsuleCollider.height *= scaleFactor;
+            }
+        }
     }
 
     void Update()
@@ -83,10 +118,27 @@ public class Defender : MonoBehaviour
                 }
             }
         }
-        
+
         if (currentEnemyTarget != null)
         {
             // Debug.Log($"Defender {gameObject.name} acquired target: {currentEnemyTarget.name}");
+            Vector3 direction = (currentEnemyTarget.transform.position - transform.position).normalized;
+            if (this is FrostTowerDefender)
+            {
+                FrostTowerDefender frostDefender = (FrostTowerDefender)this;
+                if (Physics.SphereCast(transform.position, frostDefender.frostRadius, direction, out RaycastHit hit, frostDefender.frostRadius))
+                {
+                    frostDefender.PlayFrostParticleEffect(hit.point);
+                }
+            }
+            else if (this is LightningTowerDefender)
+            {
+                LightningTowerDefender lightningDefender = (LightningTowerDefender)this;
+                if (Physics.SphereCast(transform.position, lightningDefender.chainRange, direction, out RaycastHit hit, lightningDefender.chainRange))
+                {
+                    lightningDefender.PlayLightningParticleEffect(hit.point);
+                }
+            }
         }
     }
 
@@ -113,33 +165,52 @@ public class Defender : MonoBehaviour
         // Calculate critical hit
         bool isCritical = false;
         float finalDamage = attackDamage;
-        
+
         if (criticalHitSystem != null)
         {
             isCritical = criticalHitSystem.RollCriticalHit();
             finalDamage = criticalHitSystem.CalculateDamage(attackDamage, isCritical);
         }
 
-        Vector3 spawnPosition = projectileSpawnPoint != null ? projectileSpawnPoint.position : transform.position;
-        GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
-        Projectile projectileComponent = projectile.GetComponent<Projectile>();
-        if (projectileComponent == null)
+        // Special handling for Frost and Lightning defenders
+        if (this is FrostTowerDefender)
         {
-            // Debug logging disabled
-            Destroy(projectile);
-            return;
+            // Use particle effects instead of projectiles for Frost Tower
+            FrostTowerDefender frostDefender = (FrostTowerDefender)this;
+            frostDefender.PlayFrostEffects();
+            enemy.TakeDamage(finalDamage);
         }
-
-        // Initialize projectile with critical hit info
-        projectileComponent.Initialize(enemy.transform, finalDamage, projectileSpeed, isCritical);
-        
-        if (isCritical)
+        else if (this is LightningTowerDefender)
         {
-            // Debug logging disabled
+            // Use particle effects instead of projectiles for Lightning Tower
+            LightningTowerDefender lightningDefender = (LightningTowerDefender)this;
+            lightningDefender.PlayLightningEffects(new List<Vector3> { enemy.transform.position });
+            enemy.TakeDamage(finalDamage);
         }
         else
         {
-            // Debug logging disabled
+            // Default projectile behavior for other defenders
+            Vector3 spawnPosition = projectileSpawnPoint != null ? projectileSpawnPoint.position : transform.position;
+            GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
+            Projectile projectileComponent = projectile.GetComponent<Projectile>();
+            if (projectileComponent == null)
+            {
+                // Debug logging disabled
+                Destroy(projectile);
+                return;
+            }
+
+            // Initialize projectile with critical hit info
+            projectileComponent.Initialize(enemy.transform, finalDamage, projectileSpeed, isCritical);
+
+            if (isCritical)
+            {
+                // Debug logging disabled
+            }
+            else
+            {
+                // Debug logging disabled
+            }
         }
     }
 
