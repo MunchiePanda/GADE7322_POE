@@ -1,34 +1,32 @@
 using UnityEngine;
 
-/// <summary>
-/// Kamikaze Dragon - Fast, low health, explodes on contact with defenders or tower.
-/// Once it locks onto a target, it charges at maximum speed and explodes on impact.
-/// </summary>
 public class KamikazeDragon : Enemy
 {
     [Header("Kamikaze Settings")]
     [Tooltip("Speed multiplier when charging at target")]
     public float chargeSpeedMultiplier = 4f;
-    
+
     [Tooltip("Explosion damage radius (AOE)")]
     public float explosionRadius = 50f;
-    
+
     [Tooltip("Explosion damage amount")]
     public float explosionDamage = 5f;
-    
+
     [Tooltip("Visual effect for explosion")]
     public GameObject explosionEffectPrefab;
-    
+
     [Tooltip("Particle system for charge effect")]
     public ParticleSystem chargeParticles;
-    
+
     [Header("Scaling Explosion")]
     [Tooltip("Explosion radius scales with wave")]
     public float explosionRadiusScaling = 1.1f;
-    
+
     [Tooltip("Explosion damage scales with wave")]
     public float explosionDamageScaling = 1.2f;
-    
+
+
+
     private bool isCharging = false;
     private Transform chargeTarget = null;
     private Vector3 targetPosition = Vector3.zero;
@@ -44,10 +42,14 @@ public class KamikazeDragon : Enemy
         attackDamage = 0f;       // No regular attack damage (explodes instead)
         detectionRange = 30f;    // Very long detection range to find any defender
         originalSpeed = moveSpeed;
-        
+
+        // Store original values for buff
+        _originalSpeed = moveSpeed;
+        _originalDamage = attackDamage;
+
         // Visual setup
         transform.localScale *= 0.7f; // Smaller than regular enemies
-        
+
         Renderer renderer = GetComponent<Renderer>();
         if (renderer != null)
         {
@@ -61,6 +63,39 @@ public class KamikazeDragon : Enemy
             mat.color = Color.red;
             renderer.material = mat;
         }
+    }
+
+    public void ApplyBuff()
+    {
+        if (_isBuffed) return;
+
+        _isBuffed = true;
+        moveSpeed *= buffSpeedMultiplier;
+        attackDamage *= buffDamageMultiplier;
+
+        if (buffParticleEffect != null)
+        {
+            buffParticleEffect.Play();
+        }
+    }
+
+    public void RemoveBuff()
+    {
+        if (!_isBuffed) return;
+
+        _isBuffed = false;
+        moveSpeed = _originalSpeed;
+        attackDamage = _originalDamage;
+
+        if (buffParticleEffect != null)
+        {
+            buffParticleEffect.Stop();
+        }
+    }
+
+    public bool IsBuffed()
+    {
+        return _isBuffed;
     }
 
     protected void Update()
@@ -98,8 +133,7 @@ public class KamikazeDragon : Enemy
         {
             if (defender != null && defender.IsAlive())
             {
-                // Get the defender's actual world position
-                Vector3 defenderPosition = defender.transform.position;
+                Vector3 defenderPosition = defender.GetVisualCenter();
                 float distance = Vector3.Distance(transform.position, defenderPosition);
                 
                 // Debug.Log($"BOMBER CHECKING: Defender {defender.name} at {defenderPosition}, distance {distance:F2}");

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections.Generic;
 
 public class Enemy : MonoBehaviour
@@ -26,6 +27,17 @@ public class Enemy : MonoBehaviour
     [SerializeField] protected float detectionRange = 2.0f;
     [SerializeField] protected int minResourceRewardOnDeath = 5;
     [SerializeField] protected int maxResourceRewardOnDeath = 15;
+
+    [Header("UI")]
+    [Tooltip("World space health bar slider (assign your UI slider here)")]
+    [SerializeField] protected Slider healthBarSlider;
+
+    protected ParticleSystem buffParticleEffect;
+    protected float buffSpeedMultiplier = 1.5f;
+    protected float buffDamageMultiplier = 1.2f;
+    protected bool _isBuffed = false;
+    protected float _originalSpeed;
+    protected float _originalDamage;
 
 
     protected List<Vector3Int> path;
@@ -66,11 +78,44 @@ public class Enemy : MonoBehaviour
     protected virtual void Start()
     {
         currentHealth = maxHealth;
-        // Debug.Log($"Enemy {gameObject.name} initialized with health: {currentHealth}/{maxHealth}");
 
+        _originalSpeed = moveSpeed;
+        _originalDamage = attackDamage;
+        
+        InitializeHealthBar();
+    }
 
-        // Test: Force the enemy to die immediately
-        // TakeDamage(currentHealth);
+    public void ApplyBuff()
+    {
+        if (_isBuffed) return;
+
+        _isBuffed = true;
+        moveSpeed *= buffSpeedMultiplier;
+        attackDamage *= buffDamageMultiplier;
+
+        if (buffParticleEffect != null)
+        {
+            buffParticleEffect.Play();
+        }
+    }
+
+    public void RemoveBuff()
+    {
+        if (!_isBuffed) return;
+
+        _isBuffed = false;
+        moveSpeed = _originalSpeed;
+        attackDamage = _originalDamage;
+
+        if (buffParticleEffect != null)
+        {
+            buffParticleEffect.Stop();
+        }
+    }
+
+    public bool IsBuffed()
+    {
+        return _isBuffed;
     }
 
     void Update()
@@ -201,27 +246,20 @@ public class Enemy : MonoBehaviour
 
     public virtual void TakeDamage(float amount)
     {
-        // Prevent damage if already dead
         if (currentHealth <= 0f)
         {
-            // Debug.Log($"💀 Enemy {gameObject.name} is already dead, ignoring damage");
             return;
         }
         
-        // Debug.Log($"💥 Enemy {gameObject.name} taking {amount} damage. Health: {currentHealth} -> {currentHealth - amount}");
         currentHealth -= amount;
-
-        // Debug.Log($"💥 Enemy {gameObject.name} health after damage: {currentHealth}/{maxHealth}");
+        
+        UpdateHealthBar();
 
         if (currentHealth <= 0f)
         {
-            // Debug.Log($"💀 Enemy {gameObject.name} health reached zero. Calling Die().");
-            currentHealth = 0f; // Ensure health doesn't go negative
+            currentHealth = 0f;
+            UpdateHealthBar();
             Die();
-        }
-        else
-        {
-            // Debug.Log($"💥 Enemy {gameObject.name} still alive with {currentHealth} health");
         }
     }
 
@@ -258,6 +296,23 @@ public class Enemy : MonoBehaviour
 
         Debug.Log($"💀 Destroying enemy object: {gameObject.name}");
         Destroy(gameObject);
+    }
+    
+    void InitializeHealthBar()
+    {
+        if (healthBarSlider != null)
+        {
+            healthBarSlider.maxValue = maxHealth;
+            healthBarSlider.value = currentHealth;
+        }
+    }
+    
+    void UpdateHealthBar()
+    {
+        if (healthBarSlider != null)
+        {
+            healthBarSlider.value = currentHealth;
+        }
     }
     
 }

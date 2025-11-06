@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Frost Tower defender with AoE slow effect and large area coverage.
@@ -96,13 +97,9 @@ public class FrostTowerDefender : Defender
 
      void PerformFrostAttack()
      {
-         // Debug.Log($"Frost Tower: Performing AoE attack with radius {frostRadius}");
-         
-         // This is the AoE slow system - it hits multiple enemies at once
          Collider[] enemiesInRange = Physics.OverlapSphere(transform.position, frostRadius);
          int enemiesHit = 0;
-         
-         // Debug.Log($"Frost Tower: Found {enemiesInRange.Length} colliders in range");
+         List<Vector3> hitEnemyPositions = new List<Vector3>();
          
          foreach (Collider enemyCollider in enemiesInRange)
          {
@@ -110,23 +107,17 @@ public class FrostTowerDefender : Defender
              if (enemy != null)
              {
                  enemiesHit++;
-                 float distance = Vector3.Distance(transform.position, enemy.transform.position);
-                 // Debug.Log($"Frost Tower: HIT {enemy.name} at distance {distance:F1} for {attackDamage} damage");
                  
-                 // Deal damage
                  enemy.TakeDamage(attackDamage);
-                 
-                 // Apply slow effect - this makes enemies move slower
                  ApplySlowEffect(enemy);
-                 
-                 // Apply frost visual effect - players can see which enemies are slowed
                  ApplyFrostVisualEffect(enemy);
+                 
+                 hitEnemyPositions.Add(enemy.transform.position);
+                 
+                 SpawnFrostBeamToEnemy(enemy.transform.position);
              }
          }
          
-         // Debug.Log($"Frost Tower: Attack complete! Hit {enemiesHit} enemies");
-         
-         // Play visual effects
          PlayFrostEffects();
      }
 
@@ -275,8 +266,73 @@ public class FrostTowerDefender : Defender
 
      void ApplyFrostVisualEffect(Enemy enemy)
      {
-         // Create a blue/cyan effect on the enemy
          StartCoroutine(FlashEnemyFrost(enemy));
+         SpawnFrostImpactEffect(enemy.transform.position);
+     }
+     
+     void SpawnFrostBeamToEnemy(Vector3 enemyPosition)
+     {
+         GameObject beam = new GameObject("FrostBeam");
+         beam.transform.position = GetVisualCenter();
+         
+         LineRenderer line = beam.AddComponent<LineRenderer>();
+         line.positionCount = 2;
+         line.SetPosition(0, GetVisualCenter());
+         line.SetPosition(1, enemyPosition);
+         
+         line.startWidth = 0.3f;
+         line.endWidth = 0.15f;
+         line.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+         line.material.color = frostColor;
+         line.startColor = new Color(0.5f, 1f, 1f, 0.8f);
+         line.endColor = new Color(0.3f, 0.8f, 1f, 0.6f);
+         
+         ParticleSystem particles = beam.AddComponent<ParticleSystem>();
+         var main = particles.main;
+         main.startLifetime = 0.3f;
+         main.startSpeed = 3f;
+         main.startSize = 0.2f;
+         main.startColor = new Color(0.7f, 0.9f, 1f, 0.7f);
+         main.maxParticles = 50;
+         
+         var emission = particles.emission;
+         emission.rateOverTime = 100f;
+         
+         var shape = particles.shape;
+         shape.shapeType = ParticleSystemShapeType.Cone;
+         shape.angle = 5f;
+         shape.radius = 0.1f;
+         
+         beam.transform.LookAt(enemyPosition);
+         particles.Play();
+         
+         Destroy(beam, 0.4f);
+     }
+     
+     void SpawnFrostImpactEffect(Vector3 position)
+     {
+         GameObject impact = new GameObject("FrostImpact");
+         impact.transform.position = position;
+         
+         ParticleSystem ps = impact.AddComponent<ParticleSystem>();
+         var main = ps.main;
+         main.duration = 0.5f;
+         main.startLifetime = 0.8f;
+         main.startSpeed = 2f;
+         main.startSize = 0.3f;
+         main.startColor = new Color(0.6f, 0.9f, 1f, 0.9f);
+         main.gravityModifier = 0.1f;
+         
+         var emission = ps.emission;
+         emission.rateOverTime = 0;
+         emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 15) });
+         
+         var shape = ps.shape;
+         shape.shapeType = ParticleSystemShapeType.Sphere;
+         shape.radius = 0.5f;
+         
+         ps.Play();
+         Destroy(impact, 1f);
      }
      
      System.Collections.IEnumerator FlashEnemyFrost(Enemy enemy)

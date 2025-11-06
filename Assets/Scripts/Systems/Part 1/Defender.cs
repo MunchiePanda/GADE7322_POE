@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using GADE7322_POE.Core;
 using System.Collections.Generic;
 
@@ -7,8 +8,11 @@ public class Defender : MonoBehaviour
     [Header("Stats")]
     [SerializeField] protected int hitPoints = 15;
     
-    // Health component reference
     private Health healthComponent;
+
+    [Header("UI")]
+    [Tooltip("World space health bar slider (assign your UI slider here)")]
+    [SerializeField] protected Slider healthBarSlider;
 
 
     [Header("Combat")]
@@ -36,20 +40,18 @@ public class Defender : MonoBehaviour
         gameManager = FindFirstObjectByType<GameManager>();
         criticalHitSystem = FindFirstObjectByType<CriticalHitSystem>();
 
-        // Get the Health component
         healthComponent = GetComponent<Health>();
         if (healthComponent == null)
         {
-            // Debug logging disabled
         }
         else
         {
-            // Set up the OnDeath event to notify performance tracker
             healthComponent.OnDeath.AddListener(OnDefenderDeath);
         }
 
-        // Adjust collider size for better tracking
-        AdjustColliderSize(1.5f); // Default scale factor
+        AdjustColliderSize(1.5f);
+        
+        InitializeHealthBar();
     }
 
     /// <summary>
@@ -218,22 +220,18 @@ public class Defender : MonoBehaviour
     {
         if (!IsAlive()) return;
         
-        // Debug logging disabled
-        
-        // Use Health component if available, otherwise use hit points system
         if (healthComponent != null)
         {
             healthComponent.TakeDamage(amount);
+            UpdateHealthBarFromHealthComponent();
         }
         else
         {
-            // Fallback to hit points system
             hitPoints -= Mathf.RoundToInt(amount);
-            // Debug logging disabled
+            UpdateHealthBar();
             
             if (hitPoints <= 0)
             {
-                // Debug logging disabled
                 NotifyDefenderLoss();
                 Destroy(gameObject);
             }
@@ -250,6 +248,16 @@ public class Defender : MonoBehaviour
         return hitPoints > 0;
     }
 
+    public Vector3 GetVisualCenter()
+    {
+        Renderer renderer = GetComponentInChildren<Renderer>();
+        if (renderer != null)
+        {
+            return renderer.bounds.center;
+        }
+        return transform.position;
+    }
+
     public bool UpgradeHealth()
     {
         if (gameManager == null) return false;
@@ -257,8 +265,15 @@ public class Defender : MonoBehaviour
         if (gameManager.SpendResources(healthUpgradeCost))
         {
             hitPoints += Mathf.RoundToInt(healthUpgradeAmount);
-            // Debug logging disabled
             transform.localScale *= 1.1f;
+            
+            if (healthComponent != null)
+            {
+                healthComponent.MaxHealth += healthUpgradeAmount;
+                healthComponent.Heal(healthUpgradeAmount);
+            }
+            
+            InitializeHealthBar();
             
             return true;
         }
@@ -294,14 +309,45 @@ public class Defender : MonoBehaviour
     {
         if (gameManager != null)
         {
-            // Notify performance tracker
             if (gameManager.performanceTracker != null)
             {
                 gameManager.performanceTracker.OnDefenderLost();
             }
             
-            // Notify GameManager of defender destruction for count tracking
             gameManager.OnDefenderDestroyed();
+        }
+    }
+    
+    void InitializeHealthBar()
+    {
+        if (healthBarSlider != null)
+        {
+            if (healthComponent != null)
+            {
+                healthBarSlider.maxValue = healthComponent.MaxHealth;
+                healthBarSlider.value = healthComponent.CurrentHealth;
+            }
+            else
+            {
+                healthBarSlider.maxValue = hitPoints;
+                healthBarSlider.value = hitPoints;
+            }
+        }
+    }
+    
+    void UpdateHealthBar()
+    {
+        if (healthBarSlider != null)
+        {
+            healthBarSlider.value = hitPoints;
+        }
+    }
+    
+    void UpdateHealthBarFromHealthComponent()
+    {
+        if (healthBarSlider != null && healthComponent != null)
+        {
+            healthBarSlider.value = healthComponent.CurrentHealth;
         }
     }
     

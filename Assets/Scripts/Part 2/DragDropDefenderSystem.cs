@@ -40,7 +40,6 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
     
     void Start()
     {
-        // Find references if not assigned
         if (terrainGenerator == null)
             terrainGenerator = FindFirstObjectByType<VoxelTerrainGenerator>();
         if (gameManager == null)
@@ -48,33 +47,34 @@ public class DragDropDefenderSystem : MonoBehaviour, IBeginDragHandler, IDragHan
 
         cam = Camera.main;
 
-        // Create default materials if not assigned
         if (validPlacementMaterial == null)
         {
             validPlacementMaterial = new Material(Shader.Find("Standard"));
-            validPlacementMaterial.color = new Color(0, 1, 0, 0.5f); // Green
+            validPlacementMaterial.color = new Color(0, 1, 0, 0.5f);
         }
 
         if (invalidPlacementMaterial == null)
         {
             invalidPlacementMaterial = new Material(Shader.Find("Standard"));
-            invalidPlacementMaterial.color = new Color(1, 0, 0, 0.5f); // Red
+            invalidPlacementMaterial.color = new Color(1, 0, 0, 0.5f);
         }
+    }
 
-        // Update button interactability based on wave number
+    void Update()
+    {
         UpdateButtonInteractability();
     }
 
-    /// <summary>
-    /// Updates the button's interactability based on the current wave number.
-    /// </summary>
     private void UpdateButtonInteractability()
     {
         Button button = GetComponent<Button>();
         if (button != null && gameManager != null)
         {
+            bool hasResources = gameManager.GetResources() >= cost;
             bool isUnlocked = gameManager.IsDefenderTypeUnlocked(defenderType);
-            button.interactable = isUnlocked;
+            bool underLimit = gameManager.currentDefenderCount < gameManager.maxDefenderCount;
+            
+            button.interactable = hasResources && isUnlocked && underLimit;
         }
     }
     

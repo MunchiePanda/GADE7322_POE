@@ -97,51 +97,30 @@ public class LightningTowerDefender : Defender
 
      void PerformChainLightning()
      {
-         // Debug.Log($"Lightning Tower: Starting chain lightning attack (Max targets: {maxChainTargets})");
-         
-         // This is the cool chain lightning system - it jumps between enemies
          List<Enemy> chainedEnemies = new List<Enemy>();
          List<Vector3> lightningPoints = new List<Vector3>();
          
-         // Start with the primary target
+         lightningPoints.Add(GetVisualCenter());
+         
          Enemy currentTarget = currentEnemyTarget;
          float currentDamage = attackDamage;
          
          for (int i = 0; i < maxChainTargets && currentTarget != null; i++)
          {
-             float distance = Vector3.Distance(transform.position, currentTarget.transform.position);
-             // Debug.Log($"Lightning Tower: Chain {i + 1} - HIT {currentTarget.name} at distance {distance:F1} for {currentDamage:F1} damage");
-             
-             // Deal damage to current target
              currentTarget.TakeDamage(currentDamage);
              chainedEnemies.Add(currentTarget);
              lightningPoints.Add(currentTarget.transform.position);
              
-             // Apply lightning visual effect to the hit enemy
              ApplyLightningVisualEffect(currentTarget);
+             SpawnLightningImpactEffect(currentTarget.transform.position);
              
-             // Find next target for chain - this is where the magic happens
              Enemy nextTarget = FindNextChainTarget(currentTarget, chainedEnemies);
-             if (nextTarget != null)
-             {
-                 float chainDistance = Vector3.Distance(currentTarget.transform.position, nextTarget.transform.position);
-                 // Debug.Log($"Lightning Tower: Chain {i + 1} -> {i + 2}: Jumping to {nextTarget.name} at distance {chainDistance:F1}");
-             }
-             else
-             {
-                 // Debug.Log($"Lightning Tower: Chain {i + 1} -> No more targets in range");
-             }
-             
              currentTarget = nextTarget;
-             
-             // Reduce damage for next chain
              currentDamage *= chainDamageReduction;
          }
          
-         // Debug.Log($"Lightning Tower: Chain attack complete! Hit {chainedEnemies.Count} enemies");
-         
-         // Play visual effects
          PlayLightningEffects(lightningPoints);
+         SpawnChainLightningBolt(lightningPoints);
      }
 
     Enemy FindNextChainTarget(Enemy fromEnemy, List<Enemy> alreadyHit)
@@ -254,8 +233,107 @@ public class LightningTowerDefender : Defender
      
      void ApplyLightningVisualEffect(Enemy enemy)
      {
-         // Create a flashing yellow effect on the enemy
          StartCoroutine(FlashEnemyLightning(enemy));
+     }
+     
+     void SpawnChainLightningBolt(List<Vector3> points)
+     {
+         if (points.Count < 2) return;
+         
+         GameObject bolt = new GameObject("LightningBolt");
+         LineRenderer line = bolt.AddComponent<LineRenderer>();
+         
+         List<Vector3> zigzagPoints = new List<Vector3>();
+         
+         for (int i = 0; i < points.Count - 1; i++)
+         {
+             Vector3 start = points[i];
+             Vector3 end = points[i + 1];
+             
+             zigzagPoints.Add(start);
+             
+             int segments = 8;
+             for (int j = 1; j < segments; j++)
+             {
+                 float t = j / (float)segments;
+                 Vector3 midPoint = Vector3.Lerp(start, end, t);
+                 
+                 Vector3 perpendicular = Vector3.Cross((end - start).normalized, Vector3.up);
+                 if (perpendicular.magnitude < 0.1f)
+                     perpendicular = Vector3.Cross((end - start).normalized, Vector3.right);
+                 
+                 float offset = Random.Range(-0.3f, 0.3f);
+                 midPoint += perpendicular.normalized * offset;
+                 midPoint.y += Random.Range(-0.2f, 0.2f);
+                 
+                 zigzagPoints.Add(midPoint);
+             }
+         }
+         
+         zigzagPoints.Add(points[points.Count - 1]);
+         
+         line.positionCount = zigzagPoints.Count;
+         line.SetPositions(zigzagPoints.ToArray());
+         line.startWidth = 0.15f;
+         line.endWidth = 0.1f;
+         
+         line.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+         line.material.color = lightningColor;
+         
+         Gradient gradient = new Gradient();
+         gradient.SetKeys(
+             new GradientColorKey[] { 
+                 new GradientColorKey(Color.white, 0.0f), 
+                 new GradientColorKey(lightningColor, 0.5f),
+                 new GradientColorKey(new Color(1f, 1f, 0.5f), 1.0f)
+             },
+             new GradientAlphaKey[] { 
+                 new GradientAlphaKey(1.0f, 0.0f), 
+                 new GradientAlphaKey(0.8f, 1.0f) 
+             }
+         );
+         line.colorGradient = gradient;
+         
+         Destroy(bolt, 0.3f);
+     }
+     
+     void SpawnLightningImpactEffect(Vector3 position)
+     {
+         GameObject impact = new GameObject("LightningImpact");
+         impact.transform.position = position;
+         
+         ParticleSystem ps = impact.AddComponent<ParticleSystem>();
+         var main = ps.main;
+         main.duration = 0.3f;
+         main.startLifetime = 0.5f;
+         main.startSpeed = 4f;
+         main.startSize = 0.25f;
+         main.startColor = new Color(1f, 1f, 0.7f, 1f);
+         main.gravityModifier = -0.2f;
+         
+         var emission = ps.emission;
+         emission.rateOverTime = 0;
+         emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 20) });
+         
+         var shape = ps.shape;
+         shape.shapeType = ParticleSystemShapeType.Sphere;
+         shape.radius = 0.3f;
+         
+         ps.Play();
+         
+         GameObject flash = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+         flash.transform.position = position;
+         flash.transform.localScale = Vector3.one * 0.6f;
+         flash.transform.parent = impact.transform;
+         
+         Renderer flashRenderer = flash.GetComponent<Renderer>();
+         Material flashMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+         flashMat.color = new Color(1f, 1f, 0.5f, 0.8f);
+         flashRenderer.material = flashMat;
+         
+         Destroy(flash.GetComponent<Collider>());
+         
+         Destroy(impact, 0.6f);
      }
      
      System.Collections.IEnumerator FlashEnemyLightning(Enemy enemy)

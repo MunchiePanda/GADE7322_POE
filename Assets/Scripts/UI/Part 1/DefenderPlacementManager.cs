@@ -32,7 +32,6 @@ public class DefenderPlacementManager : MonoBehaviour
 
     void Update()
     {
-        // Check for key presses to switch paths
         if (Keyboard.current.digit1Key.wasPressedThisFrame)
             SelectPath(0);
         else if (Keyboard.current.digit2Key.wasPressedThisFrame)
@@ -43,6 +42,19 @@ public class DefenderPlacementManager : MonoBehaviour
             SelectPath(3);
         else if (Keyboard.current.digit5Key.wasPressedThisFrame)
             SelectPath(4);
+
+        UpdatePlaceButtonState();
+    }
+
+    void UpdatePlaceButtonState()
+    {
+        if (placeDefenderButton == null || gameManager == null) return;
+
+        bool hasResources = gameManager.GetResources() >= gameManager.defenderCost;
+        bool underLimit = gameManager.currentDefenderCount < gameManager.maxDefenderCount;
+        bool hasLocations = selectedDefenderLocations.Count > 0 && selectedLocationIndex < selectedDefenderLocations.Count;
+
+        placeDefenderButton.interactable = hasResources && underLimit && hasLocations;
     }
 
     void SelectPath(int pathIndex)

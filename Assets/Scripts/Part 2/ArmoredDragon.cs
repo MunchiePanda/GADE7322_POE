@@ -1,22 +1,20 @@
 using UnityEngine;
 
-/// <summary>
-/// Armored Dragon - Slow, high health, moderate damage.
-/// A heavily armored dragon that takes time to kill but doesn't deal much damage.
-/// </summary>
 public class ArmoredDragon : Enemy
 {
     [Header("Armor Settings")]
     [Tooltip("Damage reduction from armor (0.5 = 50% damage reduction)")]
     [Range(0f, 0.8f)]
     public float armorReduction = 0.3f;
-    
+
     [Tooltip("Visual effect when armor is hit")]
     public GameObject armorHitEffectPrefab;
-    
+
     [Tooltip("Particle system for armor sparks")]
     public ParticleSystem armorSparks;
-    
+
+
+
     private float originalMaxHealth;
 
     protected override void Start()
@@ -29,10 +27,14 @@ public class ArmoredDragon : Enemy
         attackDamage = 3f;        // Low damage
         attackIntervalSeconds = 2.5f; // Slow attack speed
         originalMaxHealth = maxHealth;
-        
+
+        // Store original values for buff
+        _originalSpeed = moveSpeed;
+        _originalDamage = attackDamage;
+
         // Visual setup - Make it significantly bigger for more importance
         transform.localScale *= 1.8f; // Much larger than regular enemies (was 1.3f)
-        
+
         Renderer renderer = GetComponent<Renderer>();
         if (renderer != null)
         {
@@ -47,15 +49,48 @@ public class ArmoredDragon : Enemy
             mat.color = new Color(0.3f, 0.3f, 0.4f, 1f); // Dark metallic blue-gray
             renderer.material = mat;
         }
-        
+
         // Add armor visual effect
         AddArmorVisuals();
-        
+
         // Add imposing visual effects for importance
         AddImposingVisuals();
-        
+
         // Add dramatic spawn effect
         StartCoroutine(DramaticSpawnEffect());
+    }
+
+    public void ApplyBuff()
+    {
+        if (_isBuffed) return;
+
+        _isBuffed = true;
+        moveSpeed *= buffSpeedMultiplier;
+        attackDamage *= buffDamageMultiplier;
+
+        if (buffParticleEffect != null)
+        {
+            buffParticleEffect.Play();
+        }
+    }
+
+    public void RemoveBuff()
+    {
+        if (!_isBuffed) return;
+
+        _isBuffed = false;
+        moveSpeed = _originalSpeed;
+        attackDamage = _originalDamage;
+
+        if (buffParticleEffect != null)
+        {
+            buffParticleEffect.Stop();
+        }
+    }
+
+    public bool IsBuffed()
+    {
+        return _isBuffed;
     }
 
     public override void TakeDamage(float amount)
