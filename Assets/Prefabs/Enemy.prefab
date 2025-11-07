@@ -54,6 +54,7 @@ MonoBehaviour:
   detectionRange: 2
   minResourceRewardOnDeath: 5
   maxResourceRewardOnDeath: 25
+  healthBarSlider: {fileID: 8801566809766021863}
 --- !u!1001 &801129013087514849
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -367,3 +368,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3695589996093201902, guid: b9117a8c6464d1d4ea53042b015ad880, type: 3}
   m_PrefabInstance: {fileID: 6445040236659589556}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8801566809766021863 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2545681215072570195, guid: b9117a8c6464d1d4ea53042b015ad880, type: 3}
+  m_PrefabInstance: {fileID: 6445040236659589556}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

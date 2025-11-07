@@ -3,16 +3,15 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Simple UI bridge for three dedicated upgrade buttons (Basic/Frost/Lightning).
-/// Attach this to a Canvas object and wire each public method to a Button OnClick.
 /// </summary>
 public class DefenderUpgradeButtons : MonoBehaviour
 {
 	[Header("Buttons")]
-	/// <summary>Button that upgrades Basic defenders (Tier1->2->3).</summary>
+	// >Button that upgrades Basic defenders (Tier1->2->3).
 	public Button basicUpgradeButton;
-	/// <summary>Button that upgrades Frost defenders (Tier1->2->3).</summary>
+	//Button that upgrades Frost defenders (Tier1->2->3).
 	public Button frostUpgradeButton;
-	/// <summary>Button that upgrades Lightning defenders (Tier1->2->3).</summary>
+	//Button that upgrades Lightning defenders (Tier1->2->3)
 	public Button lightningUpgradeButton;
 
 	// Cached refs for state checks

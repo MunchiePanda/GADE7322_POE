@@ -36,7 +36,7 @@ public class DefenderUpgradeManager : MonoBehaviour
 
 	[Header("Upgrade Settings")]
 	/// <summary>Total resource cost for a per-type global upgrade.</summary>
-	public int upgradeCost = 1000;
+	public int upgradeCost = 10;
 
 	// Per-type upgrade levels: 0=Tier1 (base), 1=Tier2, 2=Tier3 (max)
 	private int basicLevel;

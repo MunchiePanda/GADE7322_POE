@@ -29,7 +29,7 @@ public class Enemy : MonoBehaviour
     [SerializeField] protected int maxResourceRewardOnDeath = 15;
 
     [Header("UI")]
-    [Tooltip("World space health bar slider (assign your UI slider here)")]
+    [Tooltip("Optional world space health bar slider. Assign a UI slider to display current health visually above the enemy.")]
     [SerializeField] protected Slider healthBarSlider;
 
     protected ParticleSystem buffParticleEffect;
@@ -149,12 +149,10 @@ public class Enemy : MonoBehaviour
         if (toTarget.magnitude <= step)
         {
             transform.position = targetPos;
-            // Advance along the path
             if (currentPathIndex < finalIndex)
             {
                 currentPathIndex++;
                 
-                // Report path progression to performance tracker
                 if (gameManager != null && gameManager.performanceTracker != null)
                 {
                     float progressionPercentage = ((float)currentPathIndex / finalIndex) * 100f;
@@ -163,7 +161,6 @@ public class Enemy : MonoBehaviour
             }
             else
             {
-                // Reached tower vicinity; attack tower if available
                 if (targetTower != null)
                 {
                     TryAttackTower();
@@ -174,6 +171,15 @@ public class Enemy : MonoBehaviour
         {
             Vector3 direction = toTarget.normalized;
             transform.position += direction * step;
+            
+            // Rotate the enemy to face the direction it is moving.
+            // This provides visual feedback showing which waypoint the enemy is heading toward.
+            // The rotation is smoothly interpolated to avoid jarring snaps during path following.
+            if (direction.magnitude > 0.01f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
+            }
         }
     }
 
@@ -221,25 +227,43 @@ public class Enemy : MonoBehaviour
             return;
         }
 
+        // Face the defender being attacked to make combat encounters more visually clear.
+        // The enemy will continuously track the defender's position during combat.
+        Vector3 directionToDefender = (currentDefenderTarget.transform.position - transform.position).normalized;
+        if (directionToDefender.magnitude > 0.01f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(directionToDefender);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
+        }
+
         float time = Time.time;
         if (time - lastAttackTime >= attackIntervalSeconds)
         {
             lastAttackTime = time;
-            // Debug logging disabled
             currentDefenderTarget.TakeDamage(attackDamage);
         }
     }
 
     void TryAttackTower()
     {
+        // Rotate to face the tower when the enemy arrives at its final destination.
+        // This ensures the attack visually targets the tower properly.
+        if (targetTower != null)
+        {
+            Vector3 directionToTower = (targetTower.transform.position - transform.position).normalized;
+            if (directionToTower.magnitude > 0.01f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(directionToTower);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
+            }
+        }
+
         float time = Time.time;
         if (time - lastAttackTime >= attackIntervalSeconds)
         {
             lastAttackTime = time;
             targetTower.TakeDamage(attackDamage);
             
-            // Enemy dies after first attack on tower
-            // Debug logging disabled
             Die();
         }
     }
@@ -298,6 +322,9 @@ public class Enemy : MonoBehaviour
         Destroy(gameObject);
     }
     
+    // Initializes the health bar UI element when the enemy spawns.
+    // Sets the slider maximum to match enemy max health and current value to current health.
+    // The slider will remain inactive if no health bar is assigned in the inspector.
     void InitializeHealthBar()
     {
         if (healthBarSlider != null)
@@ -307,6 +334,9 @@ public class Enemy : MonoBehaviour
         }
     }
     
+    // Updates the health bar slider to reflect the current health value.
+    // Called automatically when the enemy takes damage or heals.
+    // Safe to call even when no health bar is assigned.
     void UpdateHealthBar()
     {
         if (healthBarSlider != null)

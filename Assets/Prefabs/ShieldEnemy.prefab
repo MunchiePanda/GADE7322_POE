@@ -54,6 +54,7 @@ MonoBehaviour:
   detectionRange: 2
   minResourceRewardOnDeath: 25
   maxResourceRewardOnDeath: 50
+  healthBarSlider: {fileID: 6356165485692006849}
   armorReduction: 0.6
   armorHitEffectPrefab: {fileID: 6441873369525384307, guid: 0f3d407feb92ebb49b98d0157de5008a, type: 3}
   armorSparks: {fileID: 6280281539998945384, guid: f78aaaec3b393e24ca74cd6de8194347, type: 3}
@@ -418,3 +419,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3695589996093201902, guid: b9117a8c6464d1d4ea53042b015ad880, type: 3}
   m_PrefabInstance: {fileID: 8890582057429514898}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6356165485692006849 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2545681215072570195, guid: b9117a8c6464d1d4ea53042b015ad880, type: 3}
+  m_PrefabInstance: {fileID: 8890582057429514898}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

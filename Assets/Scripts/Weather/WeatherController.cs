@@ -13,11 +13,15 @@ public class WeatherController : MonoBehaviour
     public VoxelTerrainGenerator terrainGenerator;
 
     [Header("Procedural Weather Settings")]
+    [Tooltip("Base probability of rain occurring on any given wave")]
     [Range(0f, 1f)] public float baseRainChance = 0.45f;
+    [Tooltip("Minimum and maximum intensity values for rain when it occurs")]
     public Vector2 rainIntensityRange = new Vector2(0.4f, 0.9f);
+    [Tooltip("Minimum number of clear waves required between rain events")]
     public int minClearGapWaves = 1;
 
     [Header("Rain Effects")]
+    [Tooltip("Multiplier applied to enemy movement speed during rain")]
     public float rainSlowFactor = 0.8f;
 
     [Header("Screen Flash Settings")]
@@ -29,26 +33,43 @@ public class WeatherController : MonoBehaviour
     public bool enableMeteors = true;
     [Tooltip("Enable earthquakes")]
     public bool enableEarthquakes = true;
-    [Tooltip("Number of meteors per strike")]
-    [Range(1, 5)] public int meteorCount = 3;
+    [Tooltip("Minimum meteors per strike")]
+    [Range(1, 3)] public int minMeteorCount = 2;
+    [Tooltip("Maximum meteors per strike")]
+    [Range(2, 8)] public int maxMeteorCount = 5;
     [Tooltip("Perlin noise seed offset for procedural generation")]
     public float noiseOffset = 137.42f;
     [Tooltip("Noise scale for hazard timing")]
     public float noiseScale = 0.15f;
 
     [Header("Meteor Settings")]
-    public float meteorWarningDuration = 3f;
+    [Tooltip("Base warning duration for early waves")]
+    public float baseWarningDuration = 3f;
+    [Tooltip("Minimum warning duration for later waves")]
+    public float minWarningDuration = 1.5f;
+    [Tooltip("Speed at which meteors travel toward their targets")]
     public float meteorSpeed = 15f;
+    [Tooltip("Radius in world units for meteor damage and area of effect")]
     public float meteorImpactRadius = 3f;
+    [Tooltip("Color of the warning cylinder displayed at target locations")]
     public Color meteorWarningColor = new Color(1f, 0.3f, 0f, 0.6f);
+    [Tooltip("Minimum meteor size multiplier")]
+    [Range(0.5f, 1f)] public float minMeteorSize = 0.7f;
+    [Tooltip("Maximum meteor size multiplier")]
+    [Range(1f, 3f)] public float maxMeteorSize = 2.5f;
 
     [Header("Earthquake Settings")]
+    [Tooltip("Duration in seconds that warning displays before earthquake begins")]
     public float earthquakeWarningDuration = 2f;
+    [Tooltip("Total duration in seconds that the earthquake lasts")]
     public float earthquakeDuration = 4f;
+    [Tooltip("Minimum and maximum magnitude values for procedurally generated earthquakes")]
     public Vector2 earthquakeMagnitudeRange = new Vector2(1.0f, 5.0f);
+    [Tooltip("Base percentage of max health dealt as damage to all enemies")]
     public float earthquakeBaseDamagePercent = 0.15f;
+    [Tooltip("Multiplier for camera shake intensity based on earthquake magnitude")]
     public float earthquakeCameraShakeMultiplier = 0.4f;
-    [Tooltip("Optional: Custom prefab for earthquake dust particles")]
+    [Tooltip("Optional custom prefab for earthquake dust particles")]
     public GameObject earthquakeDustPrefab;
 
     private int _lastRainWave = -1000;
@@ -56,6 +77,7 @@ public class WeatherController : MonoBehaviour
     private int _currentWave = 0;
     private List<GameObject> _activeHazardObjects = new List<GameObject>();
     private Coroutine _flashCoroutine;
+    private string _selectedHazardType = "CLEAR";
 
     void Awake()
     {
@@ -66,24 +88,29 @@ public class WeatherController : MonoBehaviour
             terrainGenerator = FindFirstObjectByType<VoxelTerrainGenerator>();
     }
 
+    // Called before a wave starts to determine and display the upcoming weather hazard.
+    // This gives players time to prepare for the incoming environmental challenge.
+    // Caches the selected hazard to ensure consistency between warning and actual activation.
     public void OnPreWave(int upcomingWave)
     {
         _currentWave = upcomingWave;
-        string hazardType = SelectProceduralHazardType(upcomingWave);
+        _selectedHazardType = SelectProceduralHazardType(upcomingWave);
         
         if (warningUI != null)
         {
-            string warningMessage = GetWarningMessage(hazardType);
+            string warningMessage = GetWarningMessage(_selectedHazardType);
             warningUI.Show(warningMessage);
         }
     }
 
+    // Activates the selected weather hazard when the wave begins.
+    // Each hazard type has unique mechanics that affect gameplay differently.
+    // Uses the cached hazard type from OnPreWave to ensure the warning matches the actual event.
     public void OnWaveStart(int wave)
     {
         _currentWave = wave;
-        string hazardType = SelectProceduralHazardType(wave);
         
-        switch (hazardType)
+        switch (_selectedHazardType)
         {
             case "RAIN":
                 float intensity = SamplePerlinNoise(wave, 0f) * (rainIntensityRange.y - rainIntensityRange.x) + rainIntensityRange.x;
@@ -117,6 +144,9 @@ public class WeatherController : MonoBehaviour
         CleanupHazardObjects();
     }
 
+    // Uses Perlin noise to procedurally select which hazard will occur for the given wave.
+    // This creates varied but consistent weather patterns that feel natural rather than purely random.
+    // Advanced defenders have higher targeting priority for meteor strikes to increase challenge.
     string SelectProceduralHazardType(int wave)
     {
         if (wave - _lastRainWave <= minClearGapWaves)
@@ -142,10 +172,13 @@ public class WeatherController : MonoBehaviour
             return "CLEAR";
     }
     
+    // Samples 2D Perlin noise to generate procedural values for hazards.
+    // The offset multiplier allows multiple independent noise channels from the same wave number.
+    // Uses deterministic noise based on wave number to ensure consistent results.
     float SamplePerlinNoise(int wave, float offsetMultiplier)
     {
         float x = wave * noiseScale + noiseOffset * offsetMultiplier;
-        float y = Time.time * 0.01f + noiseOffset * offsetMultiplier;
+        float y = noiseOffset * offsetMultiplier + 123.456f;
         return Mathf.PerlinNoise(x, y);
     }
     
@@ -153,9 +186,9 @@ public class WeatherController : MonoBehaviour
     {
         switch (hazardType)
         {
-            case "RAIN": return "⚠️ HEAVY RAIN INCOMING";
-            case "METEOR": return "☄️ METEOR STRIKE DETECTED";
-            case "EARTHQUAKE": return "🌍 EARTHQUAKE WARNING";
+            case "RAIN": return "HEAVY RAIN INCOMING";
+            case "METEOR": return "METEOR STRIKE DETECTED";
+            case "EARTHQUAKE": return "EARTHQUAKE WARNING";
             default: return "CLEAR SKIES AHEAD";
         }
     }
@@ -230,13 +263,19 @@ public class WeatherController : MonoBehaviour
     
     IEnumerator TriggerMeteorStrike(int wave)
     {
-        Debug.Log($"☄️ METEOR STRIKE: Wave {wave} - Targeting {meteorCount} defenders");
+        // Procedurally determine meteor count based on wave number and noise.
+        int meteorCount = CalculateMeteorCount(wave);
         
-        List<Vector3> targetPositions = SelectMeteorTargets(wave);
+        // Procedurally determine warning duration that decreases with wave difficulty.
+        float warningDuration = CalculateWarningDuration(wave);
+        
+        Debug.Log($"METEOR STRIKE: Wave {wave} - Targeting {meteorCount} defenders (Warning: {warningDuration:F1}s)");
+        
+        List<Vector3> targetPositions = SelectMeteorTargets(wave, meteorCount);
         
         List<GameObject> warnings = ShowMeteorWarnings(targetPositions);
         
-        yield return new WaitForSeconds(meteorWarningDuration);
+        yield return new WaitForSeconds(warningDuration);
         
         foreach (GameObject warning in warnings)
         {
@@ -246,7 +285,38 @@ public class WeatherController : MonoBehaviour
         SpawnMeteors(targetPositions, wave);
     }
     
-    List<Vector3> SelectMeteorTargets(int wave)
+    // Procedurally calculates the number of meteors for this wave.
+    // Increases with wave difficulty and adds noise-based variation.
+    int CalculateMeteorCount(int wave)
+    {
+        float noiseValue = SamplePerlinNoise(wave, 4.2f);
+        int count = minMeteorCount + Mathf.FloorToInt(noiseValue * (maxMeteorCount - minMeteorCount + 1));
+        
+        // Scale up slightly with wave number for increasing difficulty
+        int waveBonus = Mathf.Min(wave / 10, 2);
+        count = Mathf.Min(count + waveBonus, maxMeteorCount);
+        
+        return count;
+    }
+    
+    // Procedurally calculates warning duration that decreases as waves progress.
+    // Later waves have shorter warnings for increased challenge.
+    float CalculateWarningDuration(int wave)
+    {
+        float waveFactor = Mathf.Clamp01(wave / 20f);
+        float duration = Mathf.Lerp(baseWarningDuration, minWarningDuration, waveFactor);
+        
+        // Add slight noise variation
+        float noiseVariation = SamplePerlinNoise(wave, 6.8f) * 0.5f - 0.25f;
+        duration += noiseVariation;
+        
+        return Mathf.Max(duration, minWarningDuration);
+    }
+    
+    // Selects target positions for meteor strikes using weighted defender priority.
+    // FrostTower and LightningTower defenders have 3x targeting weight to increase difficulty.
+    // Falls back to random terrain positions if no defenders exist.
+    List<Vector3> SelectMeteorTargets(int wave, int meteorCount)
     {
         List<Vector3> targets = new List<Vector3>();
         
@@ -343,35 +413,53 @@ public class WeatherController : MonoBehaviour
     {
         foreach (Vector3 target in targetPositions)
         {
+            // Vary spawn height using procedural noise to create visual variety in meteor trajectories.
             float heightNoise = SamplePerlinNoise(wave, target.x * 0.1f);
             float spawnHeight = 40f + heightNoise * 20f;
             
             Vector3 spawnPos = target + Vector3.up * spawnHeight;
             
+            // Procedurally vary meteor size based on wave difficulty and noise.
+            float sizeNoise = SamplePerlinNoise(wave, target.z * 0.15f);
+            float waveSizeBonus = 1f + (wave * 0.02f);
+            float meteorSize = Mathf.Lerp(minMeteorSize, maxMeteorSize, sizeNoise) * waveSizeBonus;
+            meteorSize = Mathf.Clamp(meteorSize, minMeteorSize, maxMeteorSize * 1.5f);
+            
             GameObject meteor = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             meteor.transform.position = spawnPos;
-            meteor.transform.localScale = Vector3.one * 2f;
+            meteor.transform.localScale = Vector3.one * meteorSize;
+            
+            // Color intensity varies with size for visual feedback.
+            float colorIntensity = Mathf.Lerp(0.8f, 1.2f, (meteorSize - minMeteorSize) / (maxMeteorSize - minMeteorSize));
             
             Renderer rend = meteor.GetComponent<Renderer>();
             Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = new Color(1f, 0.5f, 0.1f);
+            mat.color = new Color(1f * colorIntensity, 0.5f * colorIntensity, 0.1f);
             mat.SetFloat("_Smoothness", 0.8f);
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", new Color(1f, 0.4f, 0f) * (2f * colorIntensity));
             rend.material = mat;
             
+            // Add a trail to show the meteor path through the sky.
             TrailRenderer trail = meteor.AddComponent<TrailRenderer>();
             trail.time = 0.5f;
-            trail.startWidth = 1.5f;
-            trail.endWidth = 0.3f;
-            trail.material = mat;
+            trail.startWidth = 1.5f * meteorSize;
+            trail.endWidth = 0.3f * meteorSize;
+            Material trailMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            trailMat.color = new Color(1f, 0.5f, 0.1f, 0.8f);
+            trail.material = trailMat;
+            
+            // Calculate impact damage based on meteor size.
+            float baseDamage = 50f * (meteorSize / 2f);
             
             MeteorProjectile projectile = meteor.AddComponent<MeteorProjectile>();
-            projectile.Initialize(target, meteorSpeed, meteorImpactRadius, this);
+            projectile.Initialize(target, meteorSpeed, meteorImpactRadius * (meteorSize / 2f), baseDamage, this);
             
             _activeHazardObjects.Add(meteor);
         }
     }
     
-    public void OnMeteorImpact(Vector3 position, float radius)
+    public void OnMeteorImpact(Vector3 position, float radius, float baseDamage)
     {
         SpawnExplosionEffect(position);
         
@@ -388,26 +476,34 @@ public class WeatherController : MonoBehaviour
                 
                 if (distance < 1.5f)
                 {
-                    Debug.Log($"☄️ Meteor DESTROYED defender: {defender.name}");
+                    Debug.Log($"Meteor DESTROYED defender: {defender.name}");
                     defender.TakeDamage(99999f);
                 }
                 else if (distance < radius)
                 {
                     float damagePercent = 1f - (distance / radius);
-                    float damage = 50f * damagePercent;
-                    Debug.Log($"☄️ Meteor damaged defender: {defender.name} for {damage:F1} HP");
+                    float damage = baseDamage * damagePercent;
+                    Debug.Log($"Meteor damaged defender: {defender.name} for {damage:F1} HP");
                     defender.TakeDamage(damage);
                 }
             }
         }
     }
     
+    // Creates a procedural particle explosion effect at the meteor impact location.
+    // The particles use a burst emission pattern with warm colors to simulate fire and debris.
     void SpawnExplosionEffect(Vector3 position)
     {
         GameObject explosion = new GameObject("MeteorExplosion");
         explosion.transform.position = position;
         
         ParticleSystem ps = explosion.AddComponent<ParticleSystem>();
+        ParticleSystemRenderer psRenderer = explosion.GetComponent<ParticleSystemRenderer>();
+        
+        // Use URP compatible shader for particles to avoid purple/pink material issues.
+        Material particleMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+        particleMat.color = new Color(1f, 0.6f, 0.1f, 1f);
+        psRenderer.material = particleMat;
         
         var main = ps.main;
         main.duration = 1f;
@@ -438,7 +534,7 @@ public class WeatherController : MonoBehaviour
     {
         float magnitude = SamplePerlinNoise(wave, 3.7f) * (earthquakeMagnitudeRange.y - earthquakeMagnitudeRange.x) + earthquakeMagnitudeRange.x;
         
-        Debug.Log($"🌍 EARTHQUAKE: Wave {wave} - Magnitude {magnitude:F1}");
+        Debug.Log($"EARTHQUAKE: Wave {wave} - Magnitude {magnitude:F1}");
         
         yield return new WaitForSeconds(earthquakeWarningDuration);
         
@@ -455,7 +551,7 @@ public class WeatherController : MonoBehaviour
             yield return null;
         }
         
-        Debug.Log("🌍 Earthquake ended");
+        Debug.Log("Earthquake ended");
     }
     
     IEnumerator EarthquakeCameraShake(float magnitude)
@@ -580,12 +676,12 @@ public class WeatherController : MonoBehaviour
         
         if (enemiesDamaged > 0)
         {
-            Debug.Log($"🌍 Earthquake damaged {enemiesDamaged} enemies ({damagePercent * 100f:F1}% of health, Total: {totalEnemyDamage:F0} damage)");
+            Debug.Log($"Earthquake damaged {enemiesDamaged} enemies ({damagePercent * 100f:F1}% of health, Total: {totalEnemyDamage:F0} damage)");
         }
         
         if (defendersDamaged > 0)
         {
-            Debug.Log($"🌍 Earthquake damaged {defendersDamaged} defenders (Total: {totalDefenderDamage:F0} damage)");
+            Debug.Log($"Earthquake damaged {defendersDamaged} defenders (Total: {totalDefenderDamage:F0} damage)");
         }
     }
     
@@ -648,14 +744,16 @@ public class MeteorProjectile : MonoBehaviour
     private Vector3 targetPosition;
     private float speed;
     private float impactRadius;
+    private float baseDamage;
     private WeatherController weatherController;
     private bool hasImpacted = false;
     
-    public void Initialize(Vector3 target, float meteorSpeed, float radius, WeatherController controller)
+    public void Initialize(Vector3 target, float meteorSpeed, float radius, float damage, WeatherController controller)
     {
         targetPosition = target;
         speed = meteorSpeed;
         impactRadius = radius;
+        baseDamage = damage;
         weatherController = controller;
     }
     
@@ -681,7 +779,7 @@ public class MeteorProjectile : MonoBehaviour
         
         if (weatherController != null)
         {
-            weatherController.OnMeteorImpact(transform.position, impactRadius);
+            weatherController.OnMeteorImpact(transform.position, impactRadius, baseDamage);
         }
         
         Destroy(gameObject);

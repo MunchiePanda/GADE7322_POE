@@ -49,6 +49,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hitPoints: 10
+  healthBarSlider: {fileID: 456798959563849886}
   attackDamage: 30
   attackIntervalSeconds: 1
   attackRange: 15
@@ -440,6 +441,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b9117a8c6464d1d4ea53042b015ad880, type: 3}
+--- !u!114 &456798959563849886 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2545681215072570195, guid: b9117a8c6464d1d4ea53042b015ad880, type: 3}
+  m_PrefabInstance: {fileID: 2666961832528006093}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &1606567003135677987 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3695589996093201902, guid: b9117a8c6464d1d4ea53042b015ad880, type: 3}

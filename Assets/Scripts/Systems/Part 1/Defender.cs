@@ -11,7 +11,7 @@ public class Defender : MonoBehaviour
     private Health healthComponent;
 
     [Header("UI")]
-    [Tooltip("World space health bar slider (assign your UI slider here)")]
+    [Tooltip("Optional world space health bar slider. Assign a UI slider to display current health visually above the defender.")]
     [SerializeField] protected Slider healthBarSlider;
 
 
@@ -318,6 +318,9 @@ public class Defender : MonoBehaviour
         }
     }
     
+    // Initializes the health bar UI element when the defender is placed.
+    // Detects whether the defender uses the Health component or the hitPoints fallback system
+    // and configures the slider accordingly. Works with both health management approaches.
     void InitializeHealthBar()
     {
         if (healthBarSlider != null)
@@ -335,6 +338,8 @@ public class Defender : MonoBehaviour
         }
     }
     
+    // Updates the health bar for defenders using the hitPoints fallback system.
+    // This method is called when damage is taken and health upgrade is applied.
     void UpdateHealthBar()
     {
         if (healthBarSlider != null)
@@ -343,6 +348,9 @@ public class Defender : MonoBehaviour
         }
     }
     
+    // Updates the health bar for defenders using the Health component.
+    // This method reads the current health directly from the Health component
+    // to ensure the slider accurately reflects damage taken through that system.
     void UpdateHealthBarFromHealthComponent()
     {
         if (healthBarSlider != null && healthComponent != null)
