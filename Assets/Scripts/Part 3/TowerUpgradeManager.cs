@@ -2,12 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Handles upgrading the Main Tower by swapping its prefab to Tier 2 or Tier 3.
-/// - Spends resources via GameManager
-/// - Replaces the current tower instance and updates GameManager references
-/// - Preserves health ratio across swaps
-///
-/// Usage: Hook UI Buttons to UpgradeToTier2() / UpgradeToTier3()
-/// Assign T2/T3 prefabs in the inspector.
+/// Spends resources, replaces the tower, and preserves health ratio.
 /// </summary>
 public class TowerUpgradeManager : MonoBehaviour
 {
@@ -22,12 +17,14 @@ public class TowerUpgradeManager : MonoBehaviour
     public int tier3Cost = 500;
 
     public enum UpgradeAction { Tier2, Tier3, NextTier }
+
     [Header("Button Upgrade Config")]
     [Tooltip("Which upgrade to perform when calling PerformUpgrade() from a UI Button")]
     public UpgradeAction buttonUpgrade = UpgradeAction.NextTier;
 
-    [Header("State")] 
-    [Tooltip("0 = base, 1 = tier2, 2 = tier3")] public int towerLevel = 0;
+    [Header("State")]
+    [Tooltip("0 = base, 1 = tier2, 2 = tier3")]
+    public int towerLevel = 0;
 
     private GameManager gameManager;
 
@@ -46,15 +43,9 @@ public class TowerUpgradeManager : MonoBehaviour
         gameManager = FindFirstObjectByType<GameManager>();
     }
 
-    public bool UpgradeToTier2()
-    {
-        return TryUpgradeToLevel(1);
-    }
+    public bool UpgradeToTier2() => TryUpgradeToLevel(1);
 
-    public bool UpgradeToTier3()
-    {
-        return TryUpgradeToLevel(2);
-    }
+    public bool UpgradeToTier3() => TryUpgradeToLevel(2);
 
     public bool UpgradeNextTier()
     {
@@ -63,16 +54,12 @@ public class TowerUpgradeManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Mirrors DefenderUpgradeManager.TryUpgrade(...) style: upgrades the Main Tower by one tier.
-    /// Hook your UI button to this for a single-call upgrade like defenders.
+    /// Upgrades the Main Tower by one tier.
     /// </summary>
-    public bool TryUpgrade()
-    {
-        return UpgradeNextTier();
-    }
+    public bool TryUpgrade() => UpgradeNextTier();
 
     /// <summary>
-    /// Call this from a UI Button. Uses the selected 'buttonUpgrade' action.
+    /// Call from UI Button. Uses the selected 'buttonUpgrade' action.
     /// </summary>
     public void PerformUpgrade()
     {
@@ -93,7 +80,7 @@ public class TowerUpgradeManager : MonoBehaviour
     private bool TryUpgradeToLevel(int targetLevel)
     {
         if (gameManager == null) return false;
-        if (targetLevel <= towerLevel) return false; // no downgrade or duplicate
+        if (targetLevel <= towerLevel) return false;
         if (targetLevel < 1 || targetLevel > 2) return false;
 
         int cost = targetLevel == 1 ? tier2Cost : tier3Cost;
@@ -102,8 +89,7 @@ public class TowerUpgradeManager : MonoBehaviour
         GameObject prefab = GetPrefabForLevel(targetLevel);
         if (prefab == null) return false;
 
-        bool replaced = gameManager.ReplaceTower(prefab);
-        if (!replaced) return false;
+        if (!gameManager.ReplaceTower(prefab)) return false;
 
         towerLevel = targetLevel;
         return true;
@@ -119,5 +105,3 @@ public class TowerUpgradeManager : MonoBehaviour
         return null;
     }
 }
-
-

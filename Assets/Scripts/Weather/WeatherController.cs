@@ -28,14 +28,17 @@ public class WeatherController : MonoBehaviour
     public Color flashColor = new Color(1f, 1f, 1f, 0.45f);
     public float flashFadeSpeed = 2.5f;
 
-    [Header("Procedural Hazard System")]
-    [Tooltip("Enable meteor strikes")]
+    [Header("Procedural Meteor System")]
+    public ProceduralMeteorSystem proceduralMeteorSystem;
+
+    [Header("Legacy Meteor System Settings")]
+    [Tooltip("Enable meteor strikes in legacy system")]
     public bool enableMeteors = true;
-    [Tooltip("Enable earthquakes")]
-    public bool enableEarthquakes = true;
-    [Tooltip("Minimum meteors per strike")]
+    [Tooltip("Enable earthquakes in legacy system")]
+    public bool enableEarthquakes = false;
+    [Tooltip("Minimum meteors per strike in legacy system")]
     [Range(1, 3)] public int minMeteorCount = 2;
-    [Tooltip("Maximum meteors per strike")]
+    [Tooltip("Maximum meteors per strike in legacy system")]
     [Range(2, 8)] public int maxMeteorCount = 5;
     [Tooltip("Perlin noise seed offset for procedural generation")]
     public float noiseOffset = 137.42f;
@@ -86,6 +89,9 @@ public class WeatherController : MonoBehaviour
         
         if (terrainGenerator == null)
             terrainGenerator = FindFirstObjectByType<VoxelTerrainGenerator>();
+        
+        if (proceduralMeteorSystem == null)
+            proceduralMeteorSystem = FindFirstObjectByType<ProceduralMeteorSystem>();
     }
 
     // Called before a wave starts to determine and display the upcoming weather hazard.
@@ -94,12 +100,14 @@ public class WeatherController : MonoBehaviour
     public void OnPreWave(int upcomingWave)
     {
         _currentWave = upcomingWave;
-        _selectedHazardType = SelectProceduralHazardType(upcomingWave);
         
-        if (warningUI != null)
+        if (proceduralMeteorSystem != null)
         {
-            string warningMessage = GetWarningMessage(_selectedHazardType);
-            warningUI.Show(warningMessage);
+            proceduralMeteorSystem.OnPreWave(upcomingWave);
+        }
+        else if (warningUI != null)
+        {
+            warningUI.Show("METEOR STRIKE DETECTED");
         }
     }
 
@@ -110,37 +118,23 @@ public class WeatherController : MonoBehaviour
     {
         _currentWave = wave;
         
-        switch (_selectedHazardType)
+        if (proceduralMeteorSystem != null)
         {
-            case "RAIN":
-                float intensity = SamplePerlinNoise(wave, 0f) * (rainIntensityRange.y - rainIntensityRange.x) + rainIntensityRange.x;
-                StartRain(intensity);
-                _lastRainWave = wave;
-                break;
-                
-            case "METEOR":
-                if (enableMeteors)
-                {
-                    StartCoroutine(TriggerMeteorStrike(wave));
-                }
-                break;
-                
-            case "EARTHQUAKE":
-                if (enableEarthquakes)
-                {
-                    StartCoroutine(TriggerEarthquake(wave));
-                }
-                break;
-                
-            default:
-                StopRain();
-                break;
+            proceduralMeteorSystem.OnWaveStart(wave);
+        }
+        else
+        {
+            StartCoroutine(TriggerMeteorStrike(wave));
         }
     }
 
     public void OnWaveEnd(int wave)
     {
-        StopRain();
+        if (proceduralMeteorSystem != null)
+        {
+            proceduralMeteorSystem.OnWaveEnd(wave);
+        }
+        
         CleanupHazardObjects();
     }
 

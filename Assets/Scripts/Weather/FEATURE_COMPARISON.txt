@@ -1,0 +1,281 @@
+PROCEDURAL METEOR SYSTEM - FEATURE COMPARISON
+=============================================
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                        OLD SYSTEM vs NEW SYSTEM                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+WEATHER TYPES
+─────────────────────────────────────────────────────────────────────────────
+OLD:  ☁️ Rain      ⚡ Earthquake    🌠 Meteors (random selection)
+NEW:  🌠 METEORS ONLY (focused hazard system)
+
+
+METEOR VISUAL VARIETY
+─────────────────────────────────────────────────────────────────────────────
+OLD:  ⚪ All meteors = smooth spheres (identical appearance)
+      └─ Only size and color varied
+
+NEW:  🪨 Procedurally shaped meteors (vertex displacement)
+      ├─ Small meteors: Smooth, subtle bumps
+      ├─ Medium meteors: Moderate roughness, visible craters
+      └─ Large meteors: Very jagged, chaotic surface
+
+
+METEOR SIZE CORRELATION
+─────────────────────────────────────────────────────────────────────────────
+OLD:  Size → Damage (basic linear scaling)
+      └─ No visual feedback beyond color brightness
+
+NEW:  Size → Multiple Properties:
+      ├─ Damage: Linear scaling (40-120 HP range)
+      ├─ Displacement: 0.05 → 0.5 (visual roughness)
+      ├─ Frequency: 4 → 12 (surface detail)
+      ├─ Color Intensity: 0.8x → 1.3x (brightness)
+      └─ Impact Radius: Scaled proportionally
+
+
+SPECIAL DEFENDER HANDLING
+─────────────────────────────────────────────────────────────────────────────
+OLD:  💀 INSTANT KILL
+      ├─ FrostTowerDefender: 99999 damage at direct hit
+      └─ LightningTowerDefender: 99999 damage at direct hit
+      Result: Special defenders always destroyed
+
+NEW:  🛡️ PROTECTED
+      ├─ FrostTowerDefender: 60% damage reduction (survives most hits)
+      └─ LightningTowerDefender: 60% damage reduction (survives most hits)
+      Result: Special defenders can survive multiple meteor strikes
+
+
+HEALING MECHANICS
+─────────────────────────────────────────────────────────────────────────────
+OLD:  ❌ No healing mechanics
+
+NEW:  ✅ Healing Meteors
+      ├─ Trigger: Small meteors (0.3-0.8 size range)
+      ├─ Chance: ~20% for meteors in size range
+      ├─ Visual: Green color, upward particles
+      ├─ Effect: Restores 25 HP to defenders in radius
+      └─ Warning: Green cylinder (instead of orange)
+
+
+TARGETING SYSTEM
+─────────────────────────────────────────────────────────────────────────────
+OLD:  🎯 Special defenders weighted 3x (high priority targets)
+
+NEW:  🎯 Special defenders weighted 2x (reduced priority)
+      └─ More balanced targeting, other defenders also hit
+
+
+VISUAL FEEDBACK
+─────────────────────────────────────────────────────────────────────────────
+OLD:  Warning Indicators:
+      └─ Orange cylinders for all meteors
+
+NEW:  Color-Coded Warnings:
+      ├─ Orange cylinders: Damage meteors
+      ├─ Green cylinders: Healing meteors
+      ├─ Size varies with impact radius
+      └─ Pulsing animation for attention
+
+
+OLD:  Meteor Appearance:
+      ├─ Smooth sphere geometry
+      ├─ URP/Lit material
+      └─ Orange emission
+
+NEW:  Meteor Appearance:
+      ├─ Procedurally displaced geometry (unique shapes)
+      ├─ Custom shader with 3-layer Perlin noise
+      ├─ Size-based displacement (roughness)
+      ├─ Orange emission (damage) or Green emission (healing)
+      └─ Rotating during flight for visual interest
+
+
+OLD:  Impact Effects:
+      └─ Orange particle burst (50 particles)
+
+NEW:  Impact Effects:
+      ├─ Damage meteors: Orange explosion burst (50 particles)
+      ├─ Healing meteors: Green sphere burst (30 particles)
+      └─ Healing targets: Individual green sparkle particles
+
+
+PROCEDURAL GENERATION
+─────────────────────────────────────────────────────────────────────────────
+OLD:  Perlin noise used for:
+      ├─ Hazard type selection (rain/earthquake/meteor)
+      ├─ Meteor count
+      ├─ Spawn height variation
+      └─ Size variation
+
+NEW:  Perlin noise used for:
+      ├─ Meteor count (wave-scaled)
+      ├─ Target selection (deterministic randomness)
+      ├─ Size variation
+      ├─ Displacement seed (unique shapes)
+      ├─ Healing meteor chance
+      └─ Spawn height variation
+      
+      Additional: Each meteor gets unique noise seed for shader
+
+
+SHADER TECHNOLOGY
+─────────────────────────────────────────────────────────────────────────────
+OLD:  Standard URP/Lit shader
+      └─ No vertex manipulation
+
+NEW:  Custom URP shader with:
+      ├─ 3-layer Perlin noise (vertex shader)
+      ├─ Vertex displacement along normals
+      ├─ PBR lighting (fragment shader)
+      ├─ Emission support
+      ├─ Shadow casting (with displacement)
+      └─ Configurable per-meteor parameters
+
+
+DAMAGE CALCULATION
+─────────────────────────────────────────────────────────────────────────────
+OLD:  Formula:
+      baseDamage = 50 * (meteorSize / 2.0)
+      
+      Direct Hit (< 1.5m): 99999 damage (instant kill)
+      Radius Hit: baseDamage * distancePercent
+
+NEW:  Formula:
+      baseDamage = 40 * (meteorSize / maxMeteorSize)
+      
+      Special Defenders: damage * 0.6 (configurable)
+      All Defenders: baseDamage * distancePercent
+      Healing Meteors: -25 HP * distancePercent
+      
+      No instant-kill mechanic
+
+
+CONFIGURATION OPTIONS
+─────────────────────────────────────────────────────────────────────────────
+OLD:  WeatherController Settings:
+      ├─ Enable/disable meteors (bool)
+      ├─ Meteor count range (1-8)
+      ├─ Meteor size range (0.5-3.0)
+      ├─ Warning duration (1.5-3.0s)
+      └─ Impact radius (3.0)
+
+NEW:  ProceduralMeteorSystem Settings:
+      ├─ Meteor count range (1-12)
+      ├─ Meteor size range (0.5-3.0)
+      ├─ Warning duration (1.5-3.0s)
+      ├─ Base impact radius (3.0)
+      ├─ Base damage (configurable)
+      ├─ Special defender multiplier (0.0-1.0)
+      ├─ Healing meteor enable/disable
+      ├─ Healing meteor size range (0.3-2.0)
+      ├─ Healing amount (configurable)
+      ├─ Max displacement (0.0-1.0)
+      ├─ Displacement frequency (1.0-20.0)
+      └─ Color customization (damage & healing)
+      
+      Plus: 4 preset configurations via custom editor
+
+
+PERFORMANCE
+─────────────────────────────────────────────────────────────────────────────
+OLD:  CPU Impact:
+      ├─ Primitive sphere creation (CPU)
+      ├─ Material setup (CPU)
+      ├─ Particle systems (GPU)
+      └─ Physics overlap sphere (CPU)
+
+NEW:  CPU Impact:
+      ├─ Primitive sphere creation (CPU - same)
+      ├─ Material setup with shader (CPU - slightly more)
+      ├─ Particle systems (GPU - same)
+      └─ Physics overlap sphere (CPU - same)
+      
+      GPU Impact:
+      ├─ Vertex displacement (GPU - additional)
+      ├─ 3-layer noise calculation (GPU - additional)
+      └─ PBR lighting (GPU - same)
+      
+      Note: Vertex displacement is efficient on modern GPUs
+            No significant performance difference expected
+
+
+EXTENSIBILITY
+─────────────────────────────────────────────────────────────────────────────
+OLD:  ⚠️ Tightly coupled to WeatherController
+      └─ Hard to extend without modifying core class
+
+NEW:  ✅ Standalone component
+      ├─ Can be added/removed independently
+      ├─ Clear public API for integration
+      ├─ Easy to customize via inspector
+      └─ WeatherController keeps legacy fallback
+
+
+DOCUMENTATION
+─────────────────────────────────────────────────────────────────────────────
+OLD:  Code comments only
+
+NEW:  Complete documentation:
+      ├─ QUICK_START.txt (3-minute setup)
+      ├─ METEOR_SYSTEM_SETUP.txt (detailed guide)
+      ├─ IMPLEMENTATION_SUMMARY.txt (technical details)
+      ├─ FEATURE_COMPARISON.txt (this file)
+      ├─ Inline code comments
+      └─ Custom editor with preset buttons
+
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                              MIGRATION PATH                               ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+Option 1: USE NEW SYSTEM (Recommended)
+   1. Add ProceduralMeteorSystem component
+   2. Link to WeatherController
+   3. Choose a preset or configure manually
+   4. Test and adjust
+
+Option 2: KEEP OLD SYSTEM
+   • Don't add ProceduralMeteorSystem
+   • WeatherController continues using legacy meteor code
+   • No new features but still functional
+
+Option 3: HYBRID (Advanced)
+   • Keep both systems
+   • Toggle between them via inspector
+   • Compare performance and visuals
+
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                           RECOMMENDATION                                  ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+→ Use the NEW ProceduralMeteorSystem for:
+   ✓ Better visual variety and player engagement
+   ✓ Fairer gameplay (special defenders survive)
+   ✓ Strategic depth (healing meteors)
+   ✓ Size-danger visual correlation
+   ✓ Easier configuration (presets + custom editor)
+
+→ Stick with OLD system only if:
+   ✗ Performance is critical (minimal GPU usage)
+   ✗ You need rain/earthquake hazards
+   ✗ You want instant-kill mechanics
+
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                         KEY IMPROVEMENTS SUMMARY                          ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+1. 🎨 VISUAL: Procedural shapes make every meteor unique
+2. ⚖️ BALANCE: Special defenders no longer instant-killed
+3. 💚 HEALING: New support mechanic adds strategic depth
+4. 🔗 CORRELATION: Size visually matches danger level
+5. ⚡ FOCUSED: Meteors-only = consistent experience
+6. 🛠️ USABILITY: Presets and custom editor = easy setup
+7. 📚 DOCUMENTATION: Complete guides for all skill levels
+8. 🔧 EXTENSIBLE: Standalone component, easy to modify
+

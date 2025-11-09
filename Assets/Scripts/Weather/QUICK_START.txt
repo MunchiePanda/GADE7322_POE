@@ -1,0 +1,193 @@
+PROCEDURAL METEOR SYSTEM - QUICK START GUIDE
+============================================
+
+⚡ 3-MINUTE SETUP ⚡
+-------------------
+
+Step 1: Find WeatherController
+   • Open Scene Hierarchy
+   • Look for GameObject with "WeatherController" component
+   • (Usually on a GameObject named "WeatherController" or "GameManager")
+
+Step 2: Add Procedural Meteor System
+   • Select the WeatherController GameObject
+   • Click "Add Component" in Inspector
+   • Type "ProceduralMeteorSystem"
+   • Press Enter to add
+
+Step 3: Link the Systems
+   • In WeatherController component:
+     └─ Find "Procedural Meteor System" field (at top of component)
+     └─ Drag the ProceduralMeteorSystem component into this field
+   
+   • In ProceduralMeteorSystem component:
+     └─ "Terrain Generator" should auto-assign (if not, drag from scene)
+     └─ "Warning UI" is optional
+     └─ Leave "Procedural Meteor Shader" empty (auto-finds shader)
+   
+   NOTE: The "Legacy Meteor System Settings" in WeatherController can be ignored
+         when using ProceduralMeteorSystem. They're kept for backward compatibility.
+
+Step 4: Choose a Preset (Optional but Recommended)
+   • In ProceduralMeteorSystem Inspector
+   • Open "Quick Presets" section
+   • Click one of these buttons:
+     ├─ Balanced (Default) ← RECOMMENDED FOR FIRST TEST
+     ├─ Intense Danger (more meteors, more damage)
+     ├─ Defender Friendly (less danger, more healing)
+     └─ Chaotic Mayhem (maximum chaos and visual variety)
+
+Step 5: Test!
+   • Press Play
+   • Start a wave
+   • Watch for:
+     ├─ Orange warning circles (damage meteors)
+     ├─ Green warning circles (healing meteors)
+     ├─ Varied meteor shapes (jagged vs smooth)
+     └─ Special defenders surviving hits
+
+
+✅ WHAT YOU GET ✅
+------------------
+
+Before:
+├─ Random weather (rain/earthquake/meteors)
+├─ Smooth sphere meteors (all look identical)
+├─ Instant-kill on Frost/Lightning defenders
+└─ No healing mechanics
+
+After:
+├─ Meteors ONLY (rain/earthquake disabled)
+├─ Procedurally shaped meteors (unique jagged surfaces)
+├─ Frost/Lightning defenders protected (60% damage reduction)
+├─ Healing meteors (small green meteors restore HP)
+└─ Size = Danger (bigger/rougher = more damage)
+
+
+🎮 VISUAL INDICATORS 🎮
+------------------------
+
+Damage Meteors:
+├─ Warning: Orange cylinder on ground
+├─ Color: Orange/red with bright glow
+├─ Trail: Orange fire trail
+├─ Shape: Jagged (large) or smooth (small)
+└─ Impact: Orange explosion particles
+
+Healing Meteors:
+├─ Warning: Green cylinder on ground
+├─ Color: Green with soft glow
+├─ Trail: Green energy trail
+├─ Shape: Always small and smooth
+└─ Impact: Green upward-floating particles
+
+
+⚙️ KEY SETTINGS ⚙️
+------------------
+
+Meteor Count:
+   Min: 2  Max: 8  (how many meteors per strike)
+
+Damage:
+   Base: 40 HP  (medium meteor damage)
+   Special Defender Multiplier: 0.6 (= 40% protection)
+
+Healing:
+   Enabled: Yes
+   Size Range: 0.3 - 0.8 (small meteors only)
+   Amount: 25 HP
+   Chance: ~20% for meteors in size range
+
+Shape:
+   Max Displacement: 0.5 (how rough/jagged)
+   Frequency: 8 (surface detail level)
+
+
+🔧 COMMON ADJUSTMENTS 🔧
+-------------------------
+
+"I want MORE meteors per wave"
+   → Increase Max Meteor Count to 10-12
+
+"Special defenders still die too easily"
+   → Lower Special Defender Damage Multiplier to 0.4-0.5
+
+"I want smoother/rounder meteors"
+   → Lower Max Displacement to 0.2-0.3
+
+"I want rougher/more chaotic meteors"
+   → Increase Max Displacement to 0.7-0.9
+   → Increase Frequency to 12-15
+
+"I want more healing meteors"
+   → Increase Healing Meteor Max Size to 1.2
+   → Increase Healing Amount to 40
+   → (Note: Spawn is still random ~20%)
+
+"Meteors are too weak/strong"
+   → Adjust Base Damage (25 = easy, 60 = hard)
+
+
+🐛 TROUBLESHOOTING 🐛
+---------------------
+
+Purple/Pink Meteors:
+   Cause: Shader not compiled
+   Fix: Wait 10-20 seconds for Unity to compile shader
+        or right-click shader → Reimport
+
+No Meteors Spawning:
+   Cause: System not linked
+   Fix: Check WeatherController → "Procedural Meteor System" field is filled
+
+Meteors Look Like Normal Spheres:
+   Cause: Shader not assigned or displacement too low
+   Fix 1: Check Max Displacement > 0.3
+   Fix 2: Wait for shader to compile
+   Fix 3: Check shader exists at /Assets/Shaders/ProceduralMeteorShader.shader
+
+Special Defenders Still Instant-Die:
+   Cause: Damage multiplier too high
+   Fix: Set Special Defender Damage Multiplier to 0.6 or lower
+
+No Green Healing Meteors:
+   Cause: Disabled or unlucky RNG
+   Fix 1: Check "Enable Healing Meteors" is checked
+   Fix 2: Wait for multiple waves (only ~20% chance)
+   Fix 3: Increase Healing Meteor Max Size to 1.0
+
+Compilation Errors:
+   Cause: Missing namespace or script location
+   Fix: Ensure ProceduralMeteorSystem.cs is in /Assets/Scripts/Weather/
+        Check console for specific error and fix namespace imports
+
+
+📚 MORE INFO 📚
+---------------
+
+For detailed explanations:
+   → Read METEOR_SYSTEM_SETUP.txt
+
+For technical implementation details:
+   → Read IMPLEMENTATION_SUMMARY.txt
+
+For code examples and customization:
+   → Open ProceduralMeteorSystem.cs
+   → See CreateMeteorData() method for danger correlation
+   → See SpawnMeteors() method for visual setup
+
+
+🎯 RECOMMENDED FIRST PRESET 🎯
+------------------------------
+
+Use "Balanced (Default)" preset for your first test:
+   1. Select ProceduralMeteorSystem in Inspector
+   2. Open "Quick Presets" section
+   3. Click "Balanced (Default)" button
+   4. Press Play and start a wave
+   5. Observe varied meteor shapes and effects
+   6. Adjust from there based on your preference
+
+
+That's it! You're ready to test the new meteor system.
+Have fun! 🎮🌠

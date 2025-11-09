@@ -1,6 +1,3 @@
-// Shader: Custom/WaterVertexDisplace
-// Purpose: Renders a water surface with animated vertex displacement to simulate waves.
-// Usage: Apply to a mesh to create a dynamic, semi-transparent water effect in Unity.
 
 Shader "Custom/WaterVertexDisplace"
 {
@@ -73,6 +70,7 @@ Shader "Custom/WaterVertexDisplace"
 				return i.col;
 			}
 			ENDCG
-		}
+		} //I really hope this works, I hate the graphs (25/10/25)
+		// Update, Ha it worked, lol. (1/11/25)
 	}
 }

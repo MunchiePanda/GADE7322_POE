@@ -12304,7 +12304,7 @@ MonoBehaviour:
   basicTier3Prefab: {fileID: 4414111203060204694, guid: f9e129b20ce212543b865bc3ca10ef8f, type: 3}
   frostTier3Prefab: {fileID: 4414111203060204694, guid: 5fa61ef0edfd66b4bbc33653e55e74d9, type: 3}
   lightningTier3Prefab: {fileID: 4414111203060204694, guid: 74ce6a4b48e8316408d163b98709a01c, type: 3}
-  upgradeCost: 1000
+  upgradeCost: 10
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -18461,6 +18461,7 @@ GameObject:
   - component: {fileID: 1384222117}
   - component: {fileID: 1384222116}
   - component: {fileID: 1384222118}
+  - component: {fileID: 1384222119}
   m_Layer: 0
   m_Name: WeatherSystem
   m_TagString: Untagged
@@ -18527,6 +18528,7 @@ MonoBehaviour:
   rainSlowFactor: 0.8
   flashColor: {r: 1, g: 1, b: 1, a: 0.45}
   flashFadeSpeed: 2.5
+  proceduralMeteorSystem: {fileID: 0}
   enableMeteors: 1
   enableEarthquakes: 1
   minMeteorCount: 2
@@ -18546,6 +18548,44 @@ MonoBehaviour:
   earthquakeBaseDamagePercent: 0.15
   earthquakeCameraShakeMultiplier: 0.4
   earthquakeDustPrefab: {fileID: 1377730519304020261, guid: efaf450313bb3ac4f9add838d17ec792, type: 3}
+--- !u!114 &1384222119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1384222115}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f6ae3249559afa49a3747ed5cd1f24c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  warningUI: {fileID: 754197286}
+  terrainGenerator: {fileID: 1975398409}
+  screenFlashImage: {fileID: 0}
+  minMeteorCount: 2
+  maxMeteorCount: 8
+  noiseOffset: 137.42
+  noiseScale: 0.15
+  baseWarningDuration: 3
+  minWarningDuration: 1.5
+  meteorWarningColor: {r: 1, g: 0.3, b: 0, a: 0.6}
+  meteorSpeed: 15
+  baseImpactRadius: 3
+  minMeteorSize: 0.5
+  maxMeteorSize: 3
+  baseDamage: 40
+  specialDefenderDamageMultiplier: 0.6
+  enableHealingMeteors: 1
+  healingMeteorMinSize: 0.3
+  healingMeteorMaxSize: 0.8
+  healingAmount: 25
+  healingMeteorColor: {r: 0.3, g: 1, b: 0.5, a: 1}
+  proceduralMeteorShader: {fileID: 4800000, guid: d4627fc5fc5b9814c978bea37f394140, type: 3}
+  maxDisplacement: 0.5
+  displacementFrequency: 8
+  flashColor: {r: 1, g: 1, b: 1, a: 0.45}
+  flashFadeSpeed: 2.5
 --- !u!1 &1492471692
 GameObject:
   m_ObjectHideFlags: 0

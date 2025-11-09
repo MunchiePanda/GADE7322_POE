@@ -1,0 +1,198 @@
+PROCEDURAL METEOR SYSTEM - IMPLEMENTATION SUMMARY
+=================================================
+
+COMPLETED CHANGES:
+------------------
+
+1. NEW SHADER: ProceduralMeteorShader.shader
+   Location: /Assets/Shaders/ProceduralMeteorShader.shader
+   Features:
+   - URP-compatible vertex displacement shader
+   - 3D Perlin noise for procedural surface variation
+   - Configurable displacement, frequency, and seed parameters
+   - PBR lighting with emission support
+   - Shadow casting with displacement
+   Purpose: Creates unique, jagged meteor shapes that vary based on danger level
+
+2. NEW SYSTEM: ProceduralMeteorSystem.cs
+   Location: /Assets/Scripts/Weather/ProceduralMeteorSystem.cs
+   Features:
+   - Exclusive meteor hazard system (no rain/earthquake)
+   - Procedurally varied meteor shapes using vertex displacement
+   - Size-based danger correlation (size → displacement → damage)
+   - Special defender protection (Frost/Lightning take 60% damage)
+   - Healing meteor mechanic (small meteors can heal defenders)
+   - Color-coded visual feedback (orange = damage, green = healing)
+   - Perlin noise-based procedural generation
+   
+3. MODIFIED: WeatherController.cs
+   Changes:
+   - Removed rain and earthquake hazard selection
+   - Added ProceduralMeteorSystem integration
+   - Kept legacy meteor system as fallback
+   - Simplified OnPreWave, OnWaveStart, OnWaveEnd methods
+   Purpose: Focus exclusively on meteor hazards
+
+4. DOCUMENTATION: Setup and usage guides
+   - METEOR_SYSTEM_SETUP.txt: Detailed setup instructions
+   - IMPLEMENTATION_SUMMARY.txt: This file
+
+METEOR DANGER SYSTEM:
+---------------------
+
+Size Range: 0.5 - 3.0 units
+├── Small (0.5-1.0): Low damage, smooth surface, dim glow
+│   └── Healing subset (0.3-0.8): 20% chance to heal instead of damage
+├── Medium (1.0-2.0): Medium damage, moderate roughness, bright glow
+└── Large (2.0-3.0): High damage, very jagged surface, intense glow
+
+Correlation Formula:
+- Displacement: Linear from 0.05 to 0.5 (more jagged = more dangerous)
+- Frequency: Linear from 4 to 12 (surface detail variation)
+- Damage: Scales with size (base 40 * size/maxSize)
+- Color Intensity: Scales with size (0.8x to 1.3x multiplier)
+
+SPECIAL DEFENDER PROTECTION:
+-----------------------------
+
+Before:
+- FrostTowerDefender: Instant-kill at direct hit (99999 damage)
+- LightningTowerDefender: Instant-kill at direct hit (99999 damage)
+
+After:
+- FrostTowerDefender: 60% damage reduction (survives most hits)
+- LightningTowerDefender: 60% damage reduction (survives most hits)
+- Configurable via "Special Defender Damage Multiplier" (default: 0.6)
+
+HEALING METEOR SYSTEM:
+----------------------
+
+Trigger Conditions:
+- Meteor size between 0.3 and 0.8 units
+- 20% spawn chance (based on Perlin noise)
+- Enabled via "Enable Healing Meteors" toggle
+
+Visual Indicators:
+- Green warning cylinder (vs orange for damage meteors)
+- Green emission and trail
+- Green particle burst on impact
+- Upward-floating heal particles on affected defenders
+
+Effect:
+- Restores 25 HP to all defenders within impact radius
+- Scales with distance (closer = more healing)
+- No damage dealt
+
+INTEGRATION STEPS:
+------------------
+
+Step 1: Add Component
+- Select your WeatherController GameObject
+- Add Component → ProceduralMeteorSystem
+
+Step 2: Configure References
+- Assign terrain generator reference
+- Assign warning UI reference (optional)
+- Leave shader reference empty (auto-finds "Custom/ProceduralMeteorShader")
+
+Step 3: Link to WeatherController
+- In WeatherController inspector
+- Find "Procedural Meteor System" field
+- Drag the ProceduralMeteorSystem component
+
+Step 4: Adjust Settings (Optional)
+In ProceduralMeteorSystem:
+- Meteor Spawn Settings: meteorCount (2-8)
+- Damage Settings: baseDamage (40), specialDefenderDamageMultiplier (0.6)
+- Healing Settings: enable, size range (0.3-0.8), healing amount (25)
+- Shape Settings: maxDisplacement (0.5), frequency (8)
+
+Step 5: Test
+- Enter Play Mode
+- Start wave
+- Observe meteor strikes with varied shapes and effects
+
+TECHNICAL NOTES:
+----------------
+
+Shader Architecture:
+- Uses 3-layer Perlin noise (different frequencies) for natural variation
+- Vertex displacement in object space along normals
+- Hash function ensures randomness across meteors
+- Supports URP lighting and shadows
+
+Procedural Generation:
+- Perlin noise with wave number and configurable seed
+- Noise offset multipliers create variation within same wave
+- Weighted defender targeting (special defenders weighted 2x)
+- Fallback to terrain positions if no defenders
+
+Performance:
+- Shader runs on GPU (efficient vertex displacement)
+- Meteors limited to 2-12 per wave
+- Automatic cleanup after wave ends
+- Particle effects auto-destroy
+
+Compatibility:
+- Unity 6000.1 (Unity 6)
+- URP 17.1.0
+- C# 9.0+
+
+CUSTOMIZATION EXAMPLES:
+-----------------------
+
+More Dangerous Meteors:
+- Increase baseDamage to 60-80
+- Increase maxMeteorSize to 4.0
+- Increase maxDisplacement to 0.8
+
+More Frequent Healing:
+- Increase healingMeteorMaxSize to 1.2
+- Modify CreateMeteorData: change "healingChance < 0.2f" to "< 0.4f" (40% chance)
+- Increase healingAmount to 40
+
+Smoother Meteors:
+- Decrease maxDisplacement to 0.2
+- Decrease displacementFrequency to 4
+
+More Chaotic/Rough Meteors:
+- Increase maxDisplacement to 0.8
+- Increase displacementFrequency to 15
+
+TROUBLESHOOTING:
+----------------
+
+Issue: Compilation errors about missing types
+Fix: Ensure all scripts are in correct locations:
+  - ProceduralMeteorSystem.cs in /Assets/Scripts/Weather/
+  - ProceduralMeteorShader.shader in /Assets/Shaders/
+
+Issue: Purple/magenta meteors
+Fix: Shader not compiled. Wait for Unity to compile or reimport shader
+
+Issue: Meteors appear as smooth spheres (no displacement)
+Fix: Check shader is assigned and displacement settings > 0
+
+Issue: No meteors spawning
+Fix: Ensure ProceduralMeteorSystem is linked in WeatherController inspector
+
+Issue: Special defenders still die instantly
+Fix: Check specialDefenderDamageMultiplier is set to 0.6 or lower
+
+Issue: No healing meteors
+Fix: 
+  1. Enable "Enable Healing Meteors" checkbox
+  2. Check size range (0.3-0.8 default)
+  3. Healing is random 20% chance - may not appear every wave
+
+NEXT STEPS:
+-----------
+
+1. Enter Play Mode and test the meteor system
+2. Adjust settings to your preference
+3. Consider creating preset materials for different meteor types
+4. Add sound effects on meteor impact (optional)
+5. Add screen flash effect on impact (optional - Image reference already in system)
+
+For advanced customization, modify the CreateMeteorData method in ProceduralMeteorSystem.cs
+to adjust the correlation formulas between size, displacement, and damage.

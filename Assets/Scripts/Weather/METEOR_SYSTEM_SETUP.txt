@@ -1,0 +1,97 @@
+PROCEDURAL METEOR SYSTEM - SETUP GUIDE
+======================================
+
+OVERVIEW:
+---------
+The new Procedural Meteor System creates visually varied meteors with procedurally generated shapes using vertex displacement.
+Meteor danger is visually correlated with size, shape displacement, and color intensity.
+Special defenders (Frost/Lightning) are no longer instant-killed and take reduced damage.
+Healing meteors can spawn to restore defender health.
+
+FEATURES:
+---------
+1. Procedural Meteor Shapes: Uses vertex displacement shader to create unique jagged/rough meteor shapes
+2. Size-Danger Correlation: Larger meteors = more displacement, brighter colors, more damage
+3. Special Defender Protection: Frost and Lightning towers take 60% damage (configurable)
+4. Healing Meteors: Small meteors (0.3-0.8 size range) have a chance to heal defenders instead of damage
+5. Visual Feedback: Color-coded warnings (orange for damage, green for healing)
+6. No Rain/Earthquake: System focuses exclusively on meteors
+
+SETUP INSTRUCTIONS:
+-------------------
+
+METHOD 1: Use New Procedural Meteor System (Recommended)
+---------------------------------------------------------
+1. Add the "ProceduralMeteorSystem" component to your WeatherController GameObject
+2. In WeatherController inspector:
+   - Assign the ProceduralMeteorSystem reference to the "Procedural Meteor System" field
+3. Configure ProceduralMeteorSystem settings:
+   - Meteor Spawn Settings: Control number of meteors per wave (2-8 default)
+   - Damage Settings: Base damage and special defender multiplier (0.6 = 60% damage)
+   - Healing Meteor Settings: Enable/disable healing meteors, size range (0.3-0.8), healing amount
+   - Procedural Shape Settings: Displacement amount and frequency (affects visual roughness)
+4. The shader "Custom/ProceduralMeteorShader" will be automatically used
+
+METHOD 2: Keep Using Old WeatherController
+-------------------------------------------
+The old meteor system in WeatherController still works but without:
+- Procedural vertex displacement shapes
+- Healing meteors
+- Special defender damage reduction
+- Size-based visual correlation
+
+CUSTOMIZATION:
+--------------
+
+Meteor Danger Levels:
+- Small meteors (0.5-1.0): Low displacement, dim colors, low damage
+- Medium meteors (1.0-2.0): Medium displacement, bright colors, medium damage
+- Large meteors (2.0-3.0): High displacement (rough/jagged), very bright, high damage
+
+Healing Meteors:
+- Size range: 0.3-0.8 (configurable)
+- Spawn chance: 20% for meteors in size range
+- Visual: Green color with upward-floating particles
+- Effect: Restores 25 HP to defenders in impact radius
+
+Special Defender Protection:
+- FrostTowerDefender: Takes 60% damage from meteors (no instant-kill)
+- LightningTowerDefender: Takes 60% damage from meteors (no instant-kill)
+- Adjust "Special Defender Damage Multiplier" to change protection level
+
+SHADER PARAMETERS:
+------------------
+The ProceduralMeteorShader creates varied shapes automatically.
+Parameters (set procedurally, no manual adjustment needed):
+- Displacement Amount: 0.05-0.5 (small to large meteors)
+- Displacement Frequency: 4-12 (smoothness of surface)
+- Displacement Seed: Random per meteor (ensures unique shapes)
+
+TESTING:
+--------
+1. Enter Play Mode
+2. Start a wave to trigger meteor strike
+3. Observe:
+   - Orange warning cylinders for damage meteors
+   - Green warning cylinders for healing meteors (if enabled)
+   - Varied meteor shapes (jagged/rough vs smooth)
+   - Brighter/larger meteors deal more damage
+   - Special defenders survive meteor impacts
+   - Green particles on healing impact
+
+TROUBLESHOOTING:
+----------------
+- Purple/pink meteors: Shader not found. Check "Custom/ProceduralMeteorShader" exists
+- No shape variation: Displacement settings too low. Increase Max Displacement
+- Special defenders still die: Check damage multiplier is 0.6 or lower
+- No healing meteors: Enable "Enable Healing Meteors" checkbox
+- Meteors spawn at origin: Assign VoxelTerrainGenerator reference
+
+INTEGRATION NOTES:
+------------------
+- The new system works alongside the existing WeatherController
+- Rain and earthquake systems have been disabled in WeatherController
+- Old meteor system remains as fallback if ProceduralMeteorSystem is not assigned
+- Both systems can coexist but ProceduralMeteorSystem is recommended
+
+For questions or issues, check the component tooltips or review the script comments.
