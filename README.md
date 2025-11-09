@@ -39,11 +39,6 @@ Poly Pizza. (2024). *Dragon Collection* [Unity Asset Store]. Unity Technologies.
 - **Bomber Explosion**: 50-unit radius with 5 damage to all defenders
 - **Armored Dragon**: 30% damage reduction (balanced)
 
-## Development Notes
-- All emojis removed from debug logs for cleaner code
-- Unused setup scripts removed for streamlined codebase
-- Adaptive scaling formulas match detailed planning document
-- Performance tracking uses 4-metric system: Enemy Kills, Defender Survival, Resource Efficiency, Wave Completion
 
 ## Installation
 1. Clone the repository
